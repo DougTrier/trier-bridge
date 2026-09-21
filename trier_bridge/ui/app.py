@@ -77,6 +77,7 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         if section:
             window.select_section(section)
         if snapshot:
+            self._snapshot_tries = 0
             GLib.timeout_add(1500, self._dev_snapshot, window, snapshot)
         if quit_after:
             try:
@@ -96,7 +97,10 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
             node = snapshot.to_node()
             renderer = window.get_native().get_renderer()
             if node is None or renderer is None:
-                log.warning("dev snapshot: nothing to render yet")
+                self._snapshot_tries += 1
+                if self._snapshot_tries < 6:
+                    return True  # not laid out yet; try again on the next tick
+                log.warning("dev snapshot: nothing to render after %d tries", self._snapshot_tries)
                 return False
             texture = renderer.render_texture(node, None)
             if isinstance(texture, Gdk.Texture):
