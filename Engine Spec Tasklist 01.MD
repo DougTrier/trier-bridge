@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-03.05 — default-app changes as typed, reversible operations |
+| **Active task** | IMP-06.08 — security/failure regression set assembled from the verified tests |
 | **Last completed** | SCOPE-14: setup screen, Integrations page, tray icon T, search provider, Files extension, shortcut; all verified live from the installed .deb (2026-09-21 03:55 AM CDT) |
 | **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-03.05 default-apps changes → IMP-06.08 regression set → IMP-08 qualification (upgrade path, clean build, acceptance cases) |
+| **Next bounded step** | IMP-06.08 regression set → IMP-06.01/02 schema and binding write-ups → IMP-08 qualification (upgrade path, clean build, acceptance cases) |
 
 ---
 
@@ -173,8 +173,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-03.02** Files/Documents/Downloads/Desktop/removable/network-location experience. Evidence: Files page with real paths, FileManager1 launch verified live (entry IMP-03). Deeper file behaviors stay native (Nautilus).
 - [x] **IMP-03.03** Right-click/copy/move/paste/rename/delete/properties behavior. Evidence: `docs/VALIDATION.md` entry IMP-03.03 (copy, move, rename, Trash-first delete, folders as typed confirmed operations through GIO; right-click and properties stay in Files, plus the Files context-menu integration of entry SCOPE-14).
 - [x] **IMP-03.04** Drag-and-drop behavior. Disposition 2026-09-21: Trier Bridge offers no drop target; drag-and-drop happens in Files with its own copy/move indication (TB-INV-075 holds because nothing here accepts a drop). Reopen if a drop target is ever added.
-- [ ] **IMP-03.05** Installed apps/default apps.
-  - 2026-09-21: read-only half done (inventory with provenance, defaults read; entry IMP-03). Uninstall and default changes are mutations and wait for Foundation 06.
+- [x] **IMP-03.05** Installed apps/default apps. Evidence: entry IMP-03 (inventory with provenance, defaults read) and entry IMP-03.05 (default-app changes as typed, confirmed, reversible operations). Uninstalling programs is a package mutation and is tracked under IMP-06.06.
 - [x] **IMP-03.06** Printer/device entry points. Evidence: Printers page routes to the GNOME Settings printers panel; Bluetooth/devices via catalog (entry IMP-03). Live status is Foundation 04.
 - [x] **IMP-03.07** Wi-Fi/network entry points. Evidence: Network page routes to wifi/network panels (entry IMP-03).
 - [ ] **IMP-03.08** Screenshot/clipboard/common shortcut support.

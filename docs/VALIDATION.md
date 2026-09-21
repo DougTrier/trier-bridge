@@ -421,6 +421,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** folders are not copied (Files does that; refused with a hint); the terminal's output view text was not read back over AT-SPI in this run (the dialog and the filesystem were the evidence); the Trash listing in the VM still holds the test file; the Files page itself offers no file operations (it routes to Files), so these operations are reachable from the Bridge Terminal and PowerShell names only.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-03.05 — Default apps: choose which listed program opens a kind of file (typed, reversible)
+
+- **Timestamp:** 2026-09-21 08:10 AM CDT
+- **Candidate revision:** 9f779ce
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); the tb user's own `~/.config/mimeapps.list`; two programs registered per common type in this VM
+- **Files/modules:** `trier_bridge/operations/defaults.py`, `trier_bridge/ui/pages.py` (Apps page: a program drop-down and Set button per kind of file, confirmation dialog), `trier_bridge/bridge/grammar.py` and `commands.py` (`assoc`/`ftype` read-only listing), `tests/unit/test_default_apps.py`
+- **Invariant impact:** TB-INV-006 (success is the re-read default), TB-INV-050/121 (MimeIdentity = kind of file plus the current default; a change made elsewhere between plan and execution cancels), TB-INV-077 (reversible: the previous program is recorded in the journal and offered in the result; choosing it again undoes the change), TB-INV-119 (only programs the desktop already lists for the type are accepted; no free-form commands), TB-INV-083 (nothing changes until the dialog confirms), TB-INV-209 (drop-downs are announced by the selected program with the description "Program for <kind>")
+- **Expected result:** setting Text files to the other registered program is VERIFIED and reads back; the same choice again is refused as a no-op; choosing the previous program restores it; an unlisted program is refused; `assoc` lists the defaults without changing anything.
+- **Observed result:** unit in the VM: set text/plain from LibreOffice Writer to Text Editor VERIFIED, refusal on repeat, revert VERIFIED, journal resolved; unlisted program UNSUPPORTED; `assoc` OK and read-only; the concurrent-change case skipped honestly (no common type has three programs in this VM). Live Apps page: eight Set buttons (one per kind of file with candidates) and eight combo boxes named after the selected program found over AT-SPI; no tracebacks. Full unit run 114 passed, 1 skipped; integration 41 passed, 1 skipped.
+- **Tests/checks:** `python3 tools/dev.py all` (host and VM); `pytest tests/unit/test_default_apps.py`; `xdg-mime query default text/plain` before and after (unchanged: libreoffice-writer.desktop); AT-SPI walk of the Apps page.
+- **Artifacts/logs:** session transcript; the VM's `~/.config/mimeapps.list` now pins text/plain explicitly to the same program it had before.
+- **Failures/limitations:** the Set flow was not driven through the dialog over AT-SPI (drop-down selection is not exposed as an action; the same plan/execute path is covered by the unit test); the stale-default cancel path is untested where fewer than three programs exist; uninstalling programs (the other half of IMP-03.05) is a package mutation and stays with IMP-06.06.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED (controls) on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
