@@ -19,14 +19,14 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | ROOT-01 — Root project-control document alignment |
-| **Last completed** | Test VM created and profiled; tools verified in-guest (ENV-02, TOOL-05, 2026-09-20 11:10 PM CDT) |
+| **Last completed** | SCOPE-01..05 design documents from in-guest research (2026-09-20 11:55 PM CDT) |
 | **Implementation** | NOT STARTED |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | Owner review (ALN-12) → SCOPE-01..05 design documents → implementation-stack selection → Foundation 01 freeze |
+| **Next bounded step** | Live checks for R1/R2/R17/R18 in the VM → stack recommendation (ARC-01/02) for owner decision → Foundation 01 freeze |
 
 ---
 
@@ -87,11 +87,11 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 
 Gap review 2026-09-20. Each item produces a design document or a data schema under `docs/` and is complete only when that artifact exists and cites its invariants. SCOPE-01 through SCOPE-05 block ARC-01/ARC-02.
 
-- [ ] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Governed by DEC-018 and DEC-019 (accepted 2026-09-20: one integrated build; first-run setup screen with grouped integration presets; user intent decides what activates; all reversible and changeable any time; tray icon "T" otherwise); document still required.
-- [ ] **SCOPE-02** Privilege helper architecture: polkit-registered on-demand system service, D-Bus interface, schema versioning, lifecycle (exits when idle; bounded to the authorized operation per TB-INV-188), packaging, and how it stays visibly non-invasive under DEC-018.
-- [ ] **SCOPE-03** Packaging constraints and candidates: native package first; state why sandboxed formats are excluded for the core; install/uninstall behavior against TB-INV-025 to TB-INV-029.
-- [ ] **SCOPE-04** Research plan with exit criteria per open track (Wayland portals for screenshots/global shortcuts, file-manager extension APIs on GNOME/KDE/Cinnamon/XFCE, NetworkManager and udisks2 D-Bus surfaces, PackageKit versus native apt, polkit action design). Each track yields a written finding ARC-01 can cite.
-- [ ] **SCOPE-05** Test strategy: disposable VM/WSL environments are the default oracle; synthetic fixtures are prohibited unless the owner explicitly approves a named fixture for a named scenario; maps TB-T### to environments.
+- [x] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Governed by DEC-018 and DEC-019 (accepted 2026-09-20: one integrated build; first-run setup screen with grouped integration presets; user intent decides what activates; all reversible and changeable any time; tray icon "T" otherwise). Evidence: `docs/DELIVERY-MODEL.md` written 2026-09-20 11:55 PM CDT from the in-guest probe; live search-provider and Nautilus-extension checks remain open under R1/R2.
+- [x] **SCOPE-02** Privilege model. Evidence: `docs/PRIVILEGE-MODEL.md` 2026-09-20. Finding: every first-release mutation has a polkit-mediated system service (systemd1, NetworkManager, UDisks2, PackageKit, login1), so no Trier Bridge privileged helper exists in the first release; the helper design is specified only as a future, owner-approved scope change.
+- [x] **SCOPE-03** Packaging constraints and candidates. Evidence: `docs/PACKAGING.md` 2026-09-20: native `.deb` core, snap classic deferred, Flatpak and AppImage excluded, ownership table, install/upgrade/remove behavior, updates deferred to ARC-12. Formal control-file freeze stays ARC-11.
+- [x] **SCOPE-04** Research plan with exit criteria. Evidence: `docs/RESEARCH.md` sections 2 and 4, 2026-09-20: 18 tracks with exit criteria; first in-guest probe produced findings F1 to F14 (R15 and R16 closed; R1, R2, R11, R17, R18 gate ARC-01/02 and stay open until their live checks run).
+- [x] **SCOPE-05** Test strategy. Evidence: `docs/TEST-STRATEGY.md` 2026-09-20: real VM as the only oracle, real test objects instead of fixtures, layers, fault injection, run discipline from the `clean-install` checkpoint. Owner assumption recorded: no synthetic fixtures (awaiting explicit confirmation).
 - [ ] **SCOPE-06** Typed operation model: schema (ID, stable target identity, preview, authorization state, result taxonomy) and the rule that turns each result into "did anything change / what stopped it / safest next step".
 - [ ] **SCOPE-07** Windows-to-Linux concept catalog: data schema for every Windows-labeled concept with route, backend, and equivalence class (exact / approximate / none) per TB-INV-065; drives search, help, Show Me the Linux Way, and Bridge commands.
 - [ ] **SCOPE-08** Bridge Terminal grammar and MVP command list with class A to E, flags, and typed operation per command.
@@ -132,6 +132,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **ARC-10** Select first-release desktop/session matrix.
 - [ ] **ARC-11** Select package formats.
 - [ ] **ARC-12** Freeze update mechanism or explicitly defer updates.
+  - 2026-09-20: `docs/PACKAGING.md` section 5 defers updates for the first release (same channel as install; signed repository later). Owner confirmation closes this.
 - [ ] **ARC-13** Map every selected MVP feature to applicable `TB-INV-###`.
 - [ ] **ARC-14** Freeze planned test/failure matrix.
 

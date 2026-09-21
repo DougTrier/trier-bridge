@@ -1,6 +1,6 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-20 10:05 PM CDT  
+**Last updated:** 2026-09-20 11:55 PM CDT  
 **Owner:** Doug Trier  
 **Project state:** DESIGN FOUNDATION  
 **Implementation:** NOT STARTED  
@@ -49,6 +49,7 @@ Administration and command translation are deeper layers.
 - Hyper-V desktop VM scripts and autoinstall seed written under `tools/env/`; ISO download started (2026-09-20 10:25 PM CDT); VM creation is an owner-run elevated step
 - local Git repository initialized on `main` with no remote (2026-09-20)
 - test VM `tb-ubuntu-desktop-2404` created by owner and profiled in-guest; tools verified on Linux (ENV-02, TOOL-05, 2026-09-20 11:10 PM CDT)
+- SCOPE-01..05 written from an in-guest research probe: delivery model, privilege model (no helper needed), packaging, research plan with findings, test strategy (2026-09-20 11:55 PM CDT)
 - pre-implementation gap review recorded as SCOPE-01..13; non-invasive directive DEC-018 accepted; delivery model DEC-019 proposed (2026-09-20)
 
 ### Not yet done
@@ -107,7 +108,7 @@ Before implementation:
 
 0. take the `clean-install` checkpoint of the test VM (ENV-03)
 1. review root/project documents for alignment (ALN-12)
-1a. write SCOPE-01..05 design documents (delivery model, privilege helper, packaging, research plan, test strategy)
+1a. run the live R1/R2/R17/R18 checks in the VM (search provider, Nautilus extension, AT-SPI, D-Bus from each candidate stack), then bring the stack recommendation to the owner (ARC-01/02)
 2. decide implementation stack
 3. research desktop integration mechanisms for the selected first-release environments
 4. select first-release distro/desktop qualification matrix

@@ -1,6 +1,6 @@
 # Trier Bridge Documentation
 
-**Updated:** 2026-09-20 10:05 PM CDT  
+**Updated:** 2026-09-20 11:55 PM CDT  
 **Status:** Design foundation. Every runtime, test, or evidence statement in this pack is a design contract or template until observed evidence is recorded.
 
 ## Authority order
@@ -43,7 +43,11 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 | `EXPERIENCE.md` | Interaction rules, screen inventory, search, connectivity, displays, Manual, localization, theming. |
 | `VALIDATION.md` | Evidence states, evidence records, qualification automation, pre-implementation checklist, acceptance cases, evidence ledger. |
 | `ROADMAP.md` | Product phases, the eight implementation foundations, and the baseline protocol. |
-| `RESEARCH.md` | Research conclusion, open research tracks, reference policy. |
+| `RESEARCH.md` | Research plan with exit criteria (R1 to R18), in-guest findings, reference policy. |
+| `DELIVERY-MODEL.md` | SCOPE-01: what Trier Bridge is on the desktop, first-run setup, integration catalog seed, non-invasive checklist. |
+| `PRIVILEGE-MODEL.md` | SCOPE-02: no privileged helper in the first release; polkit-mediated services, identity and lifecycle on D-Bus. |
+| `PACKAGING.md` | SCOPE-03: native `.deb` core, excluded formats, package contents and lifecycle behavior. |
+| `TEST-STRATEGY.md` | SCOPE-05: real-VM oracle, real test objects, layers, fault injection, run discipline. |
 
 ## Root control files
 
