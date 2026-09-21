@@ -34,6 +34,12 @@ up from a drive's own mount point returns to This PC rather than walking past
 it, mirroring how going up from ``C:\\`` in Explorer reaches This PC and no
 further — the real filesystem does not end there, but the familiar picture
 does (TB-INV-242: labeling only, never a claim about what is reachable).
+
+Phase 3: true root's own operating-system folders (``ROOT_SYSTEM_DIRS``) are
+hidden by default when browsing the system drive's own root, the same way
+Explorer hides its own protected operating system files — a second toggle,
+separate from dotfile hiding, that only does anything at true root and never
+claims those folders do not exist (DEC-025, TB-INV-242).
 """
 from __future__ import annotations
 
@@ -61,6 +67,35 @@ from ..system.filelisting import FileEntry, ListResult, list_directory  # noqa: 
 log = logging.getLogger("trier_bridge.ui.filebrowser")
 
 VISIBLE_CAP = 500  # matches the _ProcessList convention: cap widgets, offer search to narrow
+
+# True Linux root's own operating-system folders (DEC-025, TB-INV-242): hidden by default the
+# same way Explorer hides its own protected operating system files, one toggle away, never
+# claimed to not exist. /home stays visible always — it is the direct equivalent of Users.
+ROOT_SYSTEM_DIRS = frozenset(
+    {
+        "bin",
+        "boot",
+        "dev",
+        "etc",
+        "lib",
+        "lib32",
+        "lib64",
+        "libx32",
+        "media",
+        "mnt",
+        "opt",
+        "proc",
+        "root",
+        "run",
+        "sbin",
+        "snap",
+        "srv",
+        "sys",
+        "tmp",
+        "usr",
+        "var",
+    }
+)
 
 KIND_LABEL = {
     "dir": "File folder",
@@ -121,6 +156,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._back: list[Path | None] = []
         self._forward: list[Path | None] = []
         self._show_hidden = False
+        self._show_system = False
         self._letters: list[DriveLetter] = []
         self._rows_data: list[_Row] = []
         self._generation = 0  # discards a stale worker result from a superseded navigation
@@ -150,6 +186,17 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         )
         self._hidden_toggle.connect("toggled", self._on_hidden_toggled)
         toolbar.append(self._hidden_toggle)
+        self._system_toggle = Gtk.ToggleButton(label="System folders")
+        self._system_toggle.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            [
+                "Show the Linux system's own protected folders at the system drive's root. "
+                "Nothing is changed."
+            ],
+        )
+        self._system_toggle.set_sensitive(False)
+        self._system_toggle.connect("toggled", self._on_system_toggled)
+        toolbar.append(self._system_toggle)
         self.append(toolbar)
 
         search_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -240,6 +287,10 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
 
     def _is_drive_root(self, path: Path) -> bool:
         return any(Path(d.mount_point) == path for d in self._letters)
+
+    @staticmethod
+    def _is_true_root(path: Path | None) -> bool:
+        return path == Path("/")
 
     def _load(self, path: Path | None, record_history: bool = True) -> None:
         if record_history and path != self._current:
@@ -370,13 +421,24 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         if self._current is not None:
             self._load(self._current, record_history=False)
 
+    def _on_system_toggled(self, toggle: Gtk.ToggleButton) -> None:
+        self._show_system = toggle.get_active()
+        self._render()
+
     def _render(self) -> None:
         q = self._search.get_text().strip().casefold()
-        shown = [
-            r
-            for r in self._rows_data
-            if (not r.hidden or self._show_hidden) and (not q or q in r.name.casefold())
-        ]
+        at_true_root = self._is_true_root(self._current)
+        hidden_system_count = 0
+        shown = []
+        for r in self._rows_data:
+            if r.hidden and not self._show_hidden:
+                continue
+            if at_true_root and not self._show_system and r.name in ROOT_SYSTEM_DIRS:
+                hidden_system_count += 1
+                continue
+            if q and q not in r.name.casefold():
+                continue
+            shown.append(r)
         while (child := self._list.get_row_at_index(0)) is not None:
             self._list.remove(child)
         for r in shown[:VISIBLE_CAP]:
@@ -398,12 +460,16 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         label = "This PC" if self._current is None else str(self._current)
         count = len(shown)
         noun = "drive" if self._current is None else "item"
-        self._summary.set_text(f"{label} · {count} {noun}{'s' if count != 1 else ''}")
+        summary = f"{label} · {count} {noun}{'s' if count != 1 else ''}"
+        if hidden_system_count:
+            summary += f" · {hidden_system_count} system folders hidden"
+        self._summary.set_text(summary)
 
     def _update_nav_buttons(self) -> None:
         self._back_btn.set_sensitive(bool(self._back))
         self._fwd_btn.set_sensitive(bool(self._forward))
         self._up_btn.set_sensitive(self._current is not None)
+        self._system_toggle.set_sensitive(self._is_true_root(self._current))
 
     def _update_breadcrumb(self) -> None:
         while (child := self._crumb_box.get_first_child()) is not None:
