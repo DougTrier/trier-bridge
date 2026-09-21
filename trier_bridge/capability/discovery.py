@@ -31,94 +31,16 @@ import platform
 import pwd
 import socket
 from pathlib import Path
-from typing import Any
 
 import gi
 
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio, GLib  # noqa: E402
+from gi.repository import GLib  # noqa: E402
 
 from ..core.state import CapabilityState, PrivilegeClass  # noqa: E402
+from ..system.bus import Bus  # noqa: E402
 from . import facts  # noqa: E402
 from .model import Capability, CapabilityRecord, EnvironmentProfile  # noqa: E402
-
-CALL_TIMEOUT_MS = 3000
-
-
-class _Bus:
-    """Thin read-only D-Bus helper with bounded timeouts and structured failure."""
-
-    def __init__(self, bus_type: Any) -> None:
-        self.error = ""
-        try:
-            self.conn = Gio.bus_get_sync(bus_type, None)
-        except GLib.Error as exc:
-            self.conn = None
-            self.error = f"{exc.domain}: {exc.message}"
-        self._names: set[str] | None = None
-        self._activatable: set[str] | None = None
-
-    def names(self) -> set[str]:
-        if self._names is None:
-            self._names = set(self._call_dbus("ListNames"))
-        return self._names
-
-    def activatable(self) -> set[str]:
-        if self._activatable is None:
-            self._activatable = set(self._call_dbus("ListActivatableNames"))
-        return self._activatable
-
-    def _call_dbus(self, method: str) -> list[str]:
-        if self.conn is None:
-            return []
-        try:
-            res = self.conn.call_sync(
-                "org.freedesktop.DBus",
-                "/org/freedesktop/DBus",
-                "org.freedesktop.DBus",
-                method,
-                None,
-                GLib.VariantType("(as)"),
-                Gio.DBusCallFlags.NONE,
-                CALL_TIMEOUT_MS,
-                None,
-            )
-            return list(res.unpack()[0])
-        except GLib.Error:
-            return []
-
-    def property(self, name: str, path: str, iface: str, prop: str) -> tuple[Any, str]:
-        """Return (value, error). Reading a property never activates a mutation."""
-        if self.conn is None:
-            return None, self.error or "bus unavailable"
-        try:
-            res = self.conn.call_sync(
-                name,
-                path,
-                "org.freedesktop.DBus.Properties",
-                "Get",
-                GLib.Variant("(ss)", (iface, prop)),
-                GLib.VariantType("(v)"),
-                Gio.DBusCallFlags.NONE,
-                CALL_TIMEOUT_MS,
-                None,
-            )
-            return res.unpack()[0], ""
-        except GLib.Error as exc:
-            return None, f"{exc.domain}: {exc.message}"
-
-    def call(
-        self, name: str, path: str, iface: str, method: str, args: Any = None
-    ) -> tuple[Any, str]:
-        if self.conn is None:
-            return None, self.error or "bus unavailable"
-        try:
-            res = self.conn.call_sync(
-                name, path, iface, method, args, None, Gio.DBusCallFlags.NONE, CALL_TIMEOUT_MS, None
-            )
-            return res.unpack(), ""
-        except GLib.Error as exc:
-            return None, f"{exc.domain}: {exc.message}"
 
 
 class Discovery:
@@ -126,8 +48,8 @@ class Discovery:
 
     def __init__(self, root: Path = Path("/")) -> None:
         self.root = root
-        self.system = _Bus(Gio.BusType.SYSTEM)
-        self.session = _Bus(Gio.BusType.SESSION)
+        self.system = Bus.system()
+        self.session = Bus.session()
 
     # ---- environment ---------------------------------------------------------
     def environment(self) -> EnvironmentProfile:

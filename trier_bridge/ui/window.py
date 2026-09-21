@@ -35,7 +35,9 @@ from ..catalog.model import Catalog  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
 from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
+from .disks import DisksPage  # noqa: E402
 from .eventviewer import EventViewerPage  # noqa: E402
+from .network import NetworkPage  # noqa: E402
 from .taskmanager import TaskManagerPage  # noqa: E402
 
 
@@ -102,7 +104,12 @@ SECTIONS: tuple[Section, ...] = (
     ),
     Section("devices", "Device Manager", "computer-symbolic", "Device Manager", "Troubleshooting"),
     Section(
-        "disks", "Disk Management", "drive-harddisk-symbolic", "Disk Management", "Troubleshooting"
+        "disks",
+        "Disk Management",
+        "drive-harddisk-symbolic",
+        "Disk Management",
+        "Troubleshooting",
+        available=True,
     ),
     Section("services", "Services", "system-run-symbolic", "Services", "Advanced"),
     Section(
@@ -213,6 +220,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             self._taskmanager.set_active(section.key == "taskmanager")
             if section.key == "events":
                 self._events.start()
+            if section.key == "network":
+                self._network.start()
+            if section.key == "disks":
+                self._disks.start()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
 
@@ -273,25 +284,11 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 self.notify,
             )
         if section.key == "network":
-            return EntryPointPage(
-                "Network",
-                "Wi-Fi, wired, and VPN connections live in Network settings. "
-                "Adapter details and IP information inside Trier Bridge arrive in a later "
-                "foundation.",
-                (
-                    (
-                        "Wi-Fi settings",
-                        "Windows: Wi-Fi · Linux: GNOME Settings (NetworkManager)",
-                        lambda: self._launcher.open_settings_panel("wifi"),
-                    ),
-                    (
-                        "Network settings",
-                        "Windows: Network Connections (ncpa.cpl) · Linux: GNOME Settings",
-                        lambda: self._launcher.open_settings_panel("network"),
-                    ),
-                ),
-                self.notify,
-            )
+            self._network = NetworkPage(self._launcher, self.notify)
+            return self._network
+        if section.key == "disks":
+            self._disks = DisksPage(self._launcher, self.notify)
+            return self._disks
         if section.key == "sysinfo":
             from ..capability.discovery import Discovery
             from .sysinfo import SystemInfoPage
