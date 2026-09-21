@@ -19,14 +19,14 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | IMP-04 — Foundation 04: read-only familiar system tools (Task Manager observation first) |
-| **Last completed** | Live research R2/R17/R18 in the VM and stack proposal `docs/STACK-SELECTION.md` (2026-09-21 12:05 AM CDT) |
+| **Last completed** | IMP-04.01 Task Manager observation verified live (2026-09-21 02:45 AM CDT) |
 | **Implementation** | Foundations 01, 02 complete; Foundation 03 read-only slice complete (2026-09-21); Foundation 04 starting |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-04.01 Task Manager observation (procfs, adaptive sampling) → IMP-04.03 Event Viewer over the journal → IMP-04.06 Network inventory |
+| **Next bounded step** | IMP-04.03 Event Viewer over the journal (libsystemd) → IMP-04.06 Network inventory → IMP-04.05 storage → IMP-04.04 devices → IMP-04.02 startup |
 
 ---
 

@@ -35,6 +35,7 @@ from ..catalog.model import Catalog  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
 from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
+from .eventviewer import EventViewerPage  # noqa: E402
 from .taskmanager import TaskManagerPage  # noqa: E402
 
 
@@ -92,7 +93,12 @@ SECTIONS: tuple[Section, ...] = (
         available=True,
     ),
     Section(
-        "events", "Event Viewer", "document-open-recent-symbolic", "Event Viewer", "Troubleshooting"
+        "events",
+        "Event Viewer",
+        "document-open-recent-symbolic",
+        "Event Viewer",
+        "Troubleshooting",
+        available=True,
     ),
     Section("devices", "Device Manager", "computer-symbolic", "Device Manager", "Troubleshooting"),
     Section(
@@ -205,6 +211,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             if section.key == "apps":
                 self._apps_page.start()
             self._taskmanager.set_active(section.key == "taskmanager")
+            if section.key == "events":
+                self._events.start()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
 
@@ -247,6 +255,9 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if section.key == "taskmanager":
             self._taskmanager = TaskManagerPage()
             return self._taskmanager
+        if section.key == "events":
+            self._events = EventViewerPage()
+            return self._events
         if section.key == "printers":
             return EntryPointPage(
                 "Printers",
