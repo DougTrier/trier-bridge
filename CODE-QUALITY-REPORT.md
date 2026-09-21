@@ -1,8 +1,8 @@
 # CODE-QUALITY-REPORT.md
 # Trier Bridge Code Quality Report
 
-**Candidate:** commit `69b6626` (Foundations 01–08 automated parts, DEC-024 network translation layer and drive letters; package 0.1.0~dev1)  
-**Timestamp:** 2026-09-21 09:50 AM CDT  
+**Candidate:** commit `87bd7d6` (Foundations 01–08 automated parts, DEC-024 network translation layer and drive letters; package 0.1.0~dev1)  
+**Timestamp:** 2026-09-21 12:43 PM CDT  
 **CQS:** **94 / 100** (all eight categories measured; first numeric result)  
 **Assessed weight:** 100 / 100  
 **Observed:** 94 of 100  
@@ -20,7 +20,7 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | Environment | `tb-ubuntu-desktop-2404` (Ubuntu 24.04.5, GNOME 46 Wayland, software rendering) and Windows host `.venv` with identical tool versions |
 | Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), flake8-cognitive-complexity 0.1.0, bandit 1.6.2, mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 (all from the Ubuntu 24.04 archive, mirrored on the host) |
 | Commands | `python3 tools/dev.py all` (includes `security` and `complexity`); `dev.py results` and `dev.py evidence` write the normalized test outcome and the measured inputs of this report to `reports/local/` (entry TOOL-06); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script for the broad-catch inventory and longest functions |
-| Test results | host: 105 unit passed, 11 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 137 unit passed, 1 skipped; integration 56 in the console session; bandit: 0 findings |
+| Test results | host: 105 unit passed, 11 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 137 unit passed, 1 skipped; integration 53 with the journeys excluded (the owner's window holds the single-instance name), 56 with them; all normalized by `tools/dev.py results`; bandit: 0 findings |
 
 ---
 
@@ -158,4 +158,4 @@ No baseline files, no disabled rules, no lowered thresholds. Broad `except Excep
 
 > **CQS: 94 / 100** (all eight categories measured: architecture 20, readability 15, complexity 9, documentation 15, testing 15, static analysis 10, dependencies 5, dead code 5)
 
-This is the truthful result for candidate `69b6626`. It is an engineering quality score, not a release verdict: release stays locked and the hard gates above still list what is unverified.
+This is the truthful result for candidate `87bd7d6`. It is an engineering quality score, not a release verdict: release stays locked and the hard gates above still list what is unverified.
