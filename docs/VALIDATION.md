@@ -295,6 +295,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the restricted-account path (user outside `adm`) is implemented but not yet exercised live; Boot view empty because the current boot's kernel messages fell outside the newest 500 (time-range and boot filters are follow-ups); the Security view is identifier-based, not audit-based.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-04 — Foundation 04: read-only familiar system tools (Network, Disks, Devices, Startup, provenance)
+
+- **Timestamp:** 2026-09-21 02:55 AM CDT
+- **Candidate revision:** e37d48a
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02; Hyper-V Gen 2, so no PCI/USB bus, devices on vmbus); checks over SSH; pages in the console Wayland session
+- **Files/modules:** `trier_bridge/system/{bus,network,storage,devices,startup}.py`, `trier_bridge/ui/{network,disks,devices}.py`, `tests/unit/test_network_storage.py`, `test_devices_startup.py`, `tests/integration/test_network_storage_vm.py`, `test_devices_startup_vm.py`
+- **Invariant impact:** TB-INV-071/149 (link, profile, IP, DNS, gateway, connectivity check reported as separate rows), TB-INV-052 (connection UUID + interface identity captured), TB-INV-070/157/158 (drives, partitions, filesystems, loops, mounts distinct; identity from serial/size/UUID; real mount folders shown), TB-INV-162 (free space from statvfs, Unknown when unmounted), TB-INV-173/174/175 (devices: missing fields Unknown; no driver actions; names sanitized and truncated), TB-INV-072 (installed software provenance, Foundation 03), TB-INV-131 (Unknown never zero across all tools)
+- **Expected result:** each inventory agrees with an independent read of the same system; pages render without errors; package still builds, installs, and purges cleanly.
+- **Observed result:** Network: NetworkManager 1.46.0, state Connected (global), connectivity Full Internet access; eth0 Ethernet Connected, profile netplan-eth0, 172.20.252.59/20, gateway and DNS 172.20.240.1, MAC matches /sys/class/net. Storage: 3 drives (two Msft Virtual Disks, one virtual DVD), volumes sda1 vfat at /boot/efi and sda2 ext4 at / with free space within 512 MB of statvfs, 13 squashfs loops hidden and counted, 0 loose. Devices: 25 devices across net, drm, sound, input, block, vmbus (eth0 hv_netvsc, hyperv_drm, atkbd keyboard, hid-hyperv mouse, sd disks, hv_balloon/hv_utils); a first run found 0 because PCI and USB do not exist on Gen 2, fixed by class and vmbus passes. Startup: 38 entries from /etc/xdg/autostart with On/Off state. Integration: 22 passed. Pages network, disks, devices, startup: 0 tracebacks, 0 markup errors, AT-SPI rows present. Unit: 68 passed on host and VM.
+- **Tests/checks:** `python3 tools/dev.py all`; `pytest tests/integration -m integration`; data dumps; AT-SPI walks; package rebuild (see below).
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** one environment; Hyper-V has no PCI/USB so those passes are exercised only by unit tests on a synthetic tree; UPower reported no devices (no battery in the VM); the Startup view lists but cannot toggle (Foundation 06); Task Manager APP versus USER not yet distinguished.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

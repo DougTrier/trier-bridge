@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-04 — Foundation 04: read-only familiar system tools (Task Manager observation first) |
-| **Last completed** | IMP-04.03 Event Viewer verified live (2026-09-21 02:50 AM CDT) |
-| **Implementation** | Foundations 01, 02 complete; Foundation 03 read-only slice complete (2026-09-21); Foundation 04 starting |
+| **Active task** | IMP-05 — Foundation 05: durable state, operation journal, restart reconciliation |
+| **Last completed** | Foundation 04 read-only tools verified live; 22 integration tests (2026-09-21 02:55 AM CDT) |
+| **Implementation** | Foundations 01, 02, 04 complete; 03 read-only slice complete (2026-09-21); Foundation 05 starting |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-04.06 Network inventory → IMP-04.05 storage inventory → IMP-04.04 devices → IMP-04.02 startup |
+| **Next bounded step** | IMP-05.01 preferences durability → IMP-05.02 operation journal → IMP-05.03 restart reconciliation → IMP-05.06 fault tests in the VM |
 
 ---
 
@@ -186,14 +186,13 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 # Foundation 04 — Read-only familiar system tools
 
 - [x] **IMP-04.01** Task Manager observation. Evidence: `docs/VALIDATION.md` entry IMP-04.01 (live procfs sampler, identity, Unknown-not-zero, page verified in session).
-- [ ] **IMP-04.02** Startup Apps observation.
+- [x] **IMP-04.02** Startup Apps observation. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
 - [x] **IMP-04.03** Event Viewer / journal presentation. Evidence: `docs/VALIDATION.md` entry IMP-04.03 (native sd-journal, cross-checked with journalctl, page verified in session).
-- [ ] **IMP-04.04** Device Manager inventory.
-- [ ] **IMP-04.05** Disk/storage inventory.
-- [ ] **IMP-04.06** Network Connections inventory.
-- [ ] **IMP-04.07** Installed software provenance inventory.
-- [ ] **IMP-04.08** Verify missing metrics remain Unknown/Unavailable, not zero.
-  - 2026-09-21: verified for processes (first-sample CPU, unreadable memory) and discovery records; remaining tools verify as they land.
+- [x] **IMP-04.04** Device Manager inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
+- [x] **IMP-04.05** Disk/storage inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
+- [x] **IMP-04.06** Network Connections inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
+- [x] **IMP-04.07** Installed software provenance inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
+- [x] **IMP-04.08** Verify missing metrics remain Unknown/Unavailable, not zero. Evidence: processes (first-sample CPU, unreadable memory), storage (free space when unmounted), devices (driver unknown), network (Unknown layers), discovery records; entries IMP-02, IMP-04.01, IMP-04.
 
 ---
 
