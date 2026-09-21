@@ -376,6 +376,25 @@ Research performed September 20, 2026 found many adjacent projects, but no exact
 | **TB-INV-232** | Known unsupported or unverified combinations must be documented in-product or in release documentation. | Do not let marketing widen the compatibility matrix. |
 | **TB-INV-233** | Release is blocked by unresolved data-loss, privilege-escape, arbitrary-command, update-trust, or unrecoverable-system-mutation defects. | Severity cannot be averaged away by other passing metrics. |
 
+### 3.14 In-app file browsing and navigation
+
+Scoped 2026-09-21 for the proposed in-app file browser (`DOC-02`, not yet authorized as implementation). Grounded in documented real-world failure modes, not assumed: symlink/TOCTOU path-validation guidance (canonicalize-and-prefix-check, `*at`-relative operations, no-follow on final-component deletes), GNOME's own thumbnailer sandboxing history (the "Bad Taste" CVE, fixed by routing preview generation through `bwrap`), Linux's per-user `inotify` watch ceiling, and `GtkDirectoryList`'s async-enumeration pattern for avoiding a blocked UI on large folders. These do not change what Linux does; they bound how Trier Bridge is allowed to present and touch it.
+
+| ID | Must remain true | Graceful failure requirement |
+|---|---|---|
+| **TB-INV-234** | Browsing into, or recursively operating through, a symlinked directory must follow an explicit, stated policy — shown as a link by default, never silently traversed into by a destructive recursive operation without the user choosing to enter it. | A destructive recursive operation must never escape the tree it was started on through a symlink. |
+| **TB-INV-235** | A bulk action on a multi-selection must revalidate every item's identity immediately before acting on that specific item, not only the first. | One item's staleness or failure must not silently skip, corrupt, or abandon the rest of the selection. |
+| **TB-INV-236** | Any operation that walks a directory tree must be cancellable at any point and must report only progress that reflects real completed work. | An interrupted or partially failed tree operation produces a true partial-success enumeration (TB-INV-193), never a collapsed pass/fail. |
+| **TB-INV-237** | Listing a folder must not block the UI thread regardless of size. | Very large folders page or virtualize rather than load unboundedly into memory (extends TB-INV-201/202 to directory listing specifically). |
+| **TB-INV-238** | Any live-refresh/file-watching mechanism operates within a fixed, shared budget. | It degrades to manual refresh rather than exhaust the system's `inotify` watch limit or crash on a very large or deep watched tree. |
+| **TB-INV-239** | Trier Bridge itself never parses arbitrary file content to render a preview. | Thumbnails, if offered, go through the desktop's own sandboxed thumbnailer; until that integration exists, only file-type icons are shown. |
+| **TB-INV-240** | Opening or copying an archive never auto-extracts it. | Extraction is an explicit action routed to the desktop's own archive tool by default-app association, the same as any other file type, unless a dedicated extraction feature is later built with its own bounded-size and ratio checks against decompression bombs. |
+| **TB-INV-241** | Linux allows names differing only by case to coexist in one folder; the browser must never merge, hide, or silently rename around such a collision. | The real, distinct entries are shown exactly as Linux sees them, even where a Windows user would expect them to be the same file. |
+| **TB-INV-242** | Any decision to group, de-emphasize, or default away from a system-level folder at the true filesystem root is a presentation choice only. | Every real folder stays honestly reachable and is never reported as absent (extends TB-INV-031/073 to the browsing surface). |
+| **TB-INV-243** | Device nodes, sockets, FIFOs, and other non-regular files are identified by type, never opened blindly. | An operation that could block indefinitely (for example, a blocking read on a FIFO with no writer) is refused; ambiguous types stay Unknown rather than guessed. |
+| **TB-INV-244** | Linux allows deleting or replacing a file another program still has open. | When this changes what actually happened (a running program keeps its own now-unlinked copy), the result says so rather than implying a clean, isolated change. |
+| **TB-INV-245** | No location is offered as live-browsable until its latency and failure behavior are handled. | A remote or network-backed location must not silently freeze the browser on a timeout; a phase that does not yet support one says so plainly rather than showing an empty or broken folder. |
+
 ---
 
 ## 4. Invariant family index
@@ -395,8 +414,9 @@ Research performed September 20, 2026 found many adjacent projects, but no exact
 | Offline behavior, performance, resource efficiency, and scale | TB-INV-197–TB-INV-206 |
 | Accessibility, localization, privacy, and multi-user behavior | TB-INV-207–TB-INV-218 |
 | Updates, supply chain, extensions, testing, and release | TB-INV-219–TB-INV-233 |
+| In-app file browsing and navigation | TB-INV-234–TB-INV-245 |
 
-**Total baseline invariants: 233.**
+**Total baseline invariants: 245.**
 
 ---
 
@@ -516,6 +536,20 @@ The following scenarios are not automatically separate invariants; they are mand
 - large text
 - reduced motion
 - high contrast
+
+### File browsing
+- a folder with tens of thousands of entries
+- a symlink loop (a directory that links back to its own ancestor)
+- a symlink pointing outside the tree a recursive operation was started on
+- files added, renamed, or deleted by another process while the folder is open and listed
+- the system `inotify` watch limit already exhausted by other applications
+- an archive dropped into a folder being browsed (decompression-bomb shape: huge expanded size from a tiny file)
+- two names differing only by case created in the same folder by another process
+- a FIFO, socket, or device node present in a listed folder
+- a file deleted mid-copy by another process
+- a file open and locked by another program at the moment of a delete or overwrite
+- cancellation requested mid-way through a large recursive copy or delete
+- a network-backed or FUSE-mounted location that stalls or disconnects mid-listing
 
 ---
 
