@@ -117,10 +117,10 @@ The regression set is the whole automated suite (`python3 tools/dev.py all` on t
 | 37.4 PID reuse, exits before action, same-user, other-user, protected, TERM timeout, KILL escalation | `tests/integration/test_terminate_vm.py`, `tests/unit/test_processes.py` | covered |
 | 37.5 service absent, auth denied, state changes during preview, restart fails after stop, enable versus start | `tests/integration/test_services_vm.py`, `test_authorization_vm.py`; the PARTIAL result shape is unit-level (`tests/unit/test_operations.py::test_partial_result_must_enumerate`); restart-fails-after-stop is not provoked live | covered except live PARTIAL |
 | 37.5 masked, failed, dependency failure | listing shows masked and failed units; mutation on them refused (static/masked enable UNSUPPORTED). Dependency failure not provoked | partly |
-| 37.6 packages | no package mutation exists (IMP-06.06 not started); read-only provenance only | not applicable yet |
+| 37.6 packages | no package mutation exists and none will (DEC-024); read-only provenance only | not applicable |
 | 37.7 hostile ANSI, HTML/script-like content, binary content, malformed timestamps, restricted journal | `trier_bridge/system/journal.py` strips escapes and control characters (`tests/unit/test_journal.py::test_sanitize_strips_ansi_and_control_but_keeps_text`); Event Viewer renders text only; restricted journal reported as such (entry IMP-04.03) | covered |
 | 37.7 huge logs | bounded reads (entry IMP-04.03) | covered |
-| 37.8 network | read-only network view only; no network mutation exists (IMP-06.06) | not applicable yet |
+| 37.8 interface disappears, DHCP/static transition, rollback | `tests/integration/test_network_vm.py` (a disconnected virtual adapter disappears and is reconnected from its profile; static and back to automatic DNS; stale connection cancels) | covered on a dummy interface; invalid gateway and DNS failure not provoked |
 | Test A (Windows knowledge without root) | `test_bridge_vm.py::test_north_star_a_windows_commands_without_root` | covered |
 | Test B (explicit elevation for one service) | `test_authorization_vm.py::test_security_test_b_sc_stop_asks_linux_for_this_one_action` | covered |
 | Test C (injection rejection) | `test_bridge_vm.py::test_north_star_c_injection_is_rejected_and_nothing_runs` | covered |

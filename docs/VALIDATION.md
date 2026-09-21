@@ -533,6 +533,34 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** no printer is attached to the VM, so a printer with a queue was not observed; job listing is read-only (cancelling a job is a later class B operation); the Help search field filters rows by plain text only.
 - **Evidence state:** DESKTOP_VERIFIED on Ubuntu 24.04.5 (no printer present)
 
+### IMP-06.06 — Network translation layer: adapter and IPv4 changes through NetworkManager
+
+- **Timestamp:** 2026-09-21 04:10 PM CDT
+- **Candidate revision:** afa244c
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); NetworkManager 1.46.0; polkit 124; a dummy connection `tb-dummy` on `tbdummy0` created with `nmcli` as the test object; the VM's uplink `eth0` never touched (checked before and after)
+- **Files/modules:** `trier_bridge/operations/network.py`, `trier_bridge/bridge/grammar.py` and `commands.py` (`netsh`), `trier_bridge/ui/network.py` (Disconnect/Connect and IPv4 dialog per adapter), `trier_bridge/ui/terminal.py` (network confirmation), `tests/unit/test_network_ops.py`, `tests/integration/test_network_vm.py`
+- **Invariant impact:** TB-INV-109/110 (each change is one D-Bus call under polkit with ALLOW_INTERACTIVE_AUTHORIZATION; the product never holds privilege), TB-INV-052 (connection revalidated by UUID and interface right before acting; a change made elsewhere cancels), TB-INV-006 (success is the observed device state or the re-read profile), TB-INV-094/104 (`netsh` yields the same NetworkPlan as the page and needs the same confirmation), TB-INV-078 (plain previews and results), DEC-024 (translation, not hand-off)
+- **Expected result:** `netsh interface set interface <name> disable|enable`, `netsh interface ip set address <name> static <ip> <mask> [gateway] | dhcp`, `netsh interface ip set dns <name> static <ip> | dhcp` and the page's buttons become NetworkManager changes that are verified; invalid addresses and masks are refused before any plan exists.
+- **Observed result:** four integration tests passed on the dummy interface with the real polkit agent granting: disconnect VERIFIED (NetworkManager removes a disconnected virtual adapter entirely, which the layer now treats as disconnected), connect from the saved profile VERIFIED with 192.0.2.10/24 back on the adapter, fixed address 192.0.2.11/24 with DNS 192.0.2.53 saved in the profile and visible on the adapter (VERIFIED), DNS back to automatic VERIFIED, a connection changed underneath by `nmcli` cancelled the plan, the loopback adapter refused, `netsh ... static 192.0.2.12 ...` returned a plan without acting, an unknown adapter failed plainly. `eth0` stayed connected throughout. Unit: masks, prefixes, address forms, and the netsh grammar. Lint, types, bandit clean; VM unit 125 passed.
+- **Tests/checks:** `TRIER_BRIDGE_TEST_PASSWORD=... pytest tests/integration/test_network_vm.py -m integration`; `tools/dev.py all`.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the Network page buttons and the IPv4 dialog were not driven over AT-SPI in this entry (the same plan and execute path is exercised by the tests; a page walk is queued behind the owner's open window); IPv6 and Wi-Fi profile creation are not offered; `auto` on the dummy adapter cannot get a DHCP lease, so that verb was verified only as a saved setting.
+- **Evidence state:** INTEGRATION_VERIFIED on Ubuntu 24.04.5
+
+### IMP-04.07 — Drive letters: C:, D:, ... as a familiar label over Linux mounts
+
+- **Timestamp:** 2026-09-21 04:10 PM CDT
+- **Candidate revision:** afa244c
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02): `/` ext4, `/boot/efi` vfat, `/media/tb/CIDATA` vfat
+- **Files/modules:** `trier_bridge/system/driveletters.py`, `trier_bridge/operations/files.py` (paths), `trier_bridge/bridge/commands.py` (cd, dir, type accept Windows spellings and show them), `trier_bridge/ui/disks.py` (letters next to volumes, a Drive letters group), `trier_bridge/ui/pages.py` (Drives on the Files page), `tests/unit/test_driveletters.py`
+- **Invariant impact:** TB-INV-031/073 (the letter is a label; the real path is always shown and is what every operation uses), TB-INV-004 (an unknown letter is refused plainly, never invented)
+- **Expected result:** C: is /, D: and later letters follow fixed then removable mounts in a stable order; plumbing mounts (EFI, snaps, tmpfs) get no letter; `C:\Users\<name>` is `/home/<name>`; Windows spellings work in the Command Prompt and file operations.
+- **Observed result:** in the VM: letters C: (/) and D: (/media/tb/CIDATA); `cd` prints `/home/tb  (C:\Users\tb)`; `cd C:\Users\tb` lands in /home/tb; `dir D:\` lists /media/tb/CIDATA; `cd Q:\` answers "There is no drive Q: on this computer."; `type C:\etc\hostname` reads /etc/hostname; `dir C:\Users` lists /home; `/tmp` shows as C:\tmp. Unit tests cover ordering, plumbing exclusion, escapes in the mount table, and both directions of the spelling. Unit 125 passed in the VM.
+- **Tests/checks:** `tools/dev.py all`; `vm_letters_probe.py` (test aid) against the live mount table.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the Disk Management and Files pages were not walked over AT-SPI yet (queued behind the owner's open window); letters can shift when removable media come and go, exactly as on Windows, and that is stated on the page.
+- **Evidence state:** INTEGRATION_VERIFIED (terminal and operations) on Ubuntu 24.04.5; page walks pending
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

@@ -18,8 +18,8 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-04.07 drive letters, then IMP-06.06 network translation layer (DEC-024 accepted 2026-09-21) |
-| **Last completed** | Help generated from the build; Printers page reads CUPS live; DEC-024 proposed; CQS 94/100 (2026-09-21 02:20 PM CDT) |
+| **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner's console acceptance |
+| **Last completed** | Network translation layer (IMP-06.06) and drive letters (IMP-04.07) per DEC-024, verified in the VM (2026-09-21 04:10 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
@@ -196,7 +196,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 ---
 
-- [ ] **IMP-04.07** Drive letters as a familiar label (DEC-024): C: for the Linux system drive, D:, E:, ... for other mounted volumes, shown in Disk Management, Files, and the Command Prompt next to the real path; `C:\Users\<name>` resolves to `/home/<name>`.
+- [x] **IMP-04.07** (Evidence: entry IMP-04.07.) Drive letters as a familiar label (DEC-024): C: for the Linux system drive, D:, E:, ... for other mounted volumes, shown in Disk Management, Files, and the Command Prompt next to the real path; `C:\Users\<name>` resolves to `/home/<name>`.
 
 ---
 
@@ -218,7 +218,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-06.03** Implement stable target identity and revalidation. Evidence: `docs/VALIDATION.md` entry IMP-06.04 (PID+start revalidation; stale target cancels); other target kinds as their operations land.
 - [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
 - [x] **IMP-06.05** Implement selected service control. Evidence: `docs/VALIDATION.md` entry IMP-06.05.
-- [ ] **IMP-06.06** Implement selected network/package mutations only if separately qualified.
+- [x] **IMP-06.06** Implement selected network/package mutations only if separately qualified. Evidence: entry IMP-06.06 (network translation layer on a dummy interface; packages out of scope by DEC-024).
   - 2026-09-21 (DEC-024): packages are out of scope for good (no App Center, no install/remove). Network changes are in scope as a translation layer: adapter on/off, connect/disconnect a profile, static IPv4 address/gateway/DNS, back to automatic; each a typed class C operation through NetworkManager under polkit, qualified on a dummy interface in the VM, never on its uplink.
 - [x] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior. Evidence: `docs/VALIDATION.md` entries IMP-06.04/06.05 (stale target, denial without an agent) and IMP-06.07 (granted and dismissed prompts through a real polkit agent, user-manager re-exec). Limitation recorded: systemd 255 reports a dismissed prompt as access denied; expiry is polkit's cache and not exercised.
   - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
