@@ -16,8 +16,8 @@
 Tabs: Apps and processes (this user's), Background (system and other users),
 Performance (CPU, memory, load, uptime). Sampling runs on a worker thread every
 two seconds while the page is visible and stops when it is hidden
-(TB-INV-200). No End task button exists yet: termination is a mutation and
-arrives in Foundation 06 with identity revalidation (TB-INV-050, TB-INV-134).
+(TB-INV-200). End task is a class B mutation: it asks first and revalidates the
+process identity right before acting (TB-INV-050, TB-INV-134).
 Unknown values read "Unknown", never 0 (TB-INV-131). Command lines are shown
 only in the tooltip and truncated (TB-INV-133).
 """
