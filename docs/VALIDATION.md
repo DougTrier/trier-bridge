@@ -519,6 +519,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** these are interaction tests, not usability acceptance: whether an office user finds the flow natural is IMP-08.04 and needs a person; the journeys run only where a console session is available (they skip over plain SSH).
 - **Evidence state:** DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-03.06/HELP — Live printer queues from CUPS; Help generated from the build
+
+- **Timestamp:** 2026-09-21 02:20 PM CDT
+- **Candidate revision:** 45f9f34
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); `cups-daemon` 2.4.7 running with no printers configured; `python3-cups` 2.0.1 present as Ubuntu Desktop ships it
+- **Files/modules:** `trier_bridge/system/printers.py`, `trier_bridge/ui/printers.py`, `trier_bridge/help.py`, `trier_bridge/ui/help.py`, `trier_bridge/ui/window.py`, `debian/control` (Recommends `python3-cups`), `tests/unit/test_help_and_printers.py`
+- **Invariant impact:** TB-INV-033 (pycups is optional: without it only the Printers page says printers are managed in Settings), TB-INV-004 (Help is generated from the catalog, the command table, and the integration catalog, so it cannot describe an absent feature), TB-INV-078 (printer state, reasons, and queue in plain words), TB-INV-209 (every row named; the Settings button described)
+- **Expected result:** the Printers page reports the print service, the default, each printer with state and waiting jobs, and opens the GNOME Settings printers panel; Help lists how the product works, every Windows word by group, every Bridge command with its class, the PowerShell names, the integrations, and the three folders the product writes, with Open buttons for the folders.
+- **Observed result:** Printers page over AT-SPI: "0 printers known to the print service", "No printers yet", the Printers settings button with its description; no warnings after the ampersand in the description was removed. Help page: 429 nodes, groups How Trier Bridge works, Windows words (Troubleshooting, Everyday, Advanced, Files), Command Prompt, PowerShell names, Integrations, Where Trier Bridge keeps its files. Unit: the Help test asserts every command row carries its class text and that the file rows point inside the given home; the printers test read CUPS live (`available`, zero printers). Full suites: host 101 passed, VM 118 passed, integration 46 passed with the console session (journeys included).
+- **Tests/checks:** `tools/dev.py all` (host, VM); `pytest tests/integration -m integration` in the VM session; AT-SPI walks of both pages.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** no printer is attached to the VM, so a printer with a queue was not observed; job listing is read-only (cancelling a job is a later class B operation); the Help search field filters rows by plain text only.
+- **Evidence state:** DESKTOP_VERIFIED on Ubuntu 24.04.5 (no printer present)
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

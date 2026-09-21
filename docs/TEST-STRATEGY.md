@@ -86,7 +86,7 @@ Discipline for a qualification run:
 
 ### 4.1 Journeys
 
-`tests/integration/test_journeys_vm.py` starts the product as a process and drives it through AT-SPI; it needs the console session variables (`WAYLAND_DISPLAY`, the session bus, `GTK_A11Y=atspi`) and skips otherwise. Search fields are role `entry`, plain entries `text`; pump the GLib main context and clear the app's cache between polls, or libatspi will answer from a stale tree.
+`tests/integration/test_journeys_vm.py` starts the product as a process and drives it through AT-SPI; it needs the console session variables (`WAYLAND_DISPLAY`, the session bus, `GTK_A11Y=atspi`) and skips otherwise. Search fields are role `entry`, plain entries `text`. libatspi caches: clear the desktop's cache before listing applications (a window started after the first look never appears otherwise), disable the cache on the app object, pump the GLib main context between polls, and treat a child that vanished mid-search as absent rather than as the end of the search.
 
 ## 5. Mapping to invariants
 

@@ -12,7 +12,7 @@ Trier Bridge is one installed application plus a set of desktop integrations tha
 
 | Component | What it is | Runs when |
 |---|---|---|
-| **Bridge window** | The application: launcher/search home, familiar file entry points, settings routing, system tools (Task Manager, Installed Apps, Network Connections, Device Manager, Disk Management, Event Viewer, Services), Bridge Terminal, Help, and the Integrations page. One unprivileged process per user session. | When the user opens it. |
+| **Bridge window** | The application: launcher/search home, familiar file entry points, settings routing, system tools (Task Manager, Installed Apps, Network Connections, Device Manager, Disk Management, Event Viewer, Services, Printers), Bridge Terminal, generated Help, and the Integrations page. One unprivileged process per user session. | When the user opens it. |
 | **Tray icon "T"** | A StatusNotifier/AppIndicator icon whose menu opens the window, the Integrations page, and Quit. | Only if the user selected it at setup; then it starts at login through a per-user XDG autostart entry. |
 | **Integrations** | Small, individually reversible hooks into the desktop's own extension points (section 3). | Only those the user selected. |
 | **Typed operation core** | The trusted logic that turns intent into typed operations, validates, authorizes through Linux, executes through adapters, and verifies. | Inside the Bridge window process (topology finalized in SCOPE-10). |
