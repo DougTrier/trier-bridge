@@ -309,6 +309,34 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** one environment; Hyper-V has no PCI/USB so those passes are exercised only by unit tests on a synthetic tree; UPower reported no devices (no battery in the VM); the Startup view lists but cannot toggle (Foundation 06); Task Manager APP versus USER not yet distinguished.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-05 — Foundation 05: durable state, operation journal, restart reconciliation, fault tests
+
+- **Timestamp:** 2026-09-21 03:05 AM CDT
+- **Candidate revision:** 1c3a34a
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); fault tests on a real 4 MB ext4 loopback image mounted through the kernel (sudo used by the test harness only, fixed argv); app runs in the console Wayland session
+- **Files/modules:** `trier_bridge/state/{journal,preferences}.py`, `trier_bridge/config.py` (fix), `trier_bridge/__main__.py`, `trier_bridge/ui/{app,window}.py`, `tests/unit/test_state_journal.py`, `tests/integration/test_persistence_faults_vm.py`
+- **Invariant impact:** TB-INV-055/183 (operation ID, one atomic record per state change with history), TB-INV-059/060/189 (restart: non-terminal records become OUTCOME_UNKNOWN + NEEDS_REVIEW, surfaced in a banner, never replayed), TB-INV-179/180 (preferences: declared defaults, versioned, non-durable writes reported and reverted, unknown keys preserved), TB-INV-181/182 (atomic writes survive disk full, read-only remount, permission loss; original kept, no temp file left), TB-INV-029 (newer schema opened read-only or left alone), TB-INV-194 (corrupt records quarantined, not guessed), TB-INV-196 (unresolved records never pruned)
+- **Expected result:** every fault leaves the last known-good state; an interrupted operation is flagged on the next start and shown to the user; the last section is restored.
+- **Observed result:** disk full: the write failed with a plain not-changed result, prefs.json kept bridge, no temp file remained, and the write succeeded again after space returned; read-only remount and permission loss: StateWriteError raised, record still DRAFT; child process killed with SIGKILL while EXECUTING: flagged OUTCOME_UNKNOWN on reconcile. Seeded EXECUTING record on the real app: log line about interrupted operations needing review, banner text 'An earlier action was interrupted: service.restart on cups.service...' exposed over AT-SPI on two consecutive starts; last_section disks persisted and restored. A product defect was found and fixed: temp-file creation errors escaped as raw OSError instead of StateWriteError. Unit 77 passed (host and VM); integration 30 passed.
+- **Tests/checks:** `python3 tools/dev.py all`; `pytest tests/integration -m integration`; AT-SPI walk; journal dump.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** power loss during a write is approximated by SIGKILL of the writer, not by cutting VM power; two concurrent instances (TB-INV-063) not yet tested; suspend/resume not exercised.
+- **Evidence state:** FAILURE_VERIFIED and INTEGRATION_VERIFIED on Ubuntu 24.04.5
+
+### IMP-06.04 — End task (user process termination)
+
+- **Timestamp:** 2026-09-21 03:05 AM CDT
+- **Candidate revision:** 1c3a34a
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); real child processes started by the tests; page in the console session
+- **Files/modules:** `trier_bridge/operations/process.py`, `trier_bridge/ui/taskmanager.py` (End task button, confirmation dialog), `tests/integration/test_terminate_vm.py`
+- **Invariant impact:** TB-INV-050/121 (revalidation by PID plus start time immediately before the signal; stale identity cancels and the replacement process is untouched), TB-INV-134 (End and Force end are separate operations with separate confirmations), TB-INV-132/136 (PID 1, kernel threads, system and other-user processes, and Trier Bridge itself refused before any signal), TB-INV-006 (success only when the process is observed gone; zombies count as ended), TB-INV-193 (PARTIAL enumerates what happened), TB-INV-078/192 (plain results with nothing-was-changed); journaled through Foundation 05
+- **Expected result:** a cooperative child ends and is VERIFIED; a child ignoring SIGTERM yields PARTIAL with Force end as the next step, then Force end VERIFIES; a stale identity CANCELS without touching the live process; protected targets are UNSUPPORTED.
+- **Observed result:** all four integration tests passed on the VM; the journal record history ends committed, verifying, verified; Task Manager shows End task only on the user's own rows with a spoken description, banner text updated; 0 tracebacks. Two defects found and fixed during the run: a zombie (exited, unreaped) child was still counted as present, and the PARTIAL result lacked its step lists.
+- **Tests/checks:** `pytest tests/integration/test_terminate_vm.py`; AT-SPI walk.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the confirmation dialog path was not driven end to end by automation (button present, dialog not clicked); Force end is reachable only after a PARTIAL result (no separate button yet).
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

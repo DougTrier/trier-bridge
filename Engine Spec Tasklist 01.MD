@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-05 — Foundation 05: durable state, operation journal, restart reconciliation |
-| **Last completed** | Foundation 04 read-only tools verified live; 22 integration tests (2026-09-21 02:55 AM CDT) |
-| **Implementation** | Foundations 01, 02, 04 complete; 03 read-only slice complete (2026-09-21); Foundation 05 starting |
+| **Active task** | IMP-06 — Foundation 06: typed mutations (service control next) |
+| **Last completed** | Foundation 05 fault-verified and End task verified live; 30 integration tests (2026-09-21 03:05 AM CDT) |
+| **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only slice; 06 in progress (End task done) (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-05.01 preferences durability → IMP-05.02 operation journal → IMP-05.03 restart reconciliation → IMP-05.06 fault tests in the VM |
+| **Next bounded step** | IMP-06.05 service control through systemd1 D-Bus + polkit (user units first, system units with prompt) → IMP-06.07 denial/cancel/stale checks |
 
 ---
 
@@ -198,12 +198,12 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Foundation 05 — Durable state, journals, and recovery
 
-- [ ] **IMP-05.01** Implement Trier Bridge-owned preference durability.
-- [ ] **IMP-05.02** Implement operation IDs and state journal.
-- [ ] **IMP-05.03** Implement crash/restart reconciliation.
-- [ ] **IMP-05.04** Implement atomic configuration writes.
-- [ ] **IMP-05.05** Implement recovery records/retention.
-- [ ] **IMP-05.06** Run disk-full/read-only/permission-loss/process-kill/stale-revision tests.
+- [x] **IMP-05.01** Implement Trier Bridge-owned preference durability. Evidence: `docs/VALIDATION.md` entry IMP-05 (preferences with reported non-durable writes).
+- [x] **IMP-05.02** Implement operation IDs and state journal. Evidence: `docs/VALIDATION.md` entry IMP-05.
+- [x] **IMP-05.03** Implement crash/restart reconciliation. Evidence: `docs/VALIDATION.md` entry IMP-05 (SIGKILL mid-operation flagged; banner shown).
+- [x] **IMP-05.04** Implement atomic configuration writes. Evidence: `docs/VALIDATION.md` entry IMP-01 (config.py) and IMP-05 fault tests.
+- [x] **IMP-05.05** Implement recovery records/retention. Evidence: `docs/VALIDATION.md` entry IMP-05 (unresolved never pruned).
+- [x] **IMP-05.06** Run disk-full/read-only/permission-loss/process-kill/stale-revision tests. Evidence: `docs/VALIDATION.md` entry IMP-05 (loopback ext4 image); stale-revision covered by schema tests; two concurrent instances still open.
 
 ---
 
@@ -211,8 +211,8 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 - [ ] **IMP-06.01** Implement finite privileged-operation schema; no generic root execution.
 - [ ] **IMP-06.02** Implement explicit authorization binding to current user intent.
-- [ ] **IMP-06.03** Implement stable target identity and revalidation.
-- [ ] **IMP-06.04** Implement selected user-process termination.
+- [x] **IMP-06.03** Implement stable target identity and revalidation. Evidence: `docs/VALIDATION.md` entry IMP-06.04 (PID+start revalidation; stale target cancels); other target kinds as their operations land.
+- [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
 - [ ] **IMP-06.05** Implement selected service control.
 - [ ] **IMP-06.06** Implement selected network/package mutations only if separately qualified.
 - [ ] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior.
