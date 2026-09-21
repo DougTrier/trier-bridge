@@ -138,7 +138,14 @@ def test_security_test_b_sc_stop_asks_linux_for_this_one_action(
     system_unit: str, tmp_path: Path
 ) -> None:
     """SECURITY Test B: `sc stop <service>` yields one explicit privilege request tied to that
-    service; granted through polkit, the stop is verified; the product never became root."""
+    service; granted through polkit, the stop is verified; the product never became root.
+
+    Precondition: this account must have no live `auth_admin_keep` polkit grant already
+    cached for this action (2026-09-21, entry IMP-07.12 addendum). Run from an SSH login
+    or any session that has not just interactively authenticated as admin; run from a
+    console session where the account recently granted an admin action and polkit answers
+    with zero prompts (the earlier grant is still cached), which looks like a fresh grant
+    of one but is really none."""
     from trier_bridge.bridge.commands import Exit, Session, run_line
 
     password = os.environ.get("TRIER_BRIDGE_TEST_PASSWORD", "")

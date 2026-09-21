@@ -1,6 +1,7 @@
 # Copyright 2026 Doug Trier
 # SPDX-License-Identifier: Apache-2.0
 """TB-T119/TB-T082: hosts are validated as data; ping and nslookup are Bridge commands."""
+import time
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ gi = pytest.importorskip("gi")
 
 from trier_bridge.bridge.commands import Exit, Session, run_line  # noqa: E402
 from trier_bridge.system.netdiag import valid_host  # noqa: E402
+from trier_bridge.system.netdiag import _bounded  # noqa: E402
 
 
 def test_host_names_and_addresses_are_validated() -> None:
@@ -35,6 +37,24 @@ def test_ping_and_nslookup_parse_and_refuse_bad_input(tmp_path: Path) -> None:
     assert isinstance(bad, ParseFailure) and bad.failure is Failure.SHELL_SYNTAX
     out = run_line("ipconfig /renew", session)
     assert out.exit is Exit.UNSUPPORTED and "netsh" in out.lines[0]
+
+
+def test_bounded_enforces_a_real_wall_clock_deadline() -> None:
+    """TB-INV-101: a call with no native timeout (like the standard resolver) is bounded
+    by running it on its own thread and giving up on the wait, not the call."""
+    value, err = _bounded(lambda: 42, 1.0, "fast")
+    assert value == 42 and err == ""
+
+    def boom() -> int:
+        raise OSError("boom")
+
+    value, err = _bounded(boom, 1.0, "erroring")
+    assert value is None and err == "boom"
+
+    started = time.monotonic()
+    value, err = _bounded(lambda: time.sleep(2.0), 0.1, "slow")
+    elapsed = time.monotonic() - started
+    assert value is None and "0.1" in err and elapsed < 1.0  # gave up long before the sleep ended
 
 
 def test_cmdlet_names_map_to_the_diagnostics(tmp_path: Path) -> None:

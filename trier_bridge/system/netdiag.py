@@ -20,6 +20,18 @@ empty), so they open the system's own ping or tracepath in a terminal window
 with a validated host name, exactly as the PowerShell entry does; no shell of
 ours is involved (TB-SEC-003). Flushing the DNS cache is one D-Bus call to
 systemd-resolved, verified by re-reading its cache statistics.
+
+TB-INV-101: commands that may hang need documented timeout/cancellation
+behavior. Every D-Bus call here goes through ``Bus``, which already bounds
+its calls (``CALL_TIMEOUT_MS``); ``ping``/``tracert`` hand off to a separate
+terminal window and return immediately. The one call in this module with no
+native timeout is the standard-library resolver (``socket.getaddrinfo``,
+``socket.getfqdn``), which can block far longer than a user will wait against
+an unreachable or slow name server. ``_bounded`` wraps such a call with a
+wall-clock deadline; past the deadline it returns a timeout error while the
+call itself keeps running to completion on an orphaned daemon thread (Python
+has no way to force a blocked libc call to return early), which is safe here
+because the call only reads and writes nothing Trier Bridge owns.
 """
 from __future__ import annotations
 
@@ -27,7 +39,9 @@ import ipaddress
 import re
 import shutil
 import socket
+import threading
 from dataclasses import dataclass, field
+from typing import Callable, TypeVar
 
 import gi
 
@@ -35,6 +49,33 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gio, GLib  # noqa: E402
 
 from .bus import Bus  # noqa: E402
+
+_T = TypeVar("_T")
+RESOLVE_TIMEOUT_S = 5.0
+
+
+def _bounded(fn: Callable[[], _T], timeout_s: float, what: str) -> tuple[_T | None, str]:
+    """Run a blocking call under a wall-clock bound. Returns ``(value, "")`` on success
+    or ``(None, message)`` on an ``OSError`` from the call or on timing out."""
+    result: list[_T] = []
+    error: list[OSError] = []
+    done = threading.Event()
+
+    def work() -> None:
+        try:
+            result.append(fn())
+        except OSError as exc:
+            error.append(exc)
+        finally:
+            done.set()
+
+    threading.Thread(target=work, name=f"tb-{what}", daemon=True).start()
+    if not done.wait(timeout_s):
+        return None, f"No answer from the resolver within {timeout_s:g} seconds."
+    if error:
+        return None, str(error[0].strerror or error[0])
+    return (result[0] if result else None), ""
+
 
 RESOLVED = "org.freedesktop.resolve1"
 RESOLVED_PATH = "/org/freedesktop/resolve1"
@@ -79,19 +120,26 @@ def dns_servers(bus: Bus | None = None) -> tuple[str, ...]:
 
 
 def lookup(name: str, bus: Bus | None = None) -> Lookup:
-    """Windows nslookup: what this name resolves to and which servers answer here."""
+    """Windows nslookup: what this name resolves to and which servers answer here.
+
+    TB-INV-101: an unreachable or slow name server can make the standard-library
+    resolver block far longer than a Bridge Terminal user will wait, with no
+    native timeout parameter to bound it; ``_bounded`` gives both resolver calls
+    a wall-clock deadline instead."""
     host = valid_host(name)
     servers = dns_servers(bus)
-    try:
-        infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
-    except socket.gaierror as exc:
-        return Lookup(host, (), "", servers, f"{exc.strerror or exc}")
+    infos, err = _bounded(
+        lambda: socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP),
+        RESOLVE_TIMEOUT_S,
+        "nslookup",
+    )
+    if err or infos is None:
+        return Lookup(host, (), "", servers, err or "The resolver returned no result.")
     addresses = tuple(dict.fromkeys(str(i[4][0]) for i in infos))
     canonical = ""
-    try:
-        canonical = socket.getfqdn(host) if not _is_ip(host) else ""
-    except OSError:
-        canonical = ""
+    if not _is_ip(host):
+        fqdn, _ = _bounded(lambda: socket.getfqdn(host), RESOLVE_TIMEOUT_S, "nslookup-fqdn")
+        canonical = fqdn or ""
     return Lookup(host, addresses, canonical if canonical != host else "", servers)
 
 

@@ -94,6 +94,10 @@ def test_stale_unit_identity_cancels(user_unit: str, tmp_path: Path) -> None:
 
 
 def test_system_scope_without_an_agent_is_denied_not_downgraded(tmp_path: Path) -> None:
+    """Precondition: run over SSH or any session with no live `auth_admin_keep` polkit
+    grant already cached for this action (2026-09-21, entry IMP-07.12 addendum). A console
+    session that recently authenticated as admin can still have that grant cached, and the
+    restart succeeds without a fresh prompt -- not a downgrade, a real prior authorization."""
     services, _ = list_services(Scope.SYSTEM)
     cups = next((s for s in services if s.identity.name == "cups.service"), None)
     if cups is None:
