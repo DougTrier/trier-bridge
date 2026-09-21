@@ -14,6 +14,8 @@ Work through each section top to bottom. For each row: do the step, compare to "
 
 A few sections are marked **⚠ Caution** — those either end a session, change real settings, or need a specific accessibility tool. Read the caution note before starting that section.
 
+**One thing to know before you type any Command Prompt row:** if a step shows `<something>` as a stand-in for a real value (your username, a file type), that's a writing convention, not literal text to type. Bridge Terminal correctly refuses a real `<` character as a shell-redirect symbol — that's a security feature working as designed, not a bug — but it means copying a placeholder verbatim will get refused with a parse error. I already fixed every row I could find that had this problem after hitting it myself during testing; if you spot another one, that's the same issue, not a new bug.
+
 If you want the full technical evidence behind any row — exact commands, exact output, timestamps — the entry ID in brackets (e.g. `[IMP-03.09]`) is a heading in `docs/VALIDATION.md`; search for `### <that ID>`.
 
 ---
@@ -61,11 +63,11 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 3.1 | Go to the **Files** page. | You see "Familiar places" (This Computer, Desktop, Documents, Downloads, Pictures, Music, Videos, Recycle Bin, Removable drives, Network) and a **Drives** group. | | |
-| 3.2 | Look at the Drives group. | `C:` is labeled "System drive" and opens to `/`. Any other mounted volume gets the next letter (`D:`, etc.) with its real path shown underneath. | | The letter is a label only — the real folder path is always shown too. |
-| 3.3 | Click **Open** next to **Documents**. | The GNOME Files app opens to your real `~/Documents` folder. | | |
-| 3.4 | In Command Prompt (see section 5), type `cd C:\Users\<your username>` and press Enter. | It lands in your real home folder and shows the path both ways. | | |
-| 3.5 | In Command Prompt, `cd` to `C:\Users\<you>\tb-verify-scratch` (from the setup script), then `copy test.txt test-copy.txt`. | A confirmation dialog appears naming the real source and destination paths. Confirming copies the file for real. | | Uses the file the setup script created — no need to make your own. |
+| 3.1 | Click **Files** in the Trier Bridge sidebar (left side, under "Everyday" — this stays *inside* the Trier Bridge window; it's not the same as the separate Files/Nautilus app rows 3.3 onward will open). | You see "Familiar places" (This Computer, Desktop, Documents, Downloads, Pictures, Music, Videos, Recycle Bin, Removable drives, Network) and, below it, a **Drives** group. If you don't see Drives, scroll down — it's a second group after Familiar places, not merged into it. | | |
+| 3.2 | Look at the Drives group. | `C:` is labeled "System drive" and opens to `/`. Any other real mounted volume gets the next letter (`D:`, etc.) with its real path shown underneath — but only for volumes actually mounted *right now*. If a USB stick or similar isn't mounted, it correctly won't have a letter yet; that's not a bug. | | The letter is a label only — the real folder path is always shown too. |
+| 3.3 | Click **Open** next to **Documents**. | A *different*, separate window opens: the real GNOME Files app, to your real `~/Documents` folder. This is not Trier Bridge anymore — Trier Bridge routes you here rather than reimplementing a file manager. | | |
+| 3.4 | In Command Prompt (see section 5), type `cd C:\Users\tb` (or whatever your account name is — check with `whoami` in a terminal first if unsure) and press Enter. **Do not type the literal words `<your username>`** — Bridge Terminal correctly refuses the `<` character as a shell-redirect symbol, exactly as designed; that's it working right, not a bug, but it will stop this exact row cold if copied verbatim. | It lands in your real home folder and shows the path both ways. | | |
+| 3.5 | In Command Prompt, `cd` to `C:\Users\tb\tb-verify-scratch` (substitute your real account name; from the setup script), then `copy test.txt test-copy.txt`. | A confirmation dialog appears naming the real source and destination paths. Confirming copies the file for real. | | Uses the file the setup script created — no need to make your own. |
 | 3.6 | Delete that copy: `del test-copy.txt`, confirm. | The file moves to the Trash (Recycle Bin), not permanently deleted. | | Check the Recycle Bin in Files — it should be there and restorable. The cleanup script reminds you it's there; it won't empty the Trash for you. |
 
 ---
@@ -151,7 +153,7 @@ If you want the full technical evidence behind any row — exact commands, exact
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
 | 9.1 | Open **Apps**. Find a file type with more than one program available. | A drop-down shows the current default; a **Set** button next to it. | | |
-| 9.2 | Change the default to the other option, confirm. | The change is real — verify with `xdg-mime query default <type>` in a terminal afterward. | | |
+| 9.2 | Change the default to the other option, confirm. | The change is real — verify afterward in a terminal with `xdg-mime query default` followed by the actual MIME type you changed (for example `xdg-mime query default text/plain`), not the literal word "type". | | |
 | 9.3 | Change it back. | Reverts cleanly; no leftover state. | | |
 
 ---
