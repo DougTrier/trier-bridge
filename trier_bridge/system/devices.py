@@ -244,6 +244,84 @@ def read_devices(sys_root: Path = Path("/sys"), bus: Bus | None = None) -> Devic
                     detail=f"USB {dev.name}",
                 )
             )
+    seen_sysfs = {d.sysfs_path for d in devices}
+    for cls, category, label in (
+        ("net", Category.NETWORK, "Network adapter"),
+        ("drm", Category.DISPLAY, "Display adapter"),
+        ("sound", Category.AUDIO, "Sound device"),
+        ("input", Category.INPUT, "Input device"),
+        ("block", Category.STORAGE, "Disk"),
+        ("bluetooth", Category.BLUETOOTH, "Bluetooth adapter"),
+    ):
+        cls_root = sys_root / "class" / cls
+        if not cls_root.is_dir():
+            continue
+        sources.append(f"/sys/class/{cls}")
+        for entry in sorted(cls_root.iterdir()):
+            if cls == "drm" and ("-" in entry.name or not entry.name.startswith("card")):
+                continue  # connectors and render nodes are not devices
+            if cls == "block" and (entry.name.startswith("loop") or entry.name.startswith("ram")):
+                continue
+            if cls == "input" and not entry.name.startswith("input"):
+                continue  # event/mouse nodes duplicate their parent inputN
+            if cls == "net" and entry.name == "lo":
+                continue
+            dev_link = entry / "device"
+            try:
+                real = str(dev_link.resolve()) if dev_link.exists() else str(entry.resolve())
+            except OSError:
+                real = str(entry)
+            if real in seen_sysfs:
+                continue  # already listed from its PCI/USB bus entry
+            seen_sysfs.add(real)
+            name = clean(
+                _read(entry / "name")
+                or _read(entry / "device" / "modalias").split(":")[0]
+                or entry.name
+            )
+            if cls == "input":
+                name = clean(_read(entry / "name")) or entry.name
+            elif cls == "block":
+                model = clean(_read(entry / "device" / "model"))
+                name = f"{model} ({entry.name})" if model else entry.name
+            elif cls == "net":
+                name = entry.name
+            drv = _driver(dev_link) if dev_link.exists() else ""
+            if not drv and cls == "input":
+                drv = "evdev"
+            devices.append(
+                Device(
+                    category=category,
+                    name=name,
+                    bus=cls,
+                    ids=_read(entry / "device" / "modalias")[:40] or "",
+                    driver=drv,
+                    working=True if drv else None,
+                    sysfs_path=real,
+                    detail=f"{label}; /sys/class/{cls}/{entry.name}",
+                )
+            )
+    vmbus = sys_root / "bus" / "vmbus" / "devices"
+    if vmbus.is_dir():
+        sources.append("/sys/bus/vmbus")
+        for dev in sorted(vmbus.iterdir()):
+            real = str(dev.resolve())
+            if real in seen_sysfs:
+                continue
+            drv = _driver(dev)
+            desc = clean(_read(dev / "device_id")) or dev.name
+            devices.append(
+                Device(
+                    category=Category.SYSTEM,
+                    name=f"Hyper-V {drv or 'device'}",
+                    bus="vmbus",
+                    ids=clean(_read(dev / "class_id"))[:40],
+                    driver=drv,
+                    working=True if drv else None,
+                    sysfs_path=real,
+                    detail=f"Virtual machine bus; {desc[:36]}",
+                )
+            )
     if pci_db.source:
         sources.append(pci_db.source)
     else:
