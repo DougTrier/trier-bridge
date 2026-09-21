@@ -21,7 +21,8 @@
 #   - Never creates or changes a virtual switch; uses an existing one.
 #   - Writes only under -Root (default G:\tb-vms) and reports\local.
 #   - Refuses to overwrite an existing VM or VHDX of the same name.
-#   - Disables checkpoints and host auto-start on the new VM.
+#   - Manual checkpoints allowed (take a clean-install baseline); automatic
+#     checkpoints and host auto-start are disabled on the new VM.
 #
 # Run once from an elevated PowerShell (Hyper-V cmdlets need it):
 #   .\tools\env\New-TbDesktopVm.ps1 -Start
@@ -123,14 +124,14 @@ $vm = New-VM -Name $Name -Generation 2 -MemoryStartupBytes ($MemoryGB * 1GB) -VH
 Set-VM -Name $Name -ProcessorCount $Cpu `
     -DynamicMemory -MemoryMinimumBytes ($MemoryMinGB * 1GB) -MemoryMaximumBytes ($MemoryMaxGB * 1GB) `
     -AutomaticStartAction Nothing -AutomaticStopAction ShutDown `
-    -CheckpointType Disabled -AutomaticCheckpointsEnabled $false `
+    -CheckpointType Standard -AutomaticCheckpointsEnabled $false `
     -Notes ("Trier Bridge disposable test VM. Created " + $stamp.ToString("yyyy-MM-dd HH:mm") + ". See tools/env/README.md. Remove with Remove-TbDesktopVm.ps1.")
 Set-VMFirmware -VMName $Name -EnableSecureBoot On -SecureBootTemplate "MicrosoftUEFICertificateAuthority"
 Add-VMHardDiskDrive -VMName $Name -Path $seedVhd
 $dvd = Add-VMDvdDrive -VMName $Name -Path $IsoPath -Passthru
 Set-VMFirmware -VMName $Name -FirstBootDevice $dvd
 Enable-VMIntegrationService -VMName $Name -Name "Guest Service Interface" -ErrorAction SilentlyContinue
-Write-Host "created VM '$Name': gen2, $Cpu vCPU, $MemoryGB GB (dyn $MemoryMinGB-$MemoryMaxGB), switch '$SwitchName', secure boot (MS UEFI CA), checkpoints disabled"
+Write-Host "created VM '$Name': gen2, $Cpu vCPU, $MemoryGB GB (dyn $MemoryMinGB-$MemoryMaxGB), switch '$SwitchName', secure boot (MS UEFI CA), manual checkpoints only"
 
 # ---- evidence record ----------------------------------------------------------
 $reportDir = Join-Path $repoRoot "reports\local"
@@ -158,6 +159,7 @@ if ($Start) {
     Start-VM -Name $Name
     Write-Host "started. Open the console with:  vmconnect.exe localhost $Name"
     Write-Host "The installer will ask once whether to continue with the autoinstall; answer yes. Install then completes unattended and reboots."
+    Write-Host "After first login, take the baseline:  Checkpoint-VM -Name $Name -SnapshotName clean-install"
 } else {
     Write-Host "not started. Start with:  Start-VM -Name $Name ; vmconnect.exe localhost $Name"
 }

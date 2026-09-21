@@ -77,7 +77,7 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [ ] **ENV-01** CANCELLED 2026-09-20: WSL instance scratched by owner (DEC-017 rejected). All Linux testing uses the Hyper-V VM under ENV-02.
 - [ ] **ENV-02** Create the disposable Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification.
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
-- [ ] **ENV-03** Removal procedure verified (`tools/env/Remove-TbDesktopVm.ps1`) with confirmation that nothing else on the host changed.
+- [ ] **ENV-03** Baseline `clean-install` checkpoint taken after first login and restore verified; removal procedure (`tools/env/Remove-TbDesktopVm.ps1`) kept available but the owner intends to keep the VM for other uses (2026-09-20).
 
 ---
 

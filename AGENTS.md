@@ -275,7 +275,8 @@ Readiness is not authorization.
 
 Per `docs/DECISIONS.md` DEC-017 (rejected) and DEC-016:
 
-- All Linux testing uses the disposable Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` created by `tools/env/New-TbDesktopVm.ps1`. WSL is not used for project testing.
+- All Linux testing uses the project-owned Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` created by `tools/env/New-TbDesktopVm.ps1`. WSL is not used for project testing. The owner may keep the VM for other uses; its removal is owner discretion.
+- Qualification runs start from the `clean-install` checkpoint of that VM (restore before each run) so evidence is tied to a known state. Checkpoints are allowed only on `tb-` VMs.
 - Never start, stop, export, import, checkpoint, modify, or read the owner's work-production Hyper-V VM, or the pre-existing `Ubuntu-24.04-Recovered` WSL distro.
 - Never change Hyper-V virtual switches, host networking, or Windows optional features. Creating or removing the project VM is an owner-run elevated step; agents prepare the exact command and wait.
 - Destructive or fault-injection tests run only inside the disposable VM (TB-INV-230). No synthetic fixtures unless the owner explicitly approves a named fixture for a named scenario.
