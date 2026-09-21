@@ -106,72 +106,112 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
         scroller = Gtk.ScrolledWindow(child=self._list, hscrollbar_policy=Gtk.PolicyType.NEVER)
         scroller.set_vexpand(True)
         self.append(scroller)
-        self._rows: list[Gtk.Widget] = []
+        self._by_pid: dict[int, Adw.ActionRow] = {}
+        self._rank: dict[int, int] = {}
         self._latest: list[ProcessSample] = []
+        self._more = Adw.ActionRow(use_markup=False)
+        self._more.set_visible(False)
+        self._list.append(self._more)
+        self._list.set_sort_func(self._sort)
         self._entry.connect("search-changed", lambda *_: self._render())
 
     def update(self, samples: list[ProcessSample]) -> None:
         self._latest = [s for s in samples if s.kind in self._kinds]
         self._render()
 
-    def _render(self) -> None:
-        for w in self._rows:
-            self._list.remove(w)
-        self._rows = []
-        q = self._entry.get_text().strip().casefold()
-        rows = [
-            s
-            for s in self._latest
-            if not q
-            or q in s.name.casefold()
-            or q in s.cmdline.casefold()
-            or q == str(s.identity.pid)
-        ]
-        rows.sort(key=lambda s: (-(s.cpu_percent or 0.0), -(s.rss_bytes or 0), s.name.casefold()))
-        self._summary.set_text(
-            f"{len(rows)} shown of {len(self._latest)}" if rows else self._empty_text
+    def _matches(self, s: ProcessSample, q: str) -> bool:
+        return (
+            not q or q in s.name.casefold() or q in s.cmdline.casefold() or q == str(s.identity.pid)
         )
-        for s in rows[:MAX_ROWS]:
-            row = Adw.ActionRow(use_markup=False)
+
+    def _render(self) -> None:
+        """Reuse one row per process: rebuilding widgets every tick cost a whole CPU core
+        under software rendering (IMP-08.08). Rows are updated in place, sorted by rank,
+        and hidden rather than destroyed when they fall outside the search or the cap."""
+        q = self._entry.get_text().strip().casefold()
+        shown = [s for s in self._latest if self._matches(s, q)]
+        shown.sort(key=lambda s: (-(s.cpu_percent or 0.0), -(s.rss_bytes or 0), s.name.casefold()))
+        self._summary.set_text(
+            f"{len(shown)} shown of {len(self._latest)}" if shown else self._empty_text
+        )
+        self._rank = {s.identity.pid: i for i, s in enumerate(shown)}
+        live = {s.identity.pid: s for s in self._latest}
+        for pid, row in list(self._by_pid.items()):
+            if pid not in live:
+                self._list.remove(row)
+                del self._by_pid[pid]
+        for s in self._latest:
+            row = self._by_pid.get(s.identity.pid)
+            if row is None:
+                row = self._make_row(s)
+                self._by_pid[s.identity.pid] = row
+                self._list.append(row)
+            self._fill_row(row, s)
+            rank = self._rank.get(s.identity.pid)
+            row.set_visible(rank is not None and rank < MAX_ROWS)
+        self._more.set_title(f"{len(shown) - MAX_ROWS} more; narrow the search to see them")
+        self._more.set_visible(len(shown) > MAX_ROWS)
+        self._list.invalidate_sort()
+
+    def _sort(self, a: Gtk.ListBoxRow, b: Gtk.ListBoxRow) -> int:
+        ra = self._rank.get(getattr(a, "tb_pid", -1), 1 << 30)
+        rb = self._rank.get(getattr(b, "tb_pid", -1), 1 << 30)
+        if a is self._more:
+            ra = 1 << 31
+        if b is self._more:
+            rb = 1 << 31
+        return (ra > rb) - (ra < rb)
+
+    def _make_row(self, s: ProcessSample) -> Adw.ActionRow:
+        row = Adw.ActionRow(use_markup=False)
+        row.tb_pid = s.identity.pid
+        if self._on_end is not None and s.kind.actionable_by_user:
+            end = Gtk.Button(label="End task")
+            end.set_valign(Gtk.Align.CENTER)
+            end.update_property(
+                [Gtk.AccessibleProperty.DESCRIPTION],
+                [
+                    f"Ask {s.name} to close. Unsaved work may be lost. "
+                    "You will be asked to confirm."
+                ],
+            )
+            end.connect("clicked", lambda *_, pid=s.identity.pid: self._end_by_pid(pid))
+            row.add_suffix(end)
+        return row
+
+    def _end_by_pid(self, pid: int) -> None:
+        # the latest sample for this pid, never a stale one captured at row creation
+        sample = next((s for s in self._latest if s.identity.pid == pid), None)
+        if sample is not None and self._on_end is not None:
+            self._on_end(sample, False)
+
+    def _fill_row(self, row: Adw.ActionRow, s: ProcessSample) -> None:
+        subtitle = (
+            f"CPU {_fmt_pct(s.cpu_percent)} · Memory {_fmt_bytes(s.rss_bytes)} · "
+            f"PID {s.identity.pid} · {s.user} · {KIND_LABEL[s.kind]}"
+        )
+        if row.get_title() != s.name:
             row.set_title(s.name)
-            row.set_subtitle(
-                f"CPU {_fmt_pct(s.cpu_percent)} · Memory {_fmt_bytes(s.rss_bytes)} · "
-                f"PID {s.identity.pid} · {s.user} · {KIND_LABEL[s.kind]}"
+        if row.get_subtitle() != subtitle:
+            row.set_subtitle(subtitle)
+            row.update_property(
+                [Gtk.AccessibleProperty.LABEL],
+                [
+                    f"{s.name}, CPU {_fmt_pct(s.cpu_percent)}, "
+                    f"memory {_fmt_bytes(s.rss_bytes)}, {KIND_LABEL[s.kind]}"
+                ],
             )
-            tip = (
-                s.cmdline[:200]
-                if s.cmdline
-                else (
-                    "Not readable for this account"
-                    if not s.readable
-                    else "No command line (kernel task)"
-                )
+        tip = (
+            s.cmdline[:200]
+            if s.cmdline
+            else (
+                "Not readable for this account"
+                if not s.readable
+                else "No command line (kernel task)"
             )
+        )
+        if row.get_tooltip_text() != tip:
             row.set_tooltip_text(tip)
-            spoken = (
-                f"{s.name}, CPU {_fmt_pct(s.cpu_percent)}, "
-                f"memory {_fmt_bytes(s.rss_bytes)}, {KIND_LABEL[s.kind]}"
-            )
-            row.update_property([Gtk.AccessibleProperty.LABEL], [spoken])
-            if self._on_end is not None and s.kind.actionable_by_user:
-                end = Gtk.Button(label="End task")
-                end.set_valign(Gtk.Align.CENTER)
-                end.update_property(
-                    [Gtk.AccessibleProperty.DESCRIPTION],
-                    [
-                        f"Ask {s.name} to close. Unsaved work may be lost. "
-                        "You will be asked to confirm."
-                    ],
-                )
-                end.connect("clicked", lambda *_, s=s: self._on_end(s, False))
-                row.add_suffix(end)
-            self._list.append(row)
-            self._rows.append(row)
-        if len(rows) > MAX_ROWS:
-            more = Adw.ActionRow(use_markup=False)
-            more.set_title(f"{len(rows) - MAX_ROWS} more; narrow the search to see them")
-            self._list.append(more)
-            self._rows.append(more)
 
 
 class _PerformancePage(Gtk.Box):  # type: ignore[misc]
