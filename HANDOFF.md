@@ -1,0 +1,125 @@
+# Trier Bridge Handoff Sheet
+
+**Written:** 2026-09-21 1:01 PM CDT by Claude Fable 5.1, at the owner's request, for a continuing session on a smaller model.  
+**Owner:** Doug Trier  
+**Purpose:** continue the bounded work below without re-deriving the project. Fable 5.1 does a final corrections and polish pass afterwards, so leave a clear trail: every claim in a document must point at a run you actually made.
+
+Read this file first, then follow `AGENTS.md` section 2 (context refresh). This sheet does not outrank `AGENTS.md`; it only tells you where things stand.
+
+---
+
+## 1. Where the project is
+
+- Implementation is authorized (DEC-023) on the frozen stack (DEC-020). Foundations 01–07 are closed except IMP-03.08 (needs hardware), IMP-06.06 network and package mutations (needs an owner decision), and the page walks listed in section 4.
+- Everything is local Git on `main`, no remote, nothing goes to GitHub (`AGENTS.md` section 14). Commit locally; that is how work is recorded.
+- The last three commits before this sheet (`ce04477`, `14e58d7`, `5d6dfe7`) are a Command Prompt feature batch with unit tests, committed **without** a `docs/VALIDATION.md` evidence entry and **without** a report refresh. Closing that out is your first job (section 3).
+- `tb context` reports nine unreviewed files since the 12:43 PM CDT snapshot. Those are exactly the files that batch touched. Read them with `tb changes`, `tb outline`, `tb section`; do not reread whole documents.
+- `CODE-QUALITY-REPORT.md` is for candidate `87bd7d6`. The current head is newer, so the report is stale until refreshed.
+
+## 2. Rules that bite most often
+
+- **No mocks, no fakes, no fixtures** unless the owner names one for a named scenario (owner's global rule and TB-INV-230). Tests run on real files, real processes, the real journal.
+- **No shell execution from text.** Every launch is a fixed argument list through GLib. Bridge commands become typed operations. Unknown syntax performs no operation (`AGENTS.md` section 8).
+- **Evidence states are exact.** NOT_RUN, UNIT_VERIFIED, INTEGRATION_VERIFIED, and so on (`docs/VALIDATION.md` section 1). Never write the word that means "it passed" as an evidence state; `tb terms` rejects it.
+- **Timestamps are America/Chicago with CDT or CST.** Run `date` before every stamp; stamps drifted ten hours once. Zone-less stamps fail `tb terms`.
+- **Numbers come from tool runs**, never typed from memory: `tools/dev.py results`, `evidence`, `map`, `limitations` write `reports/local/*.json` and regenerate the two derived docs.
+- **The VM is the only Linux test environment.** Never touch any Hyper-V VM without the `tb-` prefix, never change switches or host networking, never restore the `clean-install` checkpoint while the owner's window is open (it would discard their session).
+- **Do not mark ledger items complete** unless the VM run backs them (`docs/TEST-STRATEGY.md`). Do not touch release items.
+- **Report truthfully.** If a run fails or was skipped, write that down in the entry's limitations line.
+
+## 3. First job: close out the Command Prompt batch (commit `ce04477`)
+
+What the batch added (see `git show --stat ce04477`):
+
+- `shutdown /t n` arms a cancellable timer on the main loop; `shutdown /a` cancels it (`trier_bridge/bridge/commands.py`, `tests/unit/test_shutdown.py`).
+- `taskmgr`, `devmgmt.msc`, `services.msc`, `eventvwr`, `msconfig`, `ncpa.cpl`, `appwiz.cpl`, `msinfo32` open the matching Trier Bridge pages (`commands.py`, `grammar.py`, `tests/unit/test_familiar_commands.py`).
+- `findstr /R` regular-expression patterns and `/L` literal mode (`commands.py`, `tests/unit/test_familiar_commands2.py`).
+- Event Viewer Boot view now reads this boot's kernel and audit records (`trier_bridge/system/journal.py`, `trier_bridge/ui/eventviewer.py`, `tests/integration/test_journal_vm.py`).
+
+Steps, in order:
+
+1. Host gate. From the repo root:
+
+   ```bash
+   .venv\Scripts\python.exe tools\dev.py all
+   ```
+
+   Must be clean (black, flake8, mypy strict, bandit, complexity, unit tests, headers). Expect about 11 unit skips on Windows (they need `gi`, CUPS, logind, or POSIX bits).
+
+2. Push the tree to the VM and run the same gate plus the integration suite there. The VM is reachable and already has a `~/tb` copy; replace it:
+
+   ```bash
+   ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "rm -rf ~/tb && mkdir ~/tb" && git archive HEAD | ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "tar -x -C ~/tb"
+   ```
+
+   ```bash
+   ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "cd ~/tb && python3 tools/dev.py all && python3 tools/dev.py results && python3 tools/dev.py results --integration -- --ignore=tests/integration/test_journeys_vm.py && python3 tools/dev.py evidence"
+   ```
+
+   If the IP changed, find it with `Get-VMNetworkAdapter -VMName tb-ubuntu-desktop-2404` (read-only). The journeys file is excluded while the owner's Trier Bridge window holds the single-instance name; say so in the entry. Copy the three `reports/local/*.json` files back to the host with `scp` so the report refresh reads them.
+
+3. Live checks over SSH in the VM, each one recorded as observed text, not paraphrased. Use the pattern from entries IMP-07.10 and IMP-07.11 in `docs/VALIDATION.md` (a short Python snippet that calls the Bridge command layer directly is how earlier entries did it):
+   - `shutdown /r /t 30` returns NEEDS_CONFIRMATION with its preview; **never confirm the dialog** (it would restart the VM and end the owner's session). Then `shutdown /a` reports that nothing is scheduled, because nothing was confirmed. The armed-timer-then-cancel path is exercised by the unit test; say which part is unit-only.
+   - `findstr /R "^ab.*c$" <file>` and `findstr /L` on the same real file under `~/tb/docs`; one invalid pattern (an unterminated set) is refused with a message.
+   - `taskmgr` and `eventvwr` produce the open-page result (the page itself needs the console; say so).
+   - Boot view: `tests/integration/test_journal_vm.py` runs clean and the count of this boot's kernel records is greater than zero; cross-check one line against `journalctl -k -b -o json | head`.
+
+4. Write the evidence. Add one entry to `docs/VALIDATION.md` after IMP-07.11, titled `IMP-07.12 — shutdown timer and cancel, tool names open pages, findstr /R and /L; Event Viewer Boot view`, using the exact field list of the entries above it (Timestamp, Candidate revision, Environment/profile, Files/modules, Invariant impact, Expected result, Observed result, Tests/checks, Artifacts/logs, Failures/limitations, Evidence state). Candidate revision is the head hash of the tree you pushed. Cite invariants with `tb inv find` (timer: TB-INV-094/104 as in IMP-07.10; search bounds: TB-INV-099/100; journal: the ones cited in entry IMP-04.03). Also add a dated sub-bullet under IMP-04.03 in `Engine Spec Tasklist 01.MD` saying the Boot view limitation from entry IMP-04.03 is resolved, with the entry name, and a new checked line `IMP-07.12` under Foundation 07 pointing at the entry.
+
+5. Regenerate the derived docs and refresh the report:
+
+   ```bash
+   .venv\Scripts\python.exe tools\dev.py map
+   ```
+
+   ```bash
+   .venv\Scripts\python.exe tools\dev.py limitations
+   ```
+
+   Then edit `CODE-QUALITY-REPORT.md`: candidate hash, timestamp, the test-results row, the outlier tables from `reports/local/quality-evidence.json` (commands.py grew by about 5 KB, so expect new cyclomatic or cognitive outliers; every new one needs a disposition row, not a silent omission), and the suppression count from the tool. Do not change the score unless a criterion's evidence actually changed; if you believe it should change, write why in the row and leave the number for Fable's pass.
+
+6. Ledger and context. Update the resume dashboard in `Engine Spec Tasklist 01.MD` (Last completed, Next bounded step) and the checkpoint line plus `Last updated` in `CONTEXT.md`. Both stamps from `date`.
+
+7. Gate and record:
+
+   ```bash
+   python tools\tb.py all
+   ```
+
+   ```bash
+   python tools\tb.py snapshot
+   ```
+
+   Commit in two commits, following the existing message style (`git log --oneline -20`): one `IMP-07.12 evidence: ...` and one `CODE-QUALITY-REPORT: candidate <hash> ...`. End messages with the attribution line the session gives you.
+
+## 4. Second job, only if the owner closes their window in the VM
+
+Ask the owner in one line whether the Trier Bridge window in the VM can be closed. If yes:
+
+- Run the journeys: `python3 tools/dev.py results --integration` without the ignore flag; three journeys in `tests/integration/test_journeys_vm.py` need the console session.
+- Page walks over AT-SPI that are queued (entries IMP-04.07 and IMP-06.06 say "queued behind the owner's open window"): Disk Management and Files pages showing drive letters; the Network page buttons and the IPv4 dialog. Record what the accessibility tree exposed, as entry IMP-04.01 does. Add dated sub-bullets to the two entries rather than new entries.
+- The `clean-install` checkpoint may only be restored when the owner says so.
+
+## 5. Things you can do without the owner, after sections 3 and 4
+
+- **IMP-02.07** qualify the generic read-only fallback: what the product shows when systemd, NetworkManager, udisks2, or polkit are absent. Design the check against `docs/PLATFORMS.md` and `trier_bridge/capability/`; it likely needs a masked-service scenario inside the VM. Write the plan in the ledger note before coding, and stop if it needs a new VM.
+- **Timeout and cancellation of long Bridge commands** (open in the second IMP-07.08 line of the ledger).
+- Keep `tb all` and `dev.py all` clean on every commit; the pre-commit hook (`tools/git-hooks/pre-commit`, enable with `git config core.hooksPath tools/git-hooks`) runs the host gate.
+
+## 6. Waiting on the owner (do not start these)
+
+- IMP-08.04, 08.05, 08.06 acceptance at the console (office-user usability, power-user continuity, keyboard-only, Orca, large text).
+- IMP-03.08 Print Screen on hardware with a GPU; CQ-09 performance measurement on hardware.
+- IMP-08.03 a second environment (another machine, X11, an Ubuntu flavour): needs a new `tb-` VM, an owner-run elevated step.
+- IMP-06.06 network and package mutations beyond the translation layer: owner decision.
+- DOC-01..09 and ALN-12 freezes: the owner's call; notes are already in the ledger.
+- SCOPE-12 name and trademark check; anything under Release.
+
+## 7. Working notes
+
+- `tools\tb context` first in every session, `tb snapshot` after reviewing changes.
+- The VM: user `tb`, key `~/.ssh/tb-ubuntu-desktop-2404`, host side 172.20.240.1; the tray process `trier-bridge-tray` is running in the owner's session, leave it. `tools\env\tb-pad --open` moves text or files between host and VM when SSH is awkward.
+- Host tools live in `.venv` with the same pinned versions as the VM (`docs/TOOLCHAIN.md`); nothing is installed with pip into the product.
+- `reports/local/` is git-ignored by design; copy JSON there, never commit it.
+- When a document says something that the code contradicts, the code is not automatically right: check the invariant (`tb inv show`), then fix whichever is wrong and say which.
+- Leave this file in place. Fable's polish pass removes it or folds it into the ledger.
