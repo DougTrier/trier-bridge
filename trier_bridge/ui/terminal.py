@@ -37,6 +37,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..bridge.commands import CommandOutput, Exit, Session, is_sensitive, run_line  # noqa: E402
 from ..operations.files import FilePlan, execute_file  # noqa: E402
 from ..operations.process import TerminatePlan, execute_terminate  # noqa: E402
+from ..bridge.commands import ActionPlan  # noqa: E402
 from ..operations.network import NetworkPlan, execute_network  # noqa: E402
 from ..operations.service import VERB_TEXT, ServicePlan, execute_service  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
@@ -193,6 +194,8 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
             self._confirm_service(out.pending_operation)
         elif isinstance(out.pending_operation, NetworkPlan):
             self._confirm_network(out.pending_operation)
+        elif isinstance(out.pending_operation, ActionPlan):
+            self._confirm_action(out.pending_operation)
         return False
 
     def _confirm(self, plan: TerminatePlan) -> None:
@@ -218,6 +221,29 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         dialog.set_default_response("cancel")
         dialog.set_close_response("cancel")
         dialog.connect("response", self._on_confirm_file, plan)
+        dialog.present(self.get_root())
+
+    def _confirm_action(self, plan: ActionPlan) -> None:
+        dialog = Adw.AlertDialog(heading=f"{plan.heading}?", body=plan.preview)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("go", plan.heading)
+        dialog.set_response_appearance("go", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+
+        def on_response(_d: Adw.AlertDialog, response: str) -> None:
+            if response != "go":
+                self._append("Cancelled. Nothing was changed.\n\n")
+                return
+
+            def work() -> None:
+                ok, plain = plan.run()
+                note = "" if ok else " Nothing was changed."
+                GLib.idle_add(self._append, f"{plain}{note}\n\n")
+
+            threading.Thread(target=work, name="tb-action", daemon=True).start()
+
+        dialog.connect("response", on_response)
         dialog.present(self.get_root())
 
     def _confirm_network(self, plan: NetworkPlan) -> None:

@@ -303,6 +303,18 @@ def cmd_systeminfo(cmd: BridgeCommand, session: Session) -> CommandOutput:
 def cmd_ipconfig(cmd: BridgeCommand, session: Session) -> CommandOutput:
     from ..system.network import read_network
 
+    if "flushdns" in cmd.switches:
+        return _flushdns_plan()
+    if "renew" in cmd.switches or "release" in cmd.switches:
+        return CommandOutput(
+            Exit.UNSUPPORTED,
+            (
+                "Linux renews addresses by reconnecting the adapter: use netsh interface set "
+                "interface <name> disable, then enable, or the Network page.",
+            ),
+            "nmcli device reapply",
+            False,
+        )
     nw = read_network()
     if not nw.available:
         return CommandOutput(Exit.UNSUPPORTED, (nw.detail,), "nmcli device show", False)
@@ -327,6 +339,112 @@ def cmd_ipconfig(cmd: BridgeCommand, session: Session) -> CommandOutput:
         lines.append("")
     lines.append(f"Connectivity check: {nw.connectivity}")
     return _bounded(lines, "nmcli device show; ip addr")
+
+
+@dataclass(frozen=True)
+class ActionPlan:
+    """A small confirmed action with no target identity (flush a cache): the UI asks,
+    then calls ``run`` off the main loop and shows its plain result."""
+
+    heading: str
+    preview: str
+    run: Callable[[], tuple[bool, str]]
+    linux: str = ""
+
+
+def _flushdns_plan() -> CommandOutput:
+    from ..system.netdiag import flush_dns
+
+    plan = ActionPlan(
+        "Flush the DNS cache",
+        "Clear the names this computer has already looked up (systemd-resolved cache)? "
+        "Nothing else changes; new lookups fill it again.",
+        flush_dns,
+        "resolvectl flush-caches",
+    )
+    return CommandOutput(
+        Exit.NEEDS_CONFIRMATION,
+        (plan.preview, "Confirm in the dialog to continue; nothing has happened yet."),
+        plan.linux,
+        False,
+        plan,
+    )
+
+
+def cmd_ping(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..system.netdiag import diagnostic_tool, run_in_terminal, valid_host
+
+    args = list(cmd.args)
+    count = "4"
+    if "-n" in args:
+        i = args.index("-n")
+        if i + 1 >= len(args) or not args[i + 1].isdigit() or not 1 <= int(args[i + 1]) <= 100:
+            return CommandOutput(
+                Exit.PARSE_ERROR, ("ping -n needs a count from 1 to 100.",), "ping", False
+            )
+        count = args[i + 1]
+        del args[i : i + 2]
+    if len(args) != 1:
+        return CommandOutput(Exit.PARSE_ERROR, ("ping <host> [-n count]",), "ping", False)
+    try:
+        host = valid_host(args[0])
+    except ValueError as exc:
+        return CommandOutput(Exit.PARSE_ERROR, (str(exc),), "ping", False)
+    exe, argv = diagnostic_tool("ping")
+    if not exe:
+        return CommandOutput(Exit.UNSUPPORTED, ("ping is not installed here.",), "ping", False)
+    ok, plain = run_in_terminal([exe, "-c", count, host], f"ping {host}")
+    return CommandOutput(
+        Exit.OK if ok else Exit.FAILED,
+        (
+            plain,
+            "Ubuntu reserves raw network sockets, so the system ping runs in its own "
+            "window; the replies you know appear there.",
+        ),
+        f"ping -c {count} {host}",
+        ok,
+    )
+
+
+def cmd_tracert(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..system.netdiag import diagnostic_tool, run_in_terminal, valid_host
+
+    try:
+        host = valid_host(cmd.args[0])
+    except ValueError as exc:
+        return CommandOutput(Exit.PARSE_ERROR, (str(exc),), "tracepath", False)
+    exe, argv = diagnostic_tool("tracert")
+    if not exe:
+        return CommandOutput(
+            Exit.UNSUPPORTED,
+            ("Neither tracepath nor traceroute is installed here.",),
+            "tracepath",
+            False,
+        )
+    ok, plain = run_in_terminal(argv + [host], f"tracert {host}")
+    return CommandOutput(Exit.OK if ok else Exit.FAILED, (plain,), f"{exe} {host}", ok)
+
+
+def cmd_nslookup(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..system.netdiag import lookup
+
+    try:
+        res = lookup(cmd.args[0])
+    except ValueError as exc:
+        return CommandOutput(Exit.PARSE_ERROR, (str(exc),), "getent hosts", False)
+    lines = [f"Server:  {res.servers[0] if res.servers else 'Unknown'}"]
+    if len(res.servers) > 1:
+        lines.append(f"Also:    {', '.join(res.servers[1:])}")
+    lines.append("")
+    if res.error:
+        lines.append(f"*** Can't find {res.name}: {res.error}")
+        return CommandOutput(Exit.FAILED, tuple(lines), "getent hosts", True)
+    lines.append(f"Name:    {res.canonical or res.name}")
+    if res.canonical:
+        lines.append(f"Alias:   {res.name}")
+    for a in res.addresses:
+        lines.append(f"Address: {a}")
+    return CommandOutput(Exit.OK, tuple(lines), "getent hosts / resolvectl query", True)
 
 
 def cmd_getmac(cmd: BridgeCommand, session: Session) -> CommandOutput:
@@ -737,6 +855,9 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "powershell": cmd_powershell,
     "assoc": cmd_assoc,
     "netsh": cmd_netsh,
+    "ping": cmd_ping,
+    "tracert": cmd_tracert,
+    "nslookup": cmd_nslookup,
     "copy": cmd_copy,
     "move": cmd_move,
     "ren": cmd_ren,

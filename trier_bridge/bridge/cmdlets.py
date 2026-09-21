@@ -71,6 +71,15 @@ CMDLETS: tuple[Cmdlet, ...] = (
     Cmdlet("Write-Output", ("write", "write-host"), ("echo",), positional=-1),
     Cmdlet("Get-Help", ("man",), ("help",), {"-name": ("", True)}),
     Cmdlet(
+        "Test-Connection",
+        ("Test-NetConnection", "tnc"),
+        ("ping",),
+        {"-computername": ("", True), "-targetname": ("", True), "-count": ("-n", True)},
+        positional=3,
+    ),
+    Cmdlet("Resolve-DnsName", (), ("nslookup",), {"-name": ("", True)}),
+    Cmdlet("Clear-DnsClientCache", (), ("ipconfig", "/flushdns"), positional=0),
+    Cmdlet(
         "Copy-Item",
         ("cpi",),
         ("copy",),
@@ -159,6 +168,18 @@ def translate(tokens: list[str]) -> Translation:
             switch, takes_value = c.params[key]
             if switch:
                 out.append(switch)
+            if takes_value and switch:
+                # a switch that carries its value keeps it adjacent (-n 2, /pid 42)
+                if i + 1 >= len(tokens):
+                    return Translation(
+                        [],
+                        failure=f"{tok} needs a value. Nothing was run.",
+                        failure_kind="MISSING_ARG",
+                        token=tok,
+                    )
+                out.append(tokens[i + 1])
+                i += 2
+                continue
             if takes_value:
                 if i + 1 >= len(tokens):
                     return Translation(

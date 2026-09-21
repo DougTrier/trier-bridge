@@ -15,8 +15,8 @@ def test_translation_table() -> None:
     assert translate(["Stop-Process", "-Id", "42", "-Force"]).tokens == [
         "taskkill",
         "/pid",
-        "/f",
         "42",
+        "/f",
     ]
     assert translate(["Get-ChildItem", "-Path", "C:\\Users"]).tokens == ["dir", "C:\\Users"]
     assert translate(["gip"]).tokens == ["ipconfig", "/all"]

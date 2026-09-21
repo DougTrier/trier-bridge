@@ -42,11 +42,9 @@ def test_shell_syntax_is_rejected_as_a_whole(line: str) -> None:
 def test_unknown_command_and_switch_and_residue() -> None:
     r = parse("frobnicate now")
     assert isinstance(r, ParseFailure) and r.failure is Failure.UNKNOWN_COMMAND
-    r = parse("ipconfig /release")
+    r = parse("ipconfig /nope")
     assert (
-        isinstance(r, ParseFailure)
-        and r.failure is Failure.UNKNOWN_SWITCH
-        and r.token == "/release"
+        isinstance(r, ParseFailure) and r.failure is Failure.UNKNOWN_SWITCH and r.token == "/nope"
     )
     r = parse("whoami extra")
     assert isinstance(r, ParseFailure) and r.failure is Failure.TOO_MANY_ARGS
