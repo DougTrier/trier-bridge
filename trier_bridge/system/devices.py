@@ -186,113 +186,121 @@ def usb_category(cls: str, product: str) -> Category:
     return Category.USB_DEVICE
 
 
-def read_devices(sys_root: Path = Path("/sys"), bus: Bus | None = None) -> DeviceInventory:
-    devices: list[Device] = []
-    sources: list[str] = []
-    notes: list[str] = []
-    pci_db = IdDatabase(("/usr/share/misc/pci.ids", "/usr/share/hwdata/pci.ids"))
-    usb_db = IdDatabase(("/usr/share/misc/usb.ids", "/usr/share/hwdata/usb.ids"))
+CLASS_PASSES: tuple[tuple[str, Category, str], ...] = (
+    ("net", Category.NETWORK, "Network adapter"),
+    ("drm", Category.DISPLAY, "Display adapter"),
+    ("sound", Category.AUDIO, "Sound device"),
+    ("input", Category.INPUT, "Input device"),
+    ("block", Category.STORAGE, "Disk"),
+    ("bluetooth", Category.BLUETOOTH, "Bluetooth adapter"),
+)
 
-    pci_root = sys_root / "bus" / "pci" / "devices"
-    if pci_root.is_dir():
-        sources.append("/sys/bus/pci")
-        for dev in sorted(pci_root.iterdir()):
-            vendor = _read(dev / "vendor").replace("0x", "")
-            product = _read(dev / "device").replace("0x", "")
-            klass = _read(dev / "class").replace("0x", "")
-            vname, pname = pci_db.name(vendor, product)
-            base = PCI_CLASSES.get(int(klass[:2], 16) if klass[:2] else 0xFF, "Device")
-            name = clean(f"{vname} {pname}".strip() or base)
-            drv = _driver(dev)
-            devices.append(
-                Device(
-                    category=pci_category(klass),
-                    name=name,
-                    bus="pci",
-                    ids=f"{vendor}:{product}",
-                    driver=drv,
-                    working=True if drv else None,
-                    sysfs_path=str(dev),
-                    detail=f"{base}; PCI {dev.name}",
-                )
+
+def _pci_devices(sys_root: Path, db: IdDatabase) -> list[Device]:
+    out: list[Device] = []
+    root = sys_root / "bus" / "pci" / "devices"
+    if not root.is_dir():
+        return out
+    for dev in sorted(root.iterdir()):
+        vendor = _read(dev / "vendor").replace("0x", "")
+        product = _read(dev / "device").replace("0x", "")
+        klass = _read(dev / "class").replace("0x", "")
+        vname, pname = db.name(vendor, product)
+        base = PCI_CLASSES.get(int(klass[:2], 16) if klass[:2] else 0xFF, "Device")
+        drv = _driver(dev)
+        out.append(
+            Device(
+                category=pci_category(klass),
+                name=clean(f"{vname} {pname}".strip() or base),
+                bus="pci",
+                ids=f"{vendor}:{product}",
+                driver=drv,
+                working=True if drv else None,
+                sysfs_path=str(dev),
+                detail=f"{base}; PCI {dev.name}",
             )
-    usb_root = sys_root / "bus" / "usb" / "devices"
-    if usb_root.is_dir():
-        sources.append("/sys/bus/usb")
-        for dev in sorted(usb_root.iterdir()):
-            if ":" in dev.name or not (dev / "idVendor").exists():
-                continue  # interfaces and root hubs without ids
-            vendor = _read(dev / "idVendor")
-            product = _read(dev / "idProduct")
-            vname, pname = usb_db.name(vendor, product)
-            man = clean(_read(dev / "manufacturer"))
-            prod = clean(_read(dev / "product"))
-            name = clean(
-                f"{man or vname} {prod or pname}".strip() or f"USB device {vendor}:{product}"
+        )
+    return out
+
+
+def _usb_devices(sys_root: Path, db: IdDatabase) -> list[Device]:
+    out: list[Device] = []
+    root = sys_root / "bus" / "usb" / "devices"
+    if not root.is_dir():
+        return out
+    for dev in sorted(root.iterdir()):
+        if ":" in dev.name or not (dev / "idVendor").exists():
+            continue  # interfaces and root hubs without ids
+        vendor = _read(dev / "idVendor")
+        product = _read(dev / "idProduct")
+        vname, pname = db.name(vendor, product)
+        man = clean(_read(dev / "manufacturer"))
+        prod = clean(_read(dev / "product"))
+        name = clean(f"{man or vname} {prod or pname}".strip() or f"USB device {vendor}:{product}")
+        drv = _driver(dev)
+        out.append(
+            Device(
+                category=usb_category(_read(dev / "bDeviceClass"), name),
+                name=name,
+                bus="usb",
+                ids=f"{vendor}:{product}",
+                driver=drv,
+                working=True if drv else None,
+                sysfs_path=str(dev),
+                detail=f"USB {dev.name}",
             )
-            cls = _read(dev / "bDeviceClass")
-            drv = _driver(dev)
-            devices.append(
-                Device(
-                    category=usb_category(cls, name),
-                    name=name,
-                    bus="usb",
-                    ids=f"{vendor}:{product}",
-                    driver=drv,
-                    working=True if drv else None,
-                    sysfs_path=str(dev),
-                    detail=f"USB {dev.name}",
-                )
-            )
-    seen_sysfs = {d.sysfs_path for d in devices}
-    for cls, category, label in (
-        ("net", Category.NETWORK, "Network adapter"),
-        ("drm", Category.DISPLAY, "Display adapter"),
-        ("sound", Category.AUDIO, "Sound device"),
-        ("input", Category.INPUT, "Input device"),
-        ("block", Category.STORAGE, "Disk"),
-        ("bluetooth", Category.BLUETOOTH, "Bluetooth adapter"),
-    ):
+        )
+    return out
+
+
+def _class_skip(cls: str, name: str) -> bool:
+    if cls == "drm":
+        return "-" in name or not name.startswith("card")  # connectors, render nodes
+    if cls == "block":
+        return name.startswith("loop") or name.startswith("ram")
+    if cls == "input":
+        return not name.startswith("input")  # event/mouse nodes duplicate inputN
+    return cls == "net" and name == "lo"
+
+
+def _class_name(cls: str, entry: Path) -> str:
+    if cls == "input":
+        return clean(_read(entry / "name")) or entry.name
+    if cls == "block":
+        model = clean(_read(entry / "device" / "model"))
+        return f"{model} ({entry.name})" if model else entry.name
+    if cls == "net":
+        return entry.name
+    modalias = _read(entry / "device" / "modalias").split(":")[0]
+    return clean(_read(entry / "name") or modalias or entry.name)
+
+
+def _class_devices(sys_root: Path, seen: set[str], sources: list[str]) -> list[Device]:
+    """Devices by class so bus-less guests and platform devices are still covered."""
+    out: list[Device] = []
+    for cls, category, label in CLASS_PASSES:
         cls_root = sys_root / "class" / cls
         if not cls_root.is_dir():
             continue
         sources.append(f"/sys/class/{cls}")
         for entry in sorted(cls_root.iterdir()):
-            if cls == "drm" and ("-" in entry.name or not entry.name.startswith("card")):
-                continue  # connectors and render nodes are not devices
-            if cls == "block" and (entry.name.startswith("loop") or entry.name.startswith("ram")):
-                continue
-            if cls == "input" and not entry.name.startswith("input"):
-                continue  # event/mouse nodes duplicate their parent inputN
-            if cls == "net" and entry.name == "lo":
+            if _class_skip(cls, entry.name):
                 continue
             dev_link = entry / "device"
             try:
                 real = str(dev_link.resolve()) if dev_link.exists() else str(entry.resolve())
             except OSError:
                 real = str(entry)
-            if real in seen_sysfs:
+            if real in seen:
                 continue  # already listed from its PCI/USB bus entry
-            seen_sysfs.add(real)
-            name = clean(
-                _read(entry / "name")
-                or _read(entry / "device" / "modalias").split(":")[0]
-                or entry.name
-            )
-            if cls == "input":
-                name = clean(_read(entry / "name")) or entry.name
-            elif cls == "block":
-                model = clean(_read(entry / "device" / "model"))
-                name = f"{model} ({entry.name})" if model else entry.name
-            elif cls == "net":
-                name = entry.name
+            seen.add(real)
             drv = _driver(dev_link) if dev_link.exists() else ""
             if not drv and cls == "input":
                 drv = "evdev"
-            devices.append(
+            out.append(
                 Device(
                     category=category,
-                    name=name,
+                    name=_class_name(cls, entry),
                     bus=cls,
                     ids=_read(entry / "device" / "modalias")[:40] or "",
                     driver=drv,
@@ -301,79 +309,107 @@ def read_devices(sys_root: Path = Path("/sys"), bus: Bus | None = None) -> Devic
                     detail=f"{label}; /sys/class/{cls}/{entry.name}",
                 )
             )
-    vmbus = sys_root / "bus" / "vmbus" / "devices"
-    if vmbus.is_dir():
-        sources.append("/sys/bus/vmbus")
-        for dev in sorted(vmbus.iterdir()):
-            real = str(dev.resolve())
-            if real in seen_sysfs:
-                continue
-            drv = _driver(dev)
-            desc = clean(_read(dev / "device_id")) or dev.name
-            devices.append(
-                Device(
-                    category=Category.SYSTEM,
-                    name=f"Hyper-V {drv or 'device'}",
-                    bus="vmbus",
-                    ids=clean(_read(dev / "class_id"))[:40],
-                    driver=drv,
-                    working=True if drv else None,
-                    sysfs_path=real,
-                    detail=f"Virtual machine bus; {desc[:36]}",
-                )
-            )
-    if pci_db.source:
-        sources.append(pci_db.source)
-    else:
-        notes.append("Hardware name database (pci.ids) not found; PCI devices show IDs only.")
-    if usb_db.source:
-        sources.append(usb_db.source)
+    return out
 
-    bus = bus or Bus.system()
-    if bus.conn is not None and "org.freedesktop.UPower" in bus.names():
-        res, err = bus.call(
-            "org.freedesktop.UPower",
-            "/org/freedesktop/UPower",
-            "org.freedesktop.UPower",
-            "EnumerateDevices",
+
+def _vmbus_devices(sys_root: Path, seen: set[str]) -> list[Device]:
+    out: list[Device] = []
+    root = sys_root / "bus" / "vmbus" / "devices"
+    if not root.is_dir():
+        return out
+    for dev in sorted(root.iterdir()):
+        real = str(dev.resolve())
+        if real in seen:
+            continue
+        drv = _driver(dev)
+        desc = clean(_read(dev / "device_id")) or dev.name
+        out.append(
+            Device(
+                category=Category.SYSTEM,
+                name=f"Hyper-V {drv or 'device'}",
+                bus="vmbus",
+                ids=clean(_read(dev / "class_id"))[:40],
+                driver=drv,
+                working=True if drv else None,
+                sysfs_path=real,
+                detail=f"Virtual machine bus; {desc[:36]}",
+            )
         )
-        if not err and res:
-            sources.append("UPower")
-            kinds = {
-                1: "Line power",
-                2: "Battery",
-                3: "UPS",
-                5: "Mouse",
-                6: "Keyboard",
-                7: "PDA",
-                8: "Phone",
-            }
-            for path in res[0]:
-                props = bus.properties(
-                    "org.freedesktop.UPower", path, "org.freedesktop.UPower.Device"
-                )
-                if not props:
-                    continue
-                kind = kinds.get(int(props.get("Type", 0)), "Power device")
-                model = clean(str(props.get("Model", "")))
-                pct = props.get("Percentage")
-                detail = (
-                    f"{kind}; charge {pct:.0f}%"
-                    if isinstance(pct, float) and kind == "Battery"
-                    else kind
-                )
-                devices.append(
-                    Device(
-                        category=Category.BATTERY,
-                        name=model or kind,
-                        bus="power",
-                        ids=str(props.get("NativePath", "")),
-                        driver="",
-                        working=bool(props.get("IsPresent", True)),
-                        sysfs_path=str(path),
-                        detail=detail,
-                    )
-                )
+    return out
+
+
+def _power_devices(bus: Bus) -> list[Device]:
+    out: list[Device] = []
+    if bus.conn is None or "org.freedesktop.UPower" not in bus.names():
+        return out
+    res, err = bus.call(
+        "org.freedesktop.UPower",
+        "/org/freedesktop/UPower",
+        "org.freedesktop.UPower",
+        "EnumerateDevices",
+    )
+    if err or not res:
+        return out
+    kinds = {
+        1: "Line power",
+        2: "Battery",
+        3: "UPS",
+        5: "Mouse",
+        6: "Keyboard",
+        7: "PDA",
+        8: "Phone",
+    }
+    for path in res[0]:
+        props = bus.properties("org.freedesktop.UPower", path, "org.freedesktop.UPower.Device")
+        if not props:
+            continue
+        kind = kinds.get(int(props.get("Type", 0)), "Power device")
+        pct = props.get("Percentage")
+        detail = (
+            f"{kind}; charge {pct:.0f}%" if isinstance(pct, float) and kind == "Battery" else kind
+        )
+        out.append(
+            Device(
+                category=Category.BATTERY,
+                name=clean(str(props.get("Model", ""))) or kind,
+                bus="power",
+                ids=str(props.get("NativePath", "")),
+                driver="",
+                working=bool(props.get("IsPresent", True)),
+                sysfs_path=str(path),
+                detail=detail,
+            )
+        )
+    return out
+
+
+def read_devices(sys_root: Path = Path("/sys"), bus: Bus | None = None) -> DeviceInventory:
+    sources: list[str] = []
+    notes: list[str] = []
+    pci_db = IdDatabase(("/usr/share/misc/pci.ids", "/usr/share/hwdata/pci.ids"))
+    usb_db = IdDatabase(("/usr/share/misc/usb.ids", "/usr/share/hwdata/usb.ids"))
+    devices: list[Device] = []
+    if (sys_root / "bus" / "pci" / "devices").is_dir():
+        sources.append("/sys/bus/pci")
+        devices += _pci_devices(sys_root, pci_db)
+    if (sys_root / "bus" / "usb" / "devices").is_dir():
+        sources.append("/sys/bus/usb")
+        devices += _usb_devices(sys_root, usb_db)
+    seen = {d.sysfs_path for d in devices}
+    devices += _class_devices(sys_root, seen, sources)
+    if (sys_root / "bus" / "vmbus" / "devices").is_dir():
+        sources.append("/sys/bus/vmbus")
+        devices += _vmbus_devices(sys_root, seen)
+    for db in (pci_db, usb_db):
+        if db.source:
+            sources.append(db.source)
+    if not pci_db.source:
+        notes.append("Hardware name database (pci.ids) not found; PCI devices show IDs only.")
+    bus = bus or Bus.system()
+    power = _power_devices(bus)
+    if power:
+        sources.append("UPower")
+    devices += power
     if not devices:
         notes.append("No devices could be read from this system.")
     return DeviceInventory(tuple(devices), tuple(sources), tuple(notes))
