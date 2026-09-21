@@ -42,6 +42,7 @@ from .eventviewer import EventViewerPage  # noqa: E402
 from .network import NetworkPage  # noqa: E402
 from .services import ServicesPage  # noqa: E402
 from .taskmanager import TaskManagerPage  # noqa: E402
+from .terminal import TerminalPage  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -131,7 +132,12 @@ SECTIONS: tuple[Section, ...] = (
     ),
     Section("services", "Services", "system-run-symbolic", "Services", "Advanced", available=True),
     Section(
-        "terminal", "Command Prompt", "utilities-terminal-symbolic", "Command Prompt", "Advanced"
+        "terminal",
+        "Command Prompt",
+        "utilities-terminal-symbolic",
+        "Command Prompt",
+        "Advanced",
+        available=True,
     ),
     Section(
         "sysinfo",
@@ -344,6 +350,9 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             app = self.get_application()
             self._services = ServicesPage(getattr(app, "journal", None), self.notify)
             return self._services
+        if section.key == "terminal":
+            app = self.get_application()
+            return TerminalPage(getattr(app, "journal", None), self.notify)
         if section.key == "startup":
             self._startup = StartupPage()
             return self._startup
