@@ -94,6 +94,13 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         )
         run.connect("clicked", lambda *_: self._submit())
         bar.append(run)
+        pwsh = Gtk.Button(label="PowerShell")
+        pwsh.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            ["Open real PowerShell in a terminal window, if it is installed."],
+        )
+        pwsh.connect("clicked", lambda *_: self._submit_text("powershell"))
+        bar.append(pwsh)
         self.append(bar)
         self._append(f"Trier Bridge Terminal, Bridge Mode. Current folder: {self._session.cwd}\n")
 
@@ -147,6 +154,10 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         self._append(f"{self._session.cwd}> {line}\n")
         self._busy = True
         threading.Thread(target=self._run, args=(line,), name="tb-bridge", daemon=True).start()
+
+    def _submit_text(self, text: str) -> None:
+        self._entry.set_text(text)
+        self._submit()
 
     def _run(self, line: str) -> None:
         try:

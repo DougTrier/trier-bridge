@@ -74,6 +74,7 @@ class BridgeCommand:
     switches: tuple[str, ...]  # normalized lowercase without slash, in order
     args: tuple[str, ...]
     raw: str
+    note: str = ""  # "Get-Process → tasklist" when a PowerShell name was accepted
 
 
 COMMANDS: tuple[CommandSpec, ...] = (
@@ -237,6 +238,15 @@ COMMANDS: tuple[CommandSpec, ...] = (
         summary="No equivalent on Linux.",
     ),
     CommandSpec(
+        "powershell",
+        ("pwsh",),
+        PrivilegeClass.A_READ_ONLY,
+        (),
+        0,
+        linux="pwsh (PowerShell 7, the powershell snap)",
+        summary="Open real PowerShell in your terminal, if it is installed.",
+    ),
+    CommandSpec(
         "format",
         (),
         PrivilegeClass.E_NO_EQUIVALENT,
@@ -314,6 +324,12 @@ def parse(line: str) -> BridgeCommand | ParseFailure:
         return toks
     if not toks:
         return ParseFailure(Failure.EMPTY, "")
+    from .cmdlets import translate  # PowerShell names become Bridge tokens first
+
+    tr = translate(toks)
+    if tr.failure:
+        return ParseFailure(Failure[tr.failure_kind], tr.failure, tr.token)
+    toks = tr.tokens
     name = toks[0].lower()
     if name.endswith(".exe"):
         name = name[:-4]
@@ -361,7 +377,7 @@ def parse(line: str) -> BridgeCommand | ParseFailure:
         )
     if len(args) < spec.min_args:
         return ParseFailure(Failure.MISSING_ARG, f"{spec.name} needs an argument. Nothing was run.")
-    return BridgeCommand(spec, tuple(switches), tuple(args), line)
+    return BridgeCommand(spec, tuple(switches), tuple(args), line, tr.note)
 
 
 def specs() -> tuple[CommandSpec, ...]:

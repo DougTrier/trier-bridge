@@ -22,10 +22,12 @@ teaching (TB-INV-080).
 """
 from __future__ import annotations
 
+import shutil
+
 import os
 import platform
 import socket
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import Enum, unique
 from pathlib import Path
@@ -34,6 +36,7 @@ from typing import Callable
 from ..capability.facts import distro_from_os_release, parse_os_release
 from ..core.identity import ProcessIdentity
 from ..core.state import PrivilegeClass
+from .cmdlets import cmdlet_for, cmdlet_lines
 from .grammar import COMMANDS, BridgeCommand, CommandSpec, ParseFailure, parse
 
 MAX_OUTPUT_LINES = 400
@@ -81,6 +84,20 @@ def cmd_help(cmd: BridgeCommand, session: Session) -> CommandOutput:
     if cmd.args:
         want = cmd.args[0].lower()
         spec = next((s for s in COMMANDS if s.name == want or want in s.aliases), None)
+        cmdlet = cmdlet_for(want)
+        if spec is None and cmdlet is not None:
+            target = " ".join(cmdlet.bridge) if cmdlet.bridge else "(explains only)"
+            params = " ".join(cmdlet.params) or "(no parameters)"
+            return CommandOutput(
+                Exit.OK,
+                (
+                    f"{cmdlet.name}  becomes Bridge: {target}",
+                    f"  parameters: {params}",
+                    f"  also: {', '.join(cmdlet.aliases) or '-'}",
+                    cmdlet.teach or "Same typed operation as the Bridge command.",
+                ),
+                target,
+            )
         if spec is None:
             return CommandOutput(
                 Exit.UNSUPPORTED, (f"'{cmd.args[0]}' is not a Bridge command.",), performed=False
@@ -107,6 +124,7 @@ def cmd_help(cmd: BridgeCommand, session: Session) -> CommandOutput:
         }[s.privilege.value]
         lines.append(f"  {s.name:<11}{s.summary}{tag}")
     lines.append("Unknown commands, unknown switches, and shell syntax do nothing.")
+    lines.extend(cmdlet_lines())
     return CommandOutput(Exit.OK, tuple(lines), "man / --help")
 
 
@@ -436,6 +454,52 @@ def cmd_taskkill(cmd: BridgeCommand, session: Session) -> CommandOutput:
     )
 
 
+def pwsh_path() -> str:
+    """An installed PowerShell 7, never a bundled one (DEC-008)."""
+    found = shutil.which("pwsh")
+    if found:
+        return found
+    snap = Path("/snap/bin/pwsh")
+    return str(snap) if snap.exists() else ""
+
+
+def cmd_powershell(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    exe = pwsh_path()
+    if not exe:
+        return CommandOutput(
+            Exit.UNSUPPORTED,
+            (
+                "PowerShell is not installed on this computer. On Ubuntu it is the "
+                "'powershell' snap (App Center: PowerShell); Trier Bridge never bundles it.",
+                "Bridge Mode already understands Get-Process, Get-Service, and other "
+                "cmdlet names: type help.",
+            ),
+            "pwsh",
+            False,
+        )
+    from gi.repository import Gio
+
+    # The desktop opens its own terminal with a fixed program path; no shell of ours.
+    info = Gio.AppInfo.create_from_commandline(
+        exe, "PowerShell", Gio.AppInfoCreateFlags.NEEDS_TERMINAL
+    )
+    launched = bool(info.launch([], None))
+    if not launched:
+        return CommandOutput(
+            Exit.FAILED, ("The terminal window could not be opened.",), "pwsh", False
+        )
+    return CommandOutput(
+        Exit.OK,
+        (
+            f"PowerShell 7 opened in a terminal window ({exe}).",
+            "On Linux the execution policy is Unrestricted and nothing enforces one; "
+            "scripts run with your own permissions, exactly like any program you start.",
+        ),
+        "pwsh",
+        True,
+    )
+
+
 def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return CommandOutput(
         Exit.UNSUPPORTED,
@@ -463,6 +527,7 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "netstat": cmd_netstat,
     "taskkill": cmd_taskkill,
     "shutdown": cmd_shutdown,
+    "powershell": cmd_powershell,
 }
 
 
@@ -482,7 +547,10 @@ def run_line(line: str, session: Session) -> CommandOutput:
             False,
         )
     try:
-        return handler(parsed, session)
+        out = handler(parsed, session)
+        if parsed.note:
+            out = replace(out, lines=(f"PowerShell {parsed.note}",) + out.lines)
+        return out
     except Exception as exc:  # structured, never a traceback into the terminal
         return CommandOutput(
             Exit.FAILED,
