@@ -1,9 +1,9 @@
 # CODE-QUALITY-REPORT.md
 # Trier Bridge Code Quality Report
 
-**Candidate:** commit `87bd7d6` (Foundations 01–08 automated parts, DEC-024 network translation layer and drive letters; package 0.1.0~dev1)  
-**Timestamp:** 2026-09-21 12:43 PM CDT  
-**CQS:** **94 / 100** (all eight categories measured; first numeric result)  
+**Candidate:** commit `28f6988` (Foundations 01–08 automated parts through the Command Prompt shutdown-timer/tool-name/findstr-`/R`/Boot-view batch, IMP-07.12; package 0.1.0~dev1)  
+**Timestamp:** 2026-09-21 01:20 PM CDT  
+**CQS:** **94 / 100** (all eight categories measured; unchanged from candidate `87bd7d6` — see the note at the end of this refresh)  
 **Assessed weight:** 100 / 100  
 **Observed:** 94 of 100  
 **Release quality:** NOT ASSESSED (no release candidate; release locked)
@@ -16,11 +16,11 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 
 | Item | Value |
 |---|---|
-| Source scope | `trier_bridge/` (12,957 lines, 67 files), `tests/` (3,383 lines, 39 files: unit, integration, the polkit test agent, AT-SPI journeys), `tools/dev.py`, `data/integrations/tb_nautilus.py` |
+| Source scope | `trier_bridge/` (14,251 lines, 68 files), `tests/` (3,757 lines, 45 files: unit, integration, the polkit test agent, AT-SPI journeys), `tools/dev.py`, `data/integrations/tb_nautilus.py` |
 | Environment | `tb-ubuntu-desktop-2404` (Ubuntu 24.04.5, GNOME 46 Wayland, software rendering) and Windows host `.venv` with identical tool versions |
 | Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), flake8-cognitive-complexity 0.1.0, bandit 1.6.2, mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 (all from the Ubuntu 24.04 archive, mirrored on the host) |
 | Commands | `python3 tools/dev.py all` (includes `security` and `complexity`); `dev.py results` and `dev.py evidence` write the normalized test outcome and the measured inputs of this report to `reports/local/` (entry TOOL-06); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script for the broad-catch inventory and longest functions |
-| Test results | host: 105 unit passed, 11 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 137 unit passed, 1 skipped; integration 53 with the journeys excluded (the owner's window holds the single-instance name), 56 with them; all normalized by `tools/dev.py results`; bandit: 0 findings |
+| Test results | host: 105 unit passed, 11 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 139 unit passed, 1 skipped; integration 46 passed, 8 skipped with the journeys excluded (2 skips need a console session, 6 need `TRIER_BRIDGE_TEST_PASSWORD`, unset for this SSH-only session — narrower live coverage than candidate `87bd7d6`'s 53-passed/0-skipped run for that reason, not a regression); all normalized by `tools/dev.py results`; bandit: 0 findings (entry IMP-07.12) |
 
 ---
 
@@ -30,9 +30,9 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 |---|---:|---|---:|---|
 | Architecture / boundaries | 20 | purposes and dependency direction documented in package docstrings and `docs/ENGINEERING.md` (1); acyclic: `core` imports only the standard library; `system`, `state`, `operations`, `bridge`, `integrations`, `apps`, `desktop` import `core`/`config`; `ui` imports all of them; nothing imports `ui` except `__main__` (1); single mutable-state authority per kind: `config.py` writes files, `state/journal.py` owns operation records, `state/preferences.py` owns preferences, `integrations/ledger.py` owns the integration record and re-reads before every change (1); explicit domain/interfaces/adapters: typed `Operation`/`OperationResult`, `StableIdentity` protocol with four implementations (process, unit, file, default-app), adapters `system/*` behind `Bus` (1); cohesive responsibilities, no generic managers (1) | 20 | MEASURED |
 | Readability / naming | 15 | Trier Bridge vocabulary throughout (Operation, CapabilityState, ProcessIdentity, UnitIdentity, FileIdentity, MimeIdentity, TerminatePlan, FilePlan, ServicePlan, DefaultAppPlan, Integration) (1); accurate names (1); understandable control flow: fifteen functions above cyclomatic 10 are dispositioned below; none is flagged for splitting (1); consistent state/result terms matching `docs/STATE-AND-PERSISTENCE.md` (1); coherent module scope (1) | 15 | MEASURED |
-| Complexity | 15 | cyclomatic: 15 functions above 10, maximum 18 (`_build_page`); every outlier is dispositioned below; every outlier is dispositioned below; every outlier is dispositioned below; `read_devices`, `execute_service`, `read_storage`, `plan_file`, `ProcessSampler.sample`, `execute_file`, and `read_network` were decomposed today (0.5); cognitive complexity: 33 functions above 15 (flake8-cognitive-complexity, threshold 15), maximum 30, all dispositioned below (0.5); nesting review: deepest nesting three levels (0.5); function/module scope: longest function 92 lines (`Discovery.environment`), largest module `ui/window.py` 480 lines (0.5); duplicated decision review: one state machine, one identity comparison per kind, one redaction function, one atomic write, one ledger, one plan→confirm→execute shape reused by four operation kinds (1) | 9 | MEASURED |
+| Complexity | 15 | cyclomatic: 15 functions above 10, maximum 18 (`_build_page`), unchanged from candidate `87bd7d6` (same 15 functions, same values); every outlier is dispositioned below (0.5); cognitive complexity: 31 functions above 15 (flake8-cognitive-complexity, threshold 15, down from 33 — `system/journal.py: newest` and `bridge/commands.py: cmd_shutdown` were split this batch and fell below the threshold; `_search` and `cmd_start` each rose by one for the new `/R`/`/L` dispatch and the tool-name check), maximum 30, all dispositioned below (0.5); nesting review: deepest nesting three levels (0.5); function/module scope: longest function 92 lines (`Discovery.environment`), largest module `ui/window.py` 480 lines (0.5); duplicated decision review: one state machine, one identity comparison per kind, one redaction function, one atomic write, one ledger, one plan→confirm→execute shape reused by four operation kinds (1) | 9 | MEASURED |
 | Documentation / rationale | 15 | API ownership/errors/side effects in module and class docstrings (1); privilege/security assumptions stated (`operations/*`, `integrations/*`, `bridge/*`, `docs/PRIVILEGE-MODEL.md` section 8) (1); persistence/recovery documented (`config.py`, `state/journal.py`, `integrations/ledger.py`) (1); concurrency/lifecycle: worker threads hand results to the main loop through `GLib.idle_add`; the polkit test agent documents its own thread and private connection; the contract is written in `docs/ENGINEERING.md` section 14.1 (1); compatibility decisions cite `TB-INV-###` and decision IDs (1) | 15 | MEASURED |
-| Testing / regression | 15 | tests map to invariants by `TB-T###` in docstrings (1); 115 unit tests on real files, real child processes, the real Trash, the real mimeapps.list; no mocks (1); integration/negative tests against live services: 42 in the VM (systemd, polkit through a real agent, NetworkManager, udisks2, journald, sysfs, D-Bus activation, loopback ext4 faults) (1); failure/lifecycle/recovery cases: state-machine refusals, disk-full and kill-mid-write recovery, stale identity for four target kinds, PARTIAL restart, denied and dismissed authorization, read-only ledger (1); candidate-specific regression evidence: `docs/TEST-STRATEGY.md` section 7 maps SECURITY section 37 to tests with gaps named; same revision run on host and VM; installed `.deb` exercised through AT-SPI (1) | 15 | MEASURED |
+| Testing / regression | 15 | tests map to invariants by `TB-T###` in docstrings (1); 140 unit tests on real files, real child processes, the real Trash, the real mimeapps.list; no mocks (1); integration/negative tests against live services: 46 passed this session in the VM with journeys excluded (systemd, polkit through a real agent, NetworkManager, udisks2, journald, sysfs, D-Bus activation, loopback ext4 faults); 8 skipped this run for an unset test-password env var and no console session, not a code gap (entry IMP-07.12) (1); failure/lifecycle/recovery cases: state-machine refusals, disk-full and kill-mid-write recovery, stale identity for four target kinds, PARTIAL restart, denied and dismissed authorization, read-only ledger (1); candidate-specific regression evidence: `docs/TEST-STRATEGY.md` section 7 maps SECURITY section 37 to tests with gaps named; same revision run on host and VM; installed `.deb` exercised through AT-SPI (1) | 15 | MEASURED |
 | Static-analysis health | 10 | build diagnostics: package builds with no warnings; lintian silent (1); lint and type analysis: flake8 and mypy strict clean (1); security/safety findings: bandit 1.6.2 over the product reports zero findings (four low-severity `assert` uses were replaced by explicit checks today); manual grep still shows zero subprocess/shell/os.system in the product (1); suppression inventory: 148, all of three documented kinds, listed below (1); resource/nullability/unsafe/boundary warnings: mypy strict with `warn_unreachable` clean (1) | 10 | MEASURED |
 | Dependency hygiene | 5 | necessity: no runtime dependency beyond Ubuntu Desktop defaults; `python3-nautilus` is a Recommends used only when the Files integration is on (1); pins: `docs/TOOLCHAIN.md` and `debian/control` version floors (1); license/provenance: all first-party Apache-2.0 plus Ubuntu packages (1); maintenance/security/platform: Ubuntu 24.04 LTS set (1); transitive/package cost: 99 KB `.deb`, zero new packages pulled; `python3-cups` is a Recommends that Ubuntu Desktop already ships (1) | 5 | MEASURED |
 | Dead code / duplication | 5 | unused paths: pyflakes clean (1); unreachable branches: mypy `warn_unreachable` clean (1); exact duplicates: none found by reading; the two directory classes are now `config.Paths` and `integrations.catalog.UserDirs` (1); semantic duplicates / state authority: one authority each (1); standalone foundations distinguished and labelled (1) | 5 | MEASURED |
@@ -85,23 +85,23 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | `ui/disks.py: _show` | 20 | Row building per item with plain-language fallbacks (Printers, Disks, Network, Devices pages). Kept; presentation only. |
 | `bridge/commands.py: cmd_netstat` | 19 | /proc/net parsing for TCP/UDP tables. Kept. |
 | `operations/network.py: plan_network` | 19 | One refusal or preview per verb, reviewed as a whole so the wording stays consistent. Kept. |
-| `system/journal.py: newest` | 19 | sd-journal cursor walk with bounded reads. Kept. |
 | `ui/window.py: _build_page` | 19 | Flat page dispatch; reads as a table. Kept. |
-| `bridge/commands.py: cmd_start` | 18 | Reviewed; kept. |
+| `bridge/commands.py: _search` | 19 | Grew from 17: the `/R`/`/L` matcher dispatch added one branch (entry IMP-07.12). Kept. |
+| `bridge/commands.py: cmd_start` | 19 | Grew from 18: opening a `taskmgr`-family page by name added one branch (entry IMP-07.12). Kept. |
 | `catalog/model.py: load` | 18 | One branch per catalog schema rule. Kept. |
 | `ui/network.py: _show` | 18 | Row building per item with plain-language fallbacks (Printers, Disks, Network, Devices pages). Kept; presentation only. |
-| `bridge/commands.py: _search` | 17 | Reviewed; kept. |
 | `system/devices.py: _load` | 17 | pci.ids/usb.ids parser. Kept. |
 | `system/startup.py: read_startup` | 17 | Autostart entry parsing with hidden/only-show-in rules. Kept. |
 | `bridge/commands.py: cmd_taskkill` | 16 | Reviewed; kept. |
-| `bridge/commands.py: cmd_shutdown` | 16 | Reviewed; kept. |
 | `operations/network.py: _verify_link` | 16 | Polls the adapter for the expected link state with three outcomes. Kept. |
 | `operations/process.py: execute_terminate` | 16 | The TERM/KILL lifecycle. Kept. |
 | `system/driveletters.py: to_linux_path` | 16 | Drive-letter and Users alias resolution; each branch tested. Kept. |
 | `system/driveletters.py: to_windows_path` | 16 | Longest-mount match for the familiar spelling; tested. Kept. |
 | `ui/devices.py: _show` | 16 | Row building per item with plain-language fallbacks (Printers, Disks, Network, Devices pages). Kept; presentation only. |
 
-Both lists come from `python3 tools/dev.py complexity` in the VM (15 cyclomatic, 33 cognitive); the host mirror of the plugin reports a few fewer. Every function entering either list is dispositioned here before its ledger item closes.
+**Resolved this candidate:** `system/journal.py: newest` (was 19) was split into `_scope`/`_read_entry` for the boot-scoped read; `bridge/commands.py: cmd_shutdown` (was 16) was split into `_shutdown_abort`/`_shutdown_form` for the timer/cancel logic. Both are now below the cognitive threshold and no longer dispositioned here (entry IMP-07.12).
+
+Both lists come from `python3 tools/dev.py complexity` in the VM (15 cyclomatic, 31 cognitive); the host mirror of the plugin reports a few fewer. Every function entering either list is dispositioned here before its ledger item closes.
 
 ---
 
@@ -158,4 +158,4 @@ No baseline files, no disabled rules, no lowered thresholds. Broad `except Excep
 
 > **CQS: 94 / 100** (all eight categories measured: architecture 20, readability 15, complexity 9, documentation 15, testing 15, static analysis 10, dependencies 5, dead code 5)
 
-This is the truthful result for candidate `87bd7d6`. It is an engineering quality score, not a release verdict: release stays locked and the hard gates above still list what is unverified.
+This is the truthful result for candidate `28f6988`, refreshed from `87bd7d6` for the Command Prompt shutdown-timer/tool-name/findstr-`/R`/Boot-view batch (evidence entry IMP-07.12). The score is carried forward unchanged: cyclomatic outliers are identical, cognitive outliers dropped from 33 to 31 with no new criterion crossed, suppression counts are unchanged (122/26/0), bandit stayed at 0, and the added tests (140 unit, was 137) strengthen rather than weaken the testing criteria already scored at 1. No criterion's disposition changed enough to move a 0/0.5/1 score, so this refresh does not re-litigate the number; a reviewer who disagrees should change the specific criterion row, not the total. It is an engineering quality score, not a release verdict: release stays locked and the hard gates above still list what is unverified.
