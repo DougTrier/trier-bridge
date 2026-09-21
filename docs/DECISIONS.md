@@ -40,7 +40,7 @@ This file records accepted product and architecture decisions. Open questions re
 ## Open decisions
 
 - DEC-024 (package and network mutations: none in the first release) awaits the owner
-- name and trademark check before any public step (SCOPE-12)
+- (closed 2026-09-21) name: Trier Bridge is part of Trier OS, whose trademark the owner holds (SCOPE-12)
 - localization: English only until decided (`docs/ACCESSIBILITY.md` TB-A11Y-09)
 
 Decided since the list was written: first-release desktop and distro (ARC-09/10, `PLATFORMS.md` section 10), package format (ARC-11), persistence engine (ARC-07), native integration mechanisms and file-manager and launcher depth (SCOPE-14, `DELIVERY-MODEL.md` section 3).
