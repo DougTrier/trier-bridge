@@ -48,6 +48,7 @@ Administration and command translation are deeper layers.
 - test-environment direction recorded as proposed DEC-016/DEC-017 (Ubuntu LTS first; disposable WSL2 instance now, disposable Hyper-V desktop VM later)
 - Hyper-V desktop VM scripts and autoinstall seed written under `tools/env/`; ISO download started (2026-09-20 10:25 PM CDT); VM creation is an owner-run elevated step
 - local Git repository initialized on `main` with no remote (2026-09-20)
+- pre-implementation gap review recorded as SCOPE-01..13; non-invasive directive DEC-018 accepted; delivery model DEC-019 proposed (2026-09-20)
 
 ### Not yet done
 
@@ -94,6 +95,7 @@ No document existence implies runtime PASS.
 7. Design to prevent failure; when failure occurs, fail gracefully.
 8. Use America/Chicago / Central Time for project timestamps.
 9. Local Git only: commit locally, no remotes, nothing touches GitHub until explicitly instructed (2026-09-20).
+10. Non-invasive: never invasive, never mistaken for a virus; the owner defines outcomes and delegates the engineering approach (2026-09-20, DEC-018).
 
 ---
 
@@ -102,7 +104,8 @@ No document existence implies runtime PASS.
 Before implementation:
 
 0. owner creates the disposable WSL2 Ubuntu instance (`tb-ubuntu-2404`) and the Hyper-V desktop VM (`tools/env/New-TbDesktopVm.ps1 -Start`); tools verified in both (TOOL-05, ENV-01, ENV-02)
-1. review root/project documents for alignment
+1. review root/project documents for alignment (ALN-12)
+1a. write SCOPE-01..05 design documents (delivery model, privilege helper, packaging, research plan, test strategy)
 2. decide implementation stack
 3. research desktop integration mechanisms for the selected first-release environments
 4. select first-release distro/desktop qualification matrix

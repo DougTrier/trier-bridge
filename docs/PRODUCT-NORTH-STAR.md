@@ -110,3 +110,4 @@ Additional standing owner direction:
 3. Do not weaken security to create familiarity.
 4. Design to prevent failure; when failure occurs, fail gracefully.
 5. Use America/Chicago (Central Time) for project timestamps.
+6. **Non-invasive (2026-09-20):** Trier Bridge must not be invasive and must never be mistaken for a virus. The owner defines the outcome; the engineering approach is delegated, subject to `SECURITY.md`, `INVARIANTS.md`, and DEC-018.

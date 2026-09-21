@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | NOT MEASURED |
 | **Platform support** | No distro/desktop combination qualified |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | Owner review → implementation-stack selection → Foundation 01 freeze |
+| **Next bounded step** | Owner review (ALN-12) → SCOPE-01..05 design documents → implementation-stack selection → Foundation 01 freeze |
 
 ---
 
@@ -77,6 +77,26 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [ ] **ENV-02** Create the disposable Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification.
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
 - [ ] **ENV-03** Removal procedure for both environments verified (`wsl --unregister tb-ubuntu-2404`; delete VM) with confirmation that nothing else on the host changed.
+
+---
+
+# Pre-implementation scoping
+
+Gap review 2026-09-20. Each item produces a design document or a data schema under `docs/` and is complete only when that artifact exists and cites its invariants. SCOPE-01 through SCOPE-05 block ARC-01/ARC-02.
+
+- [ ] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Direction recorded as DEC-018 (accepted) and DEC-019 (proposed); document still required.
+- [ ] **SCOPE-02** Privilege helper architecture: polkit-registered on-demand system service, D-Bus interface, schema versioning, lifecycle (exits when idle; bounded to the authorized operation per TB-INV-188), packaging, and how it stays visibly non-invasive under DEC-018.
+- [ ] **SCOPE-03** Packaging constraints and candidates: native package first; state why sandboxed formats are excluded for the core; install/uninstall behavior against TB-INV-025 to TB-INV-029.
+- [ ] **SCOPE-04** Research plan with exit criteria per open track (Wayland portals for screenshots/global shortcuts, file-manager extension APIs on GNOME/KDE/Cinnamon/XFCE, NetworkManager and udisks2 D-Bus surfaces, PackageKit versus native apt, polkit action design). Each track yields a written finding ARC-01 can cite.
+- [ ] **SCOPE-05** Test strategy: disposable VM/WSL environments are the default oracle; synthetic fixtures are prohibited unless the owner explicitly approves a named fixture for a named scenario; maps TB-T### to environments.
+- [ ] **SCOPE-06** Typed operation model: schema (ID, stable target identity, preview, authorization state, result taxonomy) and the rule that turns each result into "did anything change / what stopped it / safest next step".
+- [ ] **SCOPE-07** Windows-to-Linux concept catalog: data schema for every Windows-labeled concept with route, backend, and equivalence class (exact / approximate / none) per TB-INV-065; drives search, help, Show Me the Linux Way, and Bridge commands.
+- [ ] **SCOPE-08** Bridge Terminal grammar and MVP command list with class A to E, flags, and typed operation per command.
+- [ ] **SCOPE-09** Accessibility acceptance criteria as a stack-selection gate (AT-SPI on Wayland across candidate frameworks, keyboard-only, screen reader, large text).
+- [ ] **SCOPE-10** Backend runtime topology: session service versus in-process core, UI-to-backend IPC, relationship to the privileged service.
+- [ ] **SCOPE-11** Local pre-commit gate convention (`tools\tb all` before every commit; optional local git hook), since there is no CI.
+- [ ] **SCOPE-12** Name and trademark check on "Trier Bridge" before any public step.
+- [ ] **SCOPE-13** Observability specification: log location, levels, redaction, audit placement (SECURITY.md section 26 fields).
 
 ---
 
