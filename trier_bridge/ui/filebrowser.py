@@ -11,14 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""In-app file browser, Phase 1 (DEC-025, DOC-02): navigate, list, sort, open.
+"""In-app file browser (DEC-025, DOC-02): navigate, list, sort, open, and —
+Phase 2 — rename/cut/copy/paste/delete/new folder through the already-proven
+typed operations in ``operations/files.py``: the same ``plan_file``/
+``execute_file`` pair the Bridge Terminal's ``del``/``move``/``copy``/``ren``/
+``mkdir`` already use, with the same confirmation dialog, the same
+never-overwrite and Trash-first behavior, and the same TOCTOU-safe identity
+revalidation (TB-INV-050). Nothing here calls a shell or writes through any
+other path.
 
-Read-only. Nothing here copies, moves, renames, or deletes; those are Phase 2,
-wired to the already-proven typed operations in ``operations/files.py``. A
-double-click or Enter on a folder navigates into it; on a file, it opens with
-the desktop's default app via ``Launcher.open_uri`` — never a custom parser or
-opener (TB-INV-239). Special files (devices, sockets, FIFOs) and broken
-symlinks are named honestly and never opened (TB-INV-243, TB-INV-244).
+A double-click or Enter on a folder navigates into it; on a file, it opens
+with the desktop's default app via ``Launcher.open_uri`` — never a custom
+parser or opener (TB-INV-239). Special files (devices, sockets, FIFOs) and
+broken symlinks are named honestly and never opened (TB-INV-243, TB-INV-244).
+After any mutation the current folder is re-listed from disk, never assumed
+(TB-INV-006).
 
 "This PC" is a virtual root, not a real path: it lists the drive letters from
 ``driveletters.py`` the same way Explorer's This PC lists drives, then hands
@@ -44,7 +51,10 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
+from ..core.operations import OperationResult  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
+from ..operations.files import FilePlan, execute_file, plan_file  # noqa: E402
+from ..state.journal import OperationJournal  # noqa: E402
 from ..system.driveletters import DriveLetter, letters  # noqa: E402
 from ..system.filelisting import FileEntry, ListResult, list_directory  # noqa: E402
 
@@ -91,15 +101,22 @@ class _Row:
     subtitle: str
     hidden: bool
     activate: Callable[[], None]
+    entry: FileEntry | None = None  # None for This PC's drive rows: no file actions there
 
 
 class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
-    """A real, in-app, Explorer-shaped view over a real Linux path. Read-only."""
+    """A real, in-app, Explorer-shaped view over a real Linux path."""
 
-    def __init__(self, launcher: Launcher, notify: Callable[[str], None]) -> None:
+    def __init__(
+        self,
+        launcher: Launcher,
+        notify: Callable[[str], None],
+        journal: OperationJournal | None = None,
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self._launcher = launcher
         self._notify = notify
+        self._journal = journal
         self._current: Path | None = None  # None = This PC
         self._back: list[Path | None] = []
         self._forward: list[Path | None] = []
@@ -107,6 +124,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._letters: list[DriveLetter] = []
         self._rows_data: list[_Row] = []
         self._generation = 0  # discards a stale worker result from a superseded navigation
+        self._clipboard: tuple[Path, str] | None = None  # (source, "copy" | "move")
 
         toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         toolbar.set_margin_start(12)
@@ -144,6 +162,20 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._search.set_hexpand(True)
         self._search.connect("search-changed", lambda *_: self._render())
         search_row.append(self._search)
+        self._new_folder_btn = Gtk.Button(label="New folder")
+        self._new_folder_btn.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            ["Create a new, empty folder here. You will be asked to confirm."],
+        )
+        self._new_folder_btn.connect("clicked", lambda *_: self._start_new_folder())
+        search_row.append(self._new_folder_btn)
+        self._paste_btn = Gtk.Button(label="Paste")
+        self._paste_btn.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            ["Paste the cut or copied item here. You will be asked to confirm."],
+        )
+        self._paste_btn.connect("clicked", lambda *_: self._do_paste())
+        search_row.append(self._paste_btn)
         self.append(search_row)
 
         self._status = Adw.ActionRow(use_markup=False)
@@ -250,6 +282,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._render()
         self._update_breadcrumb()
         self._update_nav_buttons()
+        self._update_action_buttons()
 
     def _apply(self, path: Path, result: ListResult, gen: int) -> bool:
         if gen != self._generation:
@@ -270,6 +303,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
                     subtitle=self._entry_subtitle(e),
                     hidden=e.hidden,
                     activate=partial(self._activate_entry, e),
+                    entry=e,
                 )
                 for e in result.entries
             ]
@@ -283,6 +317,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._render()
         self._update_breadcrumb()
         self._update_nav_buttons()
+        self._update_action_buttons()
         return False
 
     def _apply_error(self, path: Path, text: str, gen: int) -> bool:
@@ -296,6 +331,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._render()
         self._update_breadcrumb()
         self._update_nav_buttons()
+        self._update_action_buttons()
         return False
 
     @staticmethod
@@ -347,6 +383,13 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
             row = Adw.ActionRow(use_markup=False, title=r.name, subtitle=r.subtitle)
             row.tb_activate = r.activate
             row.update_property([Gtk.AccessibleProperty.LABEL], [f"{r.name}, {r.subtitle}"])
+            if r.entry is not None:
+                menu_btn = Gtk.MenuButton(icon_name="view-more-symbolic")
+                menu_btn.set_valign(Gtk.Align.CENTER)
+                menu_btn.add_css_class("flat")
+                menu_btn.update_property([Gtk.AccessibleProperty.LABEL], [f"Actions for {r.name}"])
+                menu_btn.set_popover(self._build_entry_popover(r.entry))
+                row.add_suffix(menu_btn)
             self._list.append(row)
         if len(shown) > VISIBLE_CAP:
             more = Adw.ActionRow(use_markup=False)
@@ -422,3 +465,144 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
 
     def _nav_to(self, target: Path | None) -> None:
         self._load(target)
+
+    # ---- Phase 2: rename/cut/copy/paste/delete/new folder -------------------
+    def _update_action_buttons(self) -> None:
+        self._new_folder_btn.set_sensitive(self._current is not None)
+        self._paste_btn.set_sensitive(self._current is not None and self._clipboard is not None)
+
+    def _build_entry_popover(self, e: FileEntry) -> Gtk.Popover:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        box.set_margin_top(6)
+        box.set_margin_bottom(6)
+        box.set_margin_start(6)
+        box.set_margin_end(6)
+        popover = Gtk.Popover()
+        popover.set_child(box)
+
+        def item(label: str, action: Callable[[], None]) -> None:
+            b = Gtk.Button()
+            lbl = Gtk.Label(label=label, xalign=0.0)
+            b.set_child(lbl)
+            b.add_css_class("flat")
+
+            def on_click(*_a: object) -> None:
+                popover.popdown()
+                action()
+
+            b.connect("clicked", on_click)
+            box.append(b)
+
+        item("Rename…", partial(self._start_rename, e))
+        item("Cut", partial(self._start_cut, e))
+        item("Copy", partial(self._start_copy, e))
+        item("Move to Trash", partial(self._start_trash, e))
+        return popover
+
+    def _start_cut(self, e: FileEntry) -> None:
+        self._clipboard = (e.path, "move")
+        self._update_action_buttons()
+        self._notify(f"{e.name} will move here when you Paste. Nothing has changed yet.")
+
+    def _start_copy(self, e: FileEntry) -> None:
+        self._clipboard = (e.path, "copy")
+        self._update_action_buttons()
+        self._notify(f"{e.name} will copy here when you Paste. Nothing has changed yet.")
+
+    def _do_paste(self) -> None:
+        if self._current is None or self._clipboard is None:
+            return
+        src, verb = self._clipboard
+        self._run_plan(plan_file(verb, str(src), str(self._current), self._current))
+
+    def _start_new_folder(self) -> None:
+        folder = self._current
+        if folder is None:
+            return
+        self._prompt_name(
+            heading="New folder",
+            initial="New folder",
+            on_confirmed=lambda name: self._run_plan(
+                plan_file("mkdir", str(folder / name), None, folder)
+            ),
+        )
+
+    def _start_rename(self, e: FileEntry) -> None:
+        cwd = self._current or e.path.parent
+        self._prompt_name(
+            heading=f"Rename {e.name}",
+            initial=e.name,
+            on_confirmed=lambda name: self._run_plan(plan_file("rename", str(e.path), name, cwd)),
+        )
+
+    def _start_trash(self, e: FileEntry) -> None:
+        cwd = self._current or e.path.parent
+        self._run_plan(plan_file("trash", str(e.path), None, cwd))
+
+    def _prompt_name(self, heading: str, initial: str, on_confirmed: Callable[[str], None]) -> None:
+        entry = Gtk.Entry(text=initial)
+        entry.update_property([Gtk.AccessibleProperty.LABEL], ["New name"])
+        dialog = Adw.AlertDialog(heading=heading, extra_child=entry)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("go", "OK")
+        dialog.set_response_appearance("go", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("go")
+        dialog.set_close_response("cancel")
+
+        def on_response(_d: Adw.AlertDialog, response: str) -> None:
+            if response != "go":
+                return
+            name = entry.get_text().strip()
+            if not name:
+                self._notify("A name is needed. Nothing was changed.")
+                return
+            on_confirmed(name)
+
+        dialog.connect("response", on_response)
+        dialog.present(self.get_root())
+        entry.grab_focus()
+
+    def _run_plan(self, plan_or_result: FilePlan | OperationResult | None) -> None:
+        if plan_or_result is None:
+            return
+        if isinstance(plan_or_result, OperationResult):
+            self._notify(f"{plan_or_result.plain} Nothing was changed.")
+            return
+        plan = plan_or_result
+        dialog = Adw.AlertDialog(heading=f"{plan.heading}?", body=plan.preview)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("go", plan.heading)
+        dialog.set_response_appearance(
+            "go",
+            (
+                Adw.ResponseAppearance.DESTRUCTIVE
+                if plan.destructive
+                else Adw.ResponseAppearance.SUGGESTED
+            ),
+        )
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._on_plan_response, plan)
+        dialog.present(self.get_root())
+
+    def _on_plan_response(self, _d: Adw.AlertDialog, response: str, plan: FilePlan) -> None:
+        if response != "go":
+            self._notify(f"Cancelled. {plan.label} was left as it is.")
+            return
+        folder = self._current
+
+        def work() -> None:
+            result = execute_file(plan, self._journal)
+            GLib.idle_add(self._after_execute, result, folder, plan)
+
+        threading.Thread(target=work, name="tb-filebrowser-op", daemon=True).start()
+
+    def _after_execute(self, result: OperationResult, folder: Path | None, plan: FilePlan) -> bool:
+        self._notify(f"{result.plain} {result.three_answers()['Did anything change?']}")
+        if plan.verb in ("move", "trash") and self._clipboard is not None:
+            if self._clipboard[0] == plan.source:
+                self._clipboard = None
+                self._update_action_buttons()
+        if folder is not None and folder == self._current:
+            self._load(self._current, record_history=False)
+        return False

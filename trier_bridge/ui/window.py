@@ -387,7 +387,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if section.key == "home":
             return HomePage(self._catalog, self._router, self.notify)
         if section.key == "files":
-            return FilesPage(self._launcher, self.notify)
+            app = self.get_application()
+            return FilesPage(self._launcher, self.notify, getattr(app, "journal", None))
         if section.key == "apps":
             self._apps_page = AppsPage(self._launcher, self.notify)
             return self._apps_page

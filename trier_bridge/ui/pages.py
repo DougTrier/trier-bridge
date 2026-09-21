@@ -35,6 +35,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..apps.inventory import DefaultApp, InstalledApp, default_apps, installed_apps  # noqa: E402
 from ..catalog.model import Catalog, Concept, Equivalence, RouteKind  # noqa: E402
 from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
+from ..state.journal import OperationJournal  # noqa: E402
 from ..system.driveletters import letters  # noqa: E402
 from .filebrowser import FileBrowserPage  # noqa: E402
 from ..operations.defaults import (  # noqa: E402
@@ -191,7 +192,7 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
 
 
 class FilesPage(Gtk.Box):  # type: ignore[misc]
-    """Familiar places. Real local folders browse in-app (DEC-025, Phase 1); the three
+    """Familiar places. Real local folders browse in-app (DEC-025); the three
     GVfs-virtual locations (Recycle Bin, Removable drives, Network) still hand off to
     Files, the Linux file manager, since they are not real paths ``filelisting`` can read.
     """
@@ -209,7 +210,12 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
         ("Network", "network:///", "Shared folders on the network"),
     )
 
-    def __init__(self, launcher: Launcher, notify: Callable[[str], None]) -> None:
+    def __init__(
+        self,
+        launcher: Launcher,
+        notify: Callable[[str], None],
+        journal: OperationJournal | None = None,
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
         self._stack.set_vexpand(True)
@@ -227,7 +233,7 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
         back.connect("clicked", lambda *_: self._stack.set_visible_child_name("overview"))
         back_bar.append(back)
         browser_box.append(back_bar)
-        self._browser = FileBrowserPage(launcher, notify)
+        self._browser = FileBrowserPage(launcher, notify, journal)
         browser_box.append(self._browser)
         self._stack.add_named(browser_box, "browser")
 
