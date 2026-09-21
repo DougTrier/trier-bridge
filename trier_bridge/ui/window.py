@@ -194,6 +194,9 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         content_toolbar = Adw.ToolbarView()
         content_toolbar.add_top_bar(self._build_content_header())
         self._review_banner = Adw.Banner(revealed=False)
+        self._review_banner.set_button_label("Mark reviewed")
+        self._review_banner.connect("button-clicked", self._on_reviewed)
+        self._review_records: list[JournalRecord] = []
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         content_box.append(self._review_banner)
         content_box.append(self._content_stack)
@@ -208,6 +211,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
 
     def show_unresolved(self, records: list[JournalRecord]) -> None:
         """Interrupted operations are surfaced, never silently repeated (TB-INV-060)."""
+        self._review_records = list(records)
         if not records:
             self._review_banner.set_revealed(False)
             return
@@ -292,6 +296,18 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             prefs = getattr(self.get_application(), "preferences", None)
             if prefs is not None and prefs.get("last_section") != section.key:
                 prefs.set("last_section", section.key)  # durability reported by the result
+
+    def _on_reviewed(self, _banner: Adw.Banner) -> None:
+        """The person looked at the current state; the records stop asking (TB-INV-060)."""
+        app = self.get_application()
+        journal = getattr(app, "journal", None)
+        if journal is None:
+            return
+        for rec in self._review_records:
+            journal.resolve(rec, "reviewed by the user in the window")
+        count = len(self._review_records)
+        self.show_unresolved(journal.unresolved())
+        self.notify(f"{count} interrupted action{'s' if count != 1 else ''} marked as reviewed.")
 
     def open_concept(self, concept_id: str) -> None:
         """Open a catalog concept by id (search provider results arrive this way)."""

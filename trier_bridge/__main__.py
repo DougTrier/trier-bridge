@@ -70,7 +70,16 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    return run([args[0]] if args else [], paths, journal, options)
+    try:
+        return run([args[0]] if args else [], paths, journal, options)
+    except RuntimeError as exc:  # GTK could not open a display (no session, wrong backend)
+        log.error("display unavailable: %s", exc)
+        print(
+            "Trier Bridge needs a desktop session to show its window (no display could be "
+            "opened). Nothing was changed.",
+            file=sys.stderr,
+        )
+        return 2
 
 
 if __name__ == "__main__":
