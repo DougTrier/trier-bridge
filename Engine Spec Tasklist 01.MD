@@ -60,7 +60,7 @@ Documentation completion does not imply implementation, qualification, or releas
 - [ ] **ALN-13** Verify links/names/authority order across root and `docs/`.
   - 2026-09-20 9:36 PM CDT: document pack consolidated (75 → 26 files), `docs/` created, links repaired, authority order reconciled to `AGENTS.md`. See `docs/README.md` consolidation record. Awaiting owner confirmation under ALN-12.
 - [ ] **ALN-14** Freeze first documentation revision for implementation planning.
-- [ ] **ALN-15** Owner decision on the TB-INV-077 wording amendment proposed 2026-09-20 (integrations ship enabled after install and remain individually reversible; key/mouse rebinding and file-association changes stay separately opt-in). Invariant text is unchanged until approved.
+- [x] **ALN-15** TB-INV-077 amendment question closed 2026-09-20: owner direction (DEC-019, user selects integrations at setup) satisfies the existing wording. No invariant change made.
 
 ---
 
@@ -85,7 +85,7 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 
 Gap review 2026-09-20. Each item produces a design document or a data schema under `docs/` and is complete only when that artifact exists and cites its invariants. SCOPE-01 through SCOPE-05 block ARC-01/ARC-02.
 
-- [ ] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Governed by DEC-018 and DEC-019 (both accepted 2026-09-20: one integrated build, integrations ship enabled, each switchable, uninstall removes all); document still required.
+- [ ] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Governed by DEC-018 and DEC-019 (accepted 2026-09-20: one integrated build; first-run setup screen with grouped integration presets; user intent decides what activates; all reversible and changeable any time; tray icon "T" otherwise); document still required.
 - [ ] **SCOPE-02** Privilege helper architecture: polkit-registered on-demand system service, D-Bus interface, schema versioning, lifecycle (exits when idle; bounded to the authorized operation per TB-INV-188), packaging, and how it stays visibly non-invasive under DEC-018.
 - [ ] **SCOPE-03** Packaging constraints and candidates: native package first; state why sandboxed formats are excluded for the core; install/uninstall behavior against TB-INV-025 to TB-INV-029.
 - [ ] **SCOPE-04** Research plan with exit criteria per open track (Wayland portals for screenshots/global shortcuts, file-manager extension APIs on GNOME/KDE/Cinnamon/XFCE, NetworkManager and udisks2 D-Bus surfaces, PackageKit versus native apt, polkit action design). Each track yields a written finding ARC-01 can cite.
@@ -98,6 +98,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **SCOPE-11** Local pre-commit gate convention (`tools\tb all` before every commit; optional local git hook), since there is no CI.
 - [ ] **SCOPE-12** Name and trademark check on "Trier Bridge" before any public step.
 - [ ] **SCOPE-13** Observability specification: log location, levels, redaction, audit placement (SECURITY.md section 26 fields).
+- [ ] **SCOPE-14** Integration catalog and setup flow: the list of every shippable integration, its named group (feature subset), its desktop extension point, its activation/reversal mechanism, and the first-run setup screen plus tray-icon options flow that presents them (DEC-019). Includes the Ubuntu GNOME tray/AppIndicator research item.
 
 ---
 

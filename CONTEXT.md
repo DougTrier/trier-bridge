@@ -96,6 +96,7 @@ No document existence implies runtime PASS.
 8. Use America/Chicago / Central Time for project timestamps.
 9. Local Git only: commit locally, no remotes, nothing touches GitHub until explicitly instructed (2026-09-20).
 10. Non-invasive: never invasive, never mistaken for a virus; the owner defines outcomes and delegates the engineering approach (2026-09-20, DEC-018).
+11. Ship every integration; user intent decides at first-run setup via grouped options; all reversible, changeable any time; otherwise out of sight behind a plain "T" tray icon (2026-09-20, DEC-019).
 
 ---
 

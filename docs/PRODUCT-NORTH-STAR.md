@@ -111,3 +111,4 @@ Additional standing owner direction:
 4. Design to prevent failure; when failure occurs, fail gracefully.
 5. Use America/Chicago (Central Time) for project timestamps.
 6. **Non-invasive (2026-09-20):** Trier Bridge must not be invasive and must never be mistaken for a virus. The owner defines the outcome; the engineering approach is delegated, subject to `SECURITY.md`, `INVARIANTS.md`, and DEC-018.
+7. **Ship all of it, leave it to user intent (2026-09-20):** every integration ships in the build. At setup the user sees all integration options in groups (feature subsets) so they can pick a whole group or single items and integrate as much or as little as they want. Everything is cleanly reversible and changeable any time they open the application. Otherwise it is out of sight, out of mind: a simple tray icon, a plain "T", opens the options. See DEC-019.

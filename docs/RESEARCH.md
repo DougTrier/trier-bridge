@@ -35,6 +35,8 @@ The detailed research baseline, design lessons, and reference URLs from the Sept
 - PowerShell Linux behavior
 - packaging strategy
 - distro-specific system settings APIs
+- tray icon on Ubuntu GNOME (AppIndicator/StatusNotifier availability on Wayland, default extension state on Ubuntu 24.04) for the "T" options icon (DEC-019)
+- first-run setup trigger after native package install (autostart-once versus first launch)
 
 ## 4. Reference policy
 
