@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The tray icon "T" (DEC-019): a StatusNotifierItem with a three-entry menu.
+"""The tray icon "T" (DEC-019): a StatusNotifierItem with a small menu.
 
 Runs as its own small process, started at login by a per-user autostart entry
 the user chose at setup. It speaks the StatusNotifierItem and dbusmenu
@@ -131,9 +131,12 @@ MENU_XML = """
 # id, label ("" = separator), argv to launch ("off" turns the tray integration off)
 MENU_ITEMS: tuple[tuple[int, str, str], ...] = (
     (1, "Open Trier Bridge", "open"),
-    (2, "Change integrations", "integrations"),
-    (3, "", ""),
-    (4, "Turn off the tray icon", "off"),
+    (2, "Task Manager", "taskmanager"),
+    (3, "Command Prompt", "terminal"),
+    (4, "", ""),
+    (5, "Change integrations", "integrations"),
+    (6, "", ""),
+    (7, "Turn off the tray icon", "off"),
 )
 
 
@@ -264,8 +267,8 @@ class Tray:
     def act(self, action: str) -> None:
         if action == "open":
             spawn(app_argv())
-        elif action == "integrations":
-            spawn(app_argv() + ["--section", "integrations"])
+        elif action in ("integrations", "taskmanager", "terminal"):
+            spawn(app_argv() + ["--section", action])
         elif action == "off":
             self.turn_off()
 
