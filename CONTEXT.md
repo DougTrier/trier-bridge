@@ -1,10 +1,10 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-21 12:35 PM CDT  
+**Last updated:** 2026-09-21 01:22 PM CDT  
 **Owner:** Doug Trier  
 **Project state:** FOUNDATIONS 01–07 CLOSED; FOUNDATION 08 AUTOMATED PARTS DONE; ACCEPTANCE CASES NEED THE OWNER  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
-**CQS:** 94 / 100 (all eight categories measured 2026-09-21, `CODE-QUALITY-REPORT.md`; release still locked)  
+**CQS:** 94 / 100 (all eight categories measured 2026-09-21, refreshed for candidate `28f6988` at 01:20 PM CDT, `CODE-QUALITY-REPORT.md`; release still locked)  
 
 ---
 
@@ -28,6 +28,7 @@ Administration and command translation are deeper layers.
 
 ### Completed design foundation
 
+- IMP-07.12: shutdown timer arms a cancellable main-loop timer and `/a` cancels it; `taskmgr`/`devmgmt.msc`/`services.msc`/`eventvwr`/`msconfig`/`ncpa.cpl`/`appwiz.cpl`/`msinfo32`/`compmgmt.msc` open the matching page; `findstr /R` regular-expression matching and `/L` literal mode; Event Viewer Boot view reads this boot's kernel/audit records independently of the 500-entry general read, resolving the IMP-04.03 Boot-view limitation. CODE-QUALITY-REPORT refreshed for candidate `28f6988` (2026-09-21 01:20 PM CDT); host and VM gates clean; live checks over SSH for the shutdown preview, findstr /R and /L, and the boot-scoped read cross-checked against `journalctl -k -b`. This session's VM integration run had narrower live coverage than the prior candidate (test password not set for grant-path tests, no console session), noted in entry IMP-07.12 as an evidence gap, not a code regression.
 - corrected product concept and target audience
 - Product North Star
 - engineering architecture baseline

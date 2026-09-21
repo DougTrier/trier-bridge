@@ -19,14 +19,14 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner's console acceptance |
-| **Last completed** | TOOL-06 closed: normalized test results, quality evidence, generated map and known-limitations report (2026-09-21 12:41 PM CDT) |
+| **Last completed** | IMP-07.12 closed: shutdown timer/cancel, familiar tool names open pages, findstr /R and /L, Event Viewer Boot view; CODE-QUALITY-REPORT refreshed for candidate 28f6988 (2026-09-21 01:20 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
-| **CQS** | 94 / 100, all eight categories measured for the first time (cognitive complexity and bandit now in the pinned toolchain; see CODE-QUALITY-REPORT.md) |
+| **CQS** | 94 / 100, unchanged on refresh for candidate 28f6988 (cognitive outliers 33 → 31, cyclomatic and suppressions unchanged; see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | CQ-03 concurrency contract in ENGINEERING (done in section 14.1; close in report) → CQ-09 performance budget → owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06 |
+| **Next bounded step** | IMP-02.07 generic read-only fallback qualification; owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06, whether the VM window can close for the queued page walks |
 
 ---
 
@@ -198,6 +198,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-04.01** Task Manager observation. Evidence: `docs/VALIDATION.md` entry IMP-04.01 (live procfs sampler, identity, Unknown-not-zero, page verified in session).
 - [x] **IMP-04.02** Startup Apps observation. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
 - [x] **IMP-04.03** Event Viewer / journal presentation. Evidence: `docs/VALIDATION.md` entry IMP-04.03 (native sd-journal, cross-checked with journalctl, page verified in session).
+  - 2026-09-21 01:16 PM CDT: the Boot view empty-when-out-of-the-newest-500 limitation noted in entry IMP-04.03 is resolved by a separate boot-scoped read (`_BOOT_ID`/kernel/audit match). Evidence: entry IMP-07.12.
 - [x] **IMP-04.04** Device Manager inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
 - [x] **IMP-04.05** Disk/storage inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
 - [x] **IMP-04.06** Network Connections inventory. Evidence: `docs/VALIDATION.md` entry IMP-04 (Foundation 03 entry for provenance).
@@ -246,6 +247,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-07.06** Integrate real `pwsh` where selected/available. Evidence: `docs/VALIDATION.md` entry IMP-07.06/07 (`powershell` Bridge command and Terminal button open an installed pwsh in the desktop terminal; explains the snap when absent; never bundled).
 - [x] **IMP-07.11** `findstr`, `find`, `where`, `set`, `path`, `tree`, `exit`, `%VAR%` expansion, teaching for attrib/icacls/takeown. Evidence: entry IMP-07.11.
 - [x] **IMP-07.10** `shutdown /s|/r [/t n]` as a confirmed logind action (execution deliberately unverified in the VM). Evidence: entry IMP-07.10.
+- [x] **IMP-07.12** `shutdown /t` arms a cancellable main-loop timer, `/a` cancels it; `taskmgr`/`devmgmt.msc`/`services.msc`/`eventvwr`/`msconfig`/`ncpa.cpl`/`appwiz.cpl`/`msinfo32`/`compmgmt.msc` open the matching page; `findstr /R` regular-expression matching and `/L` literal mode; Event Viewer Boot view reads this boot's kernel/audit records. Evidence: entry IMP-07.12 (unit- and integration-verified; timer fire/cancel-while-armed and the open-page desktop branch are unit-only this session).
 - [x] **IMP-07.09** Familiar commands beyond the MVP list: `explorer`, `start`, `net start|stop` (and teaching for user/use/share/view), `date`, `time`, `taskkill /IM`, teaching entries for sfc, chkdsk, xcopy, robocopy, gpedit. Evidence: entry IMP-07.09.
 - [x] **IMP-07.08** Network diagnostics a Windows user types first: `ping`, `tracert`, `nslookup`, `ipconfig /flushdns` (plus Test-Connection, Resolve-DnsName, Clear-DnsClientCache). Evidence: entry IMP-07.08.
 - [x] **IMP-07.07** Implement selected compatibility cmdlets only through typed operations. Evidence: entry IMP-07.06/07 (16 cmdlet names translate to Bridge commands with a visible note; Get-EventLog and Get-WmiObject teach; unknown parameters refuse the line).
