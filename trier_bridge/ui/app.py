@@ -98,7 +98,7 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
             renderer = window.get_native().get_renderer()
             if node is None or renderer is None:
                 self._snapshot_tries += 1
-                if self._snapshot_tries < 6:
+                if self._snapshot_tries < 10:
                     return True  # not laid out yet; try again on the next tick
                 log.warning("dev snapshot: nothing to render after %d tries", self._snapshot_tries)
                 return False
