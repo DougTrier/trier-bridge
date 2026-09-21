@@ -21,6 +21,33 @@ def test_valid_commands_become_typed() -> None:
 
 
 @pytest.mark.parametrize(
+    "line,args",
+    [
+        ("cd..", ("..",)),
+        ("CD..", ("..",)),
+        ("cd\\..", ("\\..",)),
+        ("chdir..", ("..",)),
+        ("cd\\", ("\\",)),
+        ("cd\\Users\\tb", ("\\Users\\tb",)),
+        ("cd..\\..", ("..\\..",)),
+    ],
+)
+def test_cd_accepts_the_real_cmd_exe_no_space_shortcut(line: str, args: tuple[str, ...]) -> None:
+    """TB-T083: real cmd.exe lets cd glue straight to . or \\ with no space (cd.., cd\\, cd\\foo)
+    -- a DOS-era quirk specific to this one command pair, not a general no-space convention."""
+    cmd = parse(line)
+    assert isinstance(cmd, BridgeCommand)
+    assert cmd.spec.name == "cd" and cmd.args == args
+
+
+def test_cd_glue_only_applies_at_the_start_of_the_line() -> None:
+    # "cd.." here is an argument to echo, not the command itself -- must not be split
+    cmd = parse("echo cd..")
+    assert isinstance(cmd, BridgeCommand)
+    assert cmd.spec.name == "echo" and cmd.args == ("cd..",)
+
+
+@pytest.mark.parametrize(
     "line",
     [
         "taskkill /PID 1234; rm -rf /",

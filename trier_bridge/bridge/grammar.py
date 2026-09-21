@@ -21,6 +21,7 @@ executes anything.
 """
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass
 from enum import Enum, unique
@@ -29,6 +30,16 @@ from ..core.state import PrivilegeClass
 
 MAX_LINE = 4096
 SHELL_META = set(";&|<>`$()^\n\r")
+
+# Real cmd.exe accepts cd/chdir glued directly to . or \ with no space (cd.., cd\, cd\..\foo) --
+# a DOS-era quirk specific to this one pair of commands, not a general no-space convention.
+# Splitting it here, before whitespace tokenization, is the only place that can restore the
+# space without guessing at any other command's argument shape.
+_GLUED_CD = re.compile(r"^(cd|chdir)(?=[.\\])", re.IGNORECASE)
+
+
+def _split_glued_cd(line: str) -> str:
+    return _GLUED_CD.sub(lambda m: f"{m.group(1)} ", line, count=1)
 
 
 @unique
@@ -602,6 +613,7 @@ for _spec in COMMANDS:
 
 def tokenize(line: str) -> list[str] | ParseFailure:
     """CMD-style tokens: whitespace separated, double quotes group, "" inside quotes is a quote."""
+    line = _split_glued_cd(line)
     if len(line) > MAX_LINE:
         return ParseFailure(
             Failure.TOO_LONG, f"The command is longer than {MAX_LINE} characters. Nothing was run."
