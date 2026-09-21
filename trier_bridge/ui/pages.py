@@ -1,0 +1,381 @@
+# Copyright 2026 Doug Trier
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Everyday pages (Foundation 03): Home search, Files, Apps, Settings, Printers, Network.
+
+Each page collects intent and shows structured results; opening anything goes
+through the Router, which either switches a Trier Bridge section or asks the
+desktop launcher. Every result is reported in plain words with the three
+answers (docs/EXPERIENCE.md section 5).
+"""
+from __future__ import annotations
+
+import logging
+import threading
+from functools import partial
+from typing import Callable
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Adw, GLib, Gtk  # noqa: E402
+
+from ..apps.inventory import DefaultApp, InstalledApp, default_apps, installed_apps  # noqa: E402
+from ..catalog.model import Catalog, Concept, Equivalence, RouteKind  # noqa: E402
+from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
+
+log = logging.getLogger("trier_bridge.ui.pages")
+
+
+class Router:
+    """Opens a concept: Trier Bridge sections in-window, everything else via the desktop."""
+
+    def __init__(self, select_section: Callable[[str], None], launcher: Launcher) -> None:
+        self._select = select_section
+        self._launcher = launcher
+
+    def open(self, concept: Concept) -> LaunchResult:
+        if not concept.can_open:
+            return LaunchResult(False, concept.mapping_note(), "teach-only")
+        if concept.route.kind is RouteKind.SECTION:
+            self._select(concept.route.target)
+            return LaunchResult(True, f"Showing {concept.title}.")
+        return self._launcher.open(concept.route)
+
+
+def _scrolled(child: Gtk.Widget) -> Gtk.ScrolledWindow:
+    s = Gtk.ScrolledWindow(child=child, hscrollbar_policy=Gtk.PolicyType.NEVER)
+    s.set_vexpand(True)
+    return s
+
+
+def _open_button(label: str, description: str, on_click: Callable[[], None]) -> Gtk.Button:
+    b = Gtk.Button(label=label)
+    b.set_valign(Gtk.Align.CENTER)
+    b.update_property([Gtk.AccessibleProperty.DESCRIPTION], [description])
+    b.connect("clicked", lambda *_: on_click())
+    return b
+
+
+def _report(notify: Callable[[str], None], action: Callable[[], LaunchResult]) -> None:
+    """Run an open action and tell the user the plain result; a failure says nothing changed."""
+    res = action()
+    notify(res.plain if res.ok else f"{res.plain} Nothing was changed.")
+
+
+class HomePage(Gtk.Box):  # type: ignore[misc]
+    """Search for anything you know from Windows."""
+
+    def __init__(self, catalog: Catalog, router: Router, notify: Callable[[str], None]) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self._catalog = catalog
+        self._router = router
+        self._notify = notify
+        page = Adw.PreferencesPage()
+        intro = Adw.PreferencesGroup(
+            title="Everything you know. Linux underneath.",
+            description=(
+                "Type what you would look for on Windows: Task Manager, Add or Remove Programs, "
+                "Downloads, Printers, Control Panel. Trier Bridge shows the Linux place for it "
+                "and tells you when it is not the same."
+            ),
+        )
+        self._entry = Gtk.SearchEntry(placeholder_text="Search Windows words…")
+        self._entry.update_property(
+            [Gtk.AccessibleProperty.LABEL], ["Search for anything you know from Windows"]
+        )
+        self._entry.connect("search-changed", self._on_search)
+        intro.add(self._entry)
+        page.add(intro)
+        self._results = Adw.PreferencesGroup(title="Results")
+        self._rows: list[Gtk.Widget] = []
+        page.add(self._results)
+        self.append(_scrolled(page))
+        self._show_groups()
+
+    def _clear(self) -> None:
+        for w in self._rows:
+            self._results.remove(w)
+        self._rows = []
+
+    def _show_groups(self) -> None:
+        self._clear()
+        self._results.set_title("Familiar places")
+        for concepts in self._catalog.by_group().values():
+            for c in concepts[:4]:
+                self._add_concept(c)
+
+    def _on_search(self, entry: Gtk.SearchEntry) -> None:
+        query = entry.get_text().strip()
+        if not query:
+            self._show_groups()
+            return
+        self._clear()
+        matches = self._catalog.search(query)
+        self._results.set_title(f"Results for “{query}”" if matches else "No matches")
+        if not matches:
+            row = Adw.ActionRow(
+                title="Nothing matched those words",
+                subtitle="Try another Windows term, or look under Help. Nothing was changed.",
+            )
+            self._results.add(row)
+            self._rows.append(row)
+            return
+        for m in matches:
+            self._add_concept(m.concept)
+
+    def _add_concept(self, c: Concept) -> None:
+        row = Adw.ActionRow(title=c.title, subtitle=f"{c.linux}\n{c.mapping_note()}")
+        row.set_subtitle_lines(3)
+        if c.equivalence is Equivalence.NONE:
+            badge = Gtk.Label(label="No equivalent")
+            badge.add_css_class("dim-label")
+            badge.set_valign(Gtk.Align.CENTER)
+            row.add_suffix(badge)
+        elif c.can_open:
+            label = "Show" if c.route.kind is RouteKind.SECTION else "Open"
+            row.add_suffix(
+                _open_button(
+                    label, f"{label} {c.title}. {c.mapping_note()}", partial(self._open, c)
+                )
+            )
+        self._results.add(row)
+        self._rows.append(row)
+
+    def _open(self, c: Concept) -> None:
+        res = self._router.open(c)
+        self._notify(res.plain if res.ok else f"{res.plain} Nothing was changed.")
+        if not res.ok:
+            log.info("open %s failed: %s", c.id, res.technical)
+
+
+class FilesPage(Gtk.Box):  # type: ignore[misc]
+    """Familiar places, opened in the desktop's own file manager (TB-INV-073: real paths shown)."""
+
+    PLACES = (
+        ("This Computer", "home", "Your home folder"),
+        ("Desktop", "desktop", ""),
+        ("Documents", "documents", ""),
+        ("Downloads", "download", ""),
+        ("Pictures", "pictures", ""),
+        ("Music", "music", ""),
+        ("Videos", "videos", ""),
+        ("Recycle Bin", "trash:///", "Deleted files you can restore"),
+        ("Removable drives", "computer:///", "USB drives and discs"),
+        ("Network", "network:///", "Shared folders on the network"),
+    )
+
+    def __init__(self, launcher: Launcher, notify: Callable[[str], None]) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        page = Adw.PreferencesPage()
+        group = Adw.PreferencesGroup(
+            title="Familiar places",
+            description=(
+                "These open in Files, the Linux file manager. The real folder path is shown "
+                "under each name."
+            ),
+        )
+        for title, key, hint in self.PLACES:
+            path = folder_path(key) if "://" not in key else key
+            subtitle = path or "Not set up on this computer"
+            if hint:
+                subtitle = f"{hint} · {subtitle}"
+            row = Adw.ActionRow(title=title, subtitle=subtitle)
+            if path:
+                row.add_suffix(
+                    _open_button(
+                        "Open",
+                        f"Open {title} in Files. Nothing is changed.",
+                        partial(self._open, launcher, notify, key, title),
+                    )
+                )
+            group.add(row)
+        page.add(group)
+        tips = Adw.PreferencesGroup(title="What works the same")
+        for t, s in (
+            ("Copy, cut, paste", "Ctrl+C, Ctrl+X, Ctrl+V in Files, just like Explorer."),
+            ("Right-click", "Open, Open With, Cut, Copy, Rename, Move to Trash, Properties."),
+            (
+                "Drag and drop",
+                "Drag moves within a drive and copies across drives; hold Ctrl to copy.",
+            ),
+            ("Delete", "Delete moves to the Recycle Bin (Trash); Shift+Delete deletes for good."),
+        ):
+            tips.add(Adw.ActionRow(title=t, subtitle=s))
+        page.add(tips)
+        self.append(_scrolled(page))
+
+    @staticmethod
+    def _open(launcher: Launcher, notify: Callable[[str], None], key: str, title: str) -> None:
+        res = launcher.show_folder(key)
+        notify(f"{title}: {res.plain}" if res.ok else f"{res.plain} Nothing was changed.")
+
+
+class AppsPage(Gtk.Box):  # type: ignore[misc]
+    """Installed Apps with provenance, and current default apps. Read-only in this foundation."""
+
+    def __init__(self, launcher: Launcher, notify: Callable[[str], None]) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self._launcher = launcher
+        self._notify = notify
+        self._apps: list[InstalledApp] = []
+        page = Adw.PreferencesPage()
+        self._entry = Gtk.SearchEntry(placeholder_text="Find an installed program…")
+        self._entry.update_property([Gtk.AccessibleProperty.LABEL], ["Find an installed program"])
+        self._entry.connect("search-changed", lambda *_: self._render())
+        top = Adw.PreferencesGroup(
+            title="Installed Apps",
+            description=(
+                "One list, several package systems. Each program shows where it came from "
+                "(system package, Snap, Flatpak, or this user). Uninstalling arrives in a later "
+                "foundation; nothing here changes the computer."
+            ),
+        )
+        top.add(self._entry)
+        page.add(top)
+        self._list_group = Adw.PreferencesGroup()
+        page.add(self._list_group)
+        self._defaults_group = Adw.PreferencesGroup(
+            title="Default apps",
+            description="Which program opens which kind of file. Changing these is a later step.",
+        )
+        page.add(self._defaults_group)
+        self.append(_scrolled(page))
+        self._rows: list[Gtk.Widget] = []
+        self._default_rows: list[Gtk.Widget] = []
+        self._loading = Adw.ActionRow(title="Reading installed programs…")
+        self._list_group.add(self._loading)
+        self._started = False
+
+    def start(self) -> None:
+        if self._started:
+            return
+        self._started = True
+        threading.Thread(target=self._worker, name="tb-apps", daemon=True).start()
+
+    def _worker(self) -> None:
+        try:
+            apps = installed_apps()
+            defaults = default_apps()
+        except Exception as exc:
+            log.exception("app inventory failed")
+            GLib.idle_add(self._fail, str(exc))
+            return
+        GLib.idle_add(self._loaded, apps, defaults)
+
+    def _fail(self, text: str) -> bool:
+        self._loading.set_title("Installed programs could not be read")
+        self._loading.set_subtitle(f"Nothing was changed. Technical detail: {text}")
+        return False
+
+    def _loaded(self, apps: list[InstalledApp], defaults: list[DefaultApp]) -> bool:
+        self._apps = apps
+        self._list_group.remove(self._loading)
+        self._render()
+        for d in defaults:
+            row = Adw.ActionRow(title=d.label, subtitle=d.app_name or "Nothing is set")
+            self._defaults_group.add(row)
+            self._default_rows.append(row)
+        return False
+
+    def _render(self) -> None:
+        for w in self._rows:
+            self._list_group.remove(w)
+        self._rows = []
+        q = self._entry.get_text().strip().casefold()
+        shown = [
+            a for a in self._apps if not q or q in a.name.casefold() or q in a.comment.casefold()
+        ]
+        self._list_group.set_title(f"{len(shown)} of {len(self._apps)} programs")
+        for a in shown[:200]:
+            row = Adw.ActionRow(title=a.name, subtitle=a.comment or a.desktop_id)
+            badge = Gtk.Label(label=a.provenance.label)
+            badge.add_css_class("caption")
+            badge.add_css_class("dim-label")
+            badge.set_valign(Gtk.Align.CENTER)
+            row.add_suffix(badge)
+            row.set_tooltip_text(a.source_path)
+            row.add_suffix(
+                _open_button(
+                    "Open",
+                    f"Start {a.name} ({a.provenance.label}).",
+                    partial(self._open, a),
+                )
+            )
+            self._list_group.add(row)
+            self._rows.append(row)
+        if len(shown) > 200:
+            more = Adw.ActionRow(title=f"{len(shown) - 200} more; narrow the search to see them")
+            self._list_group.add(more)
+            self._rows.append(more)
+
+    def _open(self, a: InstalledApp) -> None:
+        res = self._launcher.launch_app(a.desktop_id)
+        self._notify(res.plain if res.ok else f"{res.plain} Nothing was changed.")
+
+
+class SettingsPage(Gtk.Box):  # type: ignore[misc]
+    """Familiar settings names routed to the desktop's own Settings panels."""
+
+    def __init__(self, catalog: Catalog, router: Router, notify: Callable[[str], None]) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        page = Adw.PreferencesPage()
+        group = Adw.PreferencesGroup(
+            title="Settings",
+            description=(
+                "The names you know, routed to the right place in Linux Settings. "
+                "Opening a panel changes nothing until you change something there."
+            ),
+        )
+        for c in catalog.concepts:
+            if c.route.kind in (RouteKind.GNOME_SETTINGS, RouteKind.APP) and c.group == "Everyday":
+                row = Adw.ActionRow(title=c.title, subtitle=f"{c.linux}\n{c.mapping_note()}")
+                row.set_subtitle_lines(3)
+                row.add_suffix(
+                    _open_button(
+                        "Open",
+                        f"Open {c.title}. {c.mapping_note()}",
+                        partial(_report, notify, partial(router.open, c)),
+                    )
+                )
+                group.add(row)
+        page.add(group)
+        self.append(_scrolled(page))
+
+
+class EntryPointPage(Gtk.Box):  # type: ignore[misc]
+    """Printers / Network: the familiar entry points now; live status in Foundation 04."""
+
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        actions: tuple[tuple[str, str, Callable[[], LaunchResult]], ...],
+        notify: Callable[[str], None],
+    ) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        page = Adw.PreferencesPage()
+        group = Adw.PreferencesGroup(title=title, description=description)
+        for label, subtitle, action in actions:
+            row = Adw.ActionRow(title=label, subtitle=subtitle)
+            row.add_suffix(
+                _open_button(
+                    "Open",
+                    f"{label}. Nothing is changed by opening it.",
+                    partial(_report, notify, action),
+                )
+            )
+            group.add(row)
+        page.add(group)
+        self.append(_scrolled(page))

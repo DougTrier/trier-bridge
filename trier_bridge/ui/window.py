@@ -29,8 +29,12 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk  # noqa: E402
 
-from .. import APP_NAME, __version__  # noqa: E402
+from .. import APP_NAME  # noqa: E402
 from ..capability.model import CapabilityRecord, EnvironmentProfile  # noqa: E402
+from ..catalog.model import Catalog  # noqa: E402
+from ..desktop.launch import Launcher  # noqa: E402
+from ..resources import catalog_path  # noqa: E402
+from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -45,13 +49,39 @@ class Section:
 
 SECTIONS: tuple[Section, ...] = (
     Section("home", "Home", "go-home-symbolic", "Start", "Everyday", available=True),
-    Section("files", "Files", "folder-symbolic", "File Explorer", "Everyday"),
-    Section("apps", "Apps", "view-grid-symbolic", "Start menu, Installed Apps", "Everyday"),
+    Section("files", "Files", "folder-symbolic", "File Explorer", "Everyday", available=True),
     Section(
-        "settings", "Settings", "preferences-system-symbolic", "Settings, Control Panel", "Everyday"
+        "apps",
+        "Apps",
+        "view-grid-symbolic",
+        "Start menu, Installed Apps",
+        "Everyday",
+        available=True,
     ),
-    Section("printers", "Printers", "printer-symbolic", "Printers & scanners", "Everyday"),
-    Section("network", "Network", "network-wired-symbolic", "Network Connections", "Everyday"),
+    Section(
+        "settings",
+        "Settings",
+        "preferences-system-symbolic",
+        "Settings, Control Panel",
+        "Everyday",
+        available=True,
+    ),
+    Section(
+        "printers",
+        "Printers",
+        "printer-symbolic",
+        "Printers & scanners",
+        "Everyday",
+        available=True,
+    ),
+    Section(
+        "network",
+        "Network",
+        "network-wired-symbolic",
+        "Network Connections",
+        "Everyday",
+        available=True,
+    ),
     Section(
         "taskmanager",
         "Task Manager",
@@ -101,6 +131,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self.set_default_size(960, 640)
         self.set_size_request(360, 400)
         self._pages: dict[str, Gtk.Widget] = {}
+        self._catalog = Catalog.load(catalog_path())
+        self._launcher = Launcher()
+        self._router = Router(self.select_section, self._launcher)
+        self._toasts = Adw.ToastOverlay()
 
         self._split = Adw.NavigationSplitView()
         self._split.set_sidebar(self._build_sidebar())
@@ -112,7 +146,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         content_toolbar = Adw.ToolbarView()
         content_toolbar.add_top_bar(self._build_content_header())
         content_toolbar.set_content(self._content_stack)
-        self._split.set_content(Adw.NavigationPage.new(content_toolbar, APP_NAME))
+        self._toasts.set_child(content_toolbar)
+        self._split.set_content(Adw.NavigationPage.new(self._toasts, APP_NAME))
         self.set_content(self._split)
         self._select("home")
 
@@ -165,6 +200,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             self._content_stack.set_visible_child_name(section.key)
             if section.key == "sysinfo":
                 self._sysinfo.start()
+            if section.key == "apps":
+                self._apps_page.start()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
 
@@ -190,9 +227,54 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         header.pack_end(menu)
         return header
 
+    def notify(self, text: str) -> None:
+        """Plain-language result of an action, as a toast (screen readers announce toasts)."""
+        self._toasts.add_toast(Adw.Toast(title=text, timeout=4))
+
     def _build_page(self, section: Section) -> Gtk.Widget:
         if section.key == "home":
-            return self._home_page()
+            return HomePage(self._catalog, self._router, self.notify)
+        if section.key == "files":
+            return FilesPage(self._launcher, self.notify)
+        if section.key == "apps":
+            self._apps_page = AppsPage(self._launcher, self.notify)
+            return self._apps_page
+        if section.key == "settings":
+            return SettingsPage(self._catalog, self._router, self.notify)
+        if section.key == "printers":
+            return EntryPointPage(
+                "Printers",
+                "Add a printer, see queues, and pick a default in the Printers settings. "
+                "Live printer status inside Trier Bridge arrives in a later foundation.",
+                (
+                    (
+                        "Printers settings",
+                        "Windows: Printers & scanners · Linux: GNOME Settings (CUPS)",
+                        lambda: self._launcher.open_settings_panel("printers"),
+                    ),
+                ),
+                self.notify,
+            )
+        if section.key == "network":
+            return EntryPointPage(
+                "Network",
+                "Wi-Fi, wired, and VPN connections live in Network settings. "
+                "Adapter details and IP information inside Trier Bridge arrive in a later "
+                "foundation.",
+                (
+                    (
+                        "Wi-Fi settings",
+                        "Windows: Wi-Fi · Linux: GNOME Settings (NetworkManager)",
+                        lambda: self._launcher.open_settings_panel("wifi"),
+                    ),
+                    (
+                        "Network settings",
+                        "Windows: Network Connections (ncpa.cpl) · Linux: GNOME Settings",
+                        lambda: self._launcher.open_settings_panel("network"),
+                    ),
+                ),
+                self.notify,
+            )
         if section.key == "sysinfo":
             from ..capability.discovery import Discovery
             from .sysinfo import SystemInfoPage
@@ -224,14 +306,6 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         page = Adw.StatusPage(title=title, description=description, icon_name=icon)
         page.update_property([Gtk.AccessibleProperty.DESCRIPTION], [description])
         return page
-
-    def _home_page(self) -> Gtk.Widget:
-        text = (
-            f"Trier Bridge {__version__} (Foundation 02).\n\n"
-            "This build shows where familiar things will live. The only thing it reads on this "
-            "computer is the read-only check under System Information; it changes nothing."
-        )
-        return self._status("Everything you know. Linux underneath.", text, "go-home-symbolic")
 
 
 def Gio_menu() -> Any:
