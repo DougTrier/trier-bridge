@@ -48,6 +48,19 @@ def test_findstr_and_find_search_real_files(tmp_path: Path) -> None:
     assert isinstance(parse("findstr beta"), ParseFailure)  # needs a file
 
 
+def test_findstr_regex_anchors_are_refused_but_A_and_Z_work(tmp_path: Path) -> None:
+    """TB-T083: /R patterns can't use ^ $ ( ) -- refused as shell syntax before parsing even
+    starts, quoted or not (same family as the < refusal). \\A / \\Z are the working substitute;
+    this is the exact case TEST-AND-VERIFICATION-POINTS.md row 5.5 hit and was fixed for."""
+    s = Session(_tree(tmp_path))
+    for bad in ('findstr /R "^Alpha" docs\\a.txt', 'findstr /R "gamma$" docs\\a.txt'):
+        res = parse(bad)
+        assert isinstance(res, ParseFailure) and res.failure is Failure.SHELL_SYNTAX
+    out = run_line('findstr /R "\\AAlpha" docs\\a.txt', s)
+    assert out.exit is Exit.OK and out.lines == ("Alpha line",)
+    assert run_line('findstr /R "\\Aalpha" docs\\a.txt', s).exit is Exit.FAILED  # case matters
+
+
 def test_where_set_path_and_variables(tmp_path: Path) -> None:
     s = Session(tmp_path)
     out = run_line("where python", s)
