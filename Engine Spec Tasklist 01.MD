@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | ROOT-01 — Root project-control document alignment |
+| **Active task** | IMP-01 — Foundation 01: toolchain pins, skeleton, checks, reproducible build |
 | **Last completed** | Live research R2/R17/R18 in the VM and stack proposal `docs/STACK-SELECTION.md` (2026-09-21 12:05 AM CDT) |
-| **Implementation** | NOT STARTED |
+| **Implementation** | AUTHORIZED 2026-09-21 (DEC-023); Foundation 01 in progress |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | Owner decision on DEC-020 (stack) → Foundation 01 toolchain freeze (IMP-01.01) → module skeleton |
+| **Next bounded step** | IMP-01.01 toolchain pins → IMP-01.02 skeleton → IMP-01.04 check entry points → IMP-01.06 reproducible build in the VM |
 
 ---
 
@@ -123,10 +123,8 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Platform and architecture freeze
 
-- [ ] **ARC-01** Select implementation language/runtime with documented alternatives and rationale.
-  - 2026-09-21: proposal written, `docs/STACK-SELECTION.md` (Python 3.12 + PyGObject), alternatives B to E recorded; live evidence F15/F16/F17. Awaiting owner decision (DEC-020).
-- [ ] **ARC-02** Select desktop/UI framework with Wayland/X11/accessibility/package implications.
-  - 2026-09-21: proposal GTK 4 + libadwaita in `docs/STACK-SELECTION.md`; AT-SPI on Wayland verified live (F17). Awaiting owner decision (DEC-020).
+- [x] **ARC-01** Select implementation language/runtime with documented alternatives and rationale. Evidence: `docs/STACK-SELECTION.md`; DEC-020 accepted under owner delegation 2026-09-21.
+- [x] **ARC-02** Select desktop/UI framework with Wayland/X11/accessibility/package implications. Evidence: GTK 4 + libadwaita, AT-SPI on Wayland verified (F17); DEC-020.
 - [ ] **ARC-03** Freeze module/dependency direction.
 - [ ] **ARC-04** Freeze typed operation model.
 - [ ] **ARC-05** Freeze capability-discovery contract.
@@ -136,8 +134,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **ARC-09** Select first-release distro families.
 - [ ] **ARC-10** Select first-release desktop/session matrix.
 - [ ] **ARC-11** Select package formats.
-- [ ] **ARC-12** Freeze update mechanism or explicitly defer updates.
-  - 2026-09-20: `docs/PACKAGING.md` section 5 defers updates for the first release (same channel as install; signed repository later). Owner confirmation closes this.
+- [x] **ARC-12** Freeze update mechanism or explicitly defer updates. Evidence: deferred, DEC-022 (2026-09-21), `docs/PACKAGING.md` section 5.
 - [ ] **ARC-13** Map every selected MVP feature to applicable `TB-INV-###`.
 - [ ] **ARC-14** Freeze planned test/failure matrix.
 

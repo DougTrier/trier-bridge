@@ -3,7 +3,7 @@
 **Task:** SCOPE-05  
 **Status:** Design. No test has been run against product code because no product code exists.  
 **Governing:** `VALIDATION.md` (evidence states and records), `SECURITY.md` section 37, TB-INV-228 to 233, DEC-016, DEC-017 (rejected: no WSL)  
-**Owner assumption:** no synthetic fixtures. Recorded 2026-09-20 pending the owner's explicit confirmation; until then it is the working rule.
+**Fixture policy:** no synthetic fixtures, accepted as DEC-021 on 2026-09-21 under owner delegation.
 
 ## 1. Principles
 

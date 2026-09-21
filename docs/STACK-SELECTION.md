@@ -1,7 +1,7 @@
 # Trier Bridge Implementation Stack Selection
 
 **Tasks:** ARC-01 (language/runtime), ARC-02 (desktop framework)  
-**Status:** PROPOSED for owner decision (DEC-020). Nothing is frozen until Doug Trier accepts it.  
+**Status:** ACCEPTED as DEC-020 on 2026-09-21 under owner delegation. Frozen for Foundation 01.  
 **Inputs:** `DELIVERY-MODEL.md` section 7, `PRIVILEGE-MODEL.md` section 7, `PACKAGING.md` section 8, `RESEARCH.md` findings F12, F15, F16, F17  
 **Date:** 2026-09-21 (evidence gathered 2026-09-20 in `tb-ubuntu-desktop-2404`)
 

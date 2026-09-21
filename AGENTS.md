@@ -79,16 +79,17 @@ Do not use UTC timestamps as the primary project chronology unless explicitly la
 
 ## 4. Current implementation boundary
 
-Trier Bridge is currently in design foundation.
+Implementation was authorized by the owner on 2026-09-21 (DEC-023) with the stack frozen as DEC-020 (Python 3.12 + PyGObject, GTK 4 + libadwaita). Work proceeds foundation by foundation per the ledger; a foundation starts only when its prerequisites have evidence.
 
-Until Doug explicitly authorizes implementation and the Foundation 01 stack is frozen:
+Still binding regardless of authorization:
 
-- do not create speculative production modules
-- do not choose a framework silently
-- do not choose a language silently
+- do not create production modules outside the current foundation's scope
+- do not change the frozen stack silently (DEC-020)
 - do not create a generic privileged helper
 - do not add dependencies because they "might be useful"
-- do not treat the `tools/` scripts (Python/PowerShell/batch) as a product-stack choice; they are read-only engineering automation
+- the `tools/` scripts remain read-only engineering automation; `tools/dev.py` runs the development checks and may write caches, never product state
+- no runtime dependency outside what Ubuntu 24.04 Desktop ships, unless recorded in the dependency inventory with a reason
+- no `pip install` at build or run time for the product; development tools come from the Ubuntu archive or a pinned, recorded source
 - do not mark implementation/test tasks complete
 - do not publish a repository or release
 

@@ -2,8 +2,8 @@
 
 **Last updated:** 2026-09-21 12:05 AM CDT  
 **Owner:** Doug Trier  
-**Project state:** DESIGN FOUNDATION  
-**Implementation:** NOT STARTED  
+**Project state:** FOUNDATION 01 IN PROGRESS  
+**Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
 **CQS:** NOT MEASURED  
 
 ---
@@ -110,7 +110,7 @@ Before implementation:
 
 0. take the `clean-install` checkpoint of the test VM (ENV-03)
 1. review root/project documents for alignment (ALN-12)
-1a. owner decides DEC-020 (stack); then Foundation 01 (IMP-01.01 toolchain pins, IMP-01.02 skeleton)
+1a. Foundation 01: IMP-01.01 toolchain pins, IMP-01.02 skeleton, IMP-01.04 check entry points, IMP-01.06 reproducible build in the VM, IMP-01.07 quality baseline
 2. decide implementation stack
 3. research desktop integration mechanisms for the selected first-release environments
 4. select first-release distro/desktop qualification matrix

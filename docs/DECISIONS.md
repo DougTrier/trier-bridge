@@ -25,11 +25,10 @@ This file records accepted product and architecture decisions. Open questions re
 | DEC-016 | Ubuntu 24.04 LTS is the first-release qualification target. Ubuntu-based derivatives (for example Linux Mint, Zorin OS, Pop!_OS) are the next targets because the adapters carry over, but each derivative still receives its own evidence before any support claim (TB-INV-017, TB-INV-231). Owner accepted 2026-09-20. | Accepted |
 | DEC-019 | Delivery model: Trier Bridge ships as one integrated build containing the application (launcher/search, familiar file entry points, settings routing, system tools, Bridge Terminal) and every desktop integration it provides. Which integrations are active is decided by user intent: on first launch after package installation a setup screen lists every integration, organized into named groups (feature subsets) so the user can select a whole group or individual items and integrate as much or as little as they want. Nothing is activated before that choice. Every integration is cleanly reversible and can be changed at any time from the application. Otherwise the product stays out of sight: a simple tray icon (a plain "T") opens the options. Integrations use only each desktop's standard extension points and augment the native file manager rather than replacing it. Global key/mouse rebinding and file-association changes are individual items, never part of a default group. Privileged operations run in a small separate system service registered with polkit, started on demand, exiting when idle. Sandboxed package formats that block system access are not candidates for the core. Owner direction 2026-09-20. | Accepted |
 
-## Proposed decisions
-
-| ID | Decision | Status |
-|---|---|---|
-| DEC-020 | Implementation stack (ARC-01/ARC-02): Python 3.12 with PyGObject for the runtime and GTK 4 with libadwaita for the desktop framework, per `docs/STACK-SELECTION.md`. Rationale: zero added runtime dependencies on Ubuntu Desktop 24.04, every gate (D-Bus, polkit, search provider, AT-SPI on Wayland) verified live in the test VM, native GNOME look, widest reviewability. Rust remains the path for any measured hotspot behind the same adapter interface. Recorded 2026-09-21; becomes Accepted only on owner confirmation. | Proposed |
+| DEC-020 | Implementation stack (ARC-01/ARC-02): Python 3.12 with PyGObject; GTK 4 with libadwaita; per `docs/STACK-SELECTION.md`. Owner delegated the choice on 2026-09-21 ("that is in your area of expertise; I stated the outcome and you make it happen as safe and secure as possible"). Accepted under that delegation; alternatives remain recorded for revisit with new evidence. | Accepted |
+| DEC-021 | Testing uses only real systems and real test objects in the project VM; no synthetic fixtures, mocks, or stubbed services. A fixture may exist only if the owner names it and its single scenario in `docs/TEST-STRATEGY.md`. Accepted under the same delegation, consistent with the owner's global no-mock rule. | Accepted |
+| DEC-022 | Updates are deferred for the first release: Trier Bridge updates arrive through the same package channel as installation; no self-update mechanism; a signed repository is a later, owner-gated step (`docs/PACKAGING.md` section 5). Closes ARC-12. | Accepted |
+| DEC-023 | Implementation is authorized. On 2026-09-21 the owner set the goal "continue working until the project is done or I ask you to stop." Foundation 01 may begin; every later foundation still requires its prerequisites and evidence (ledger completion rules). Publication remains owner-gated (AGENTS.md section 14). | Accepted |
 
 ## Rejected decisions
 
@@ -39,15 +38,12 @@ This file records accepted product and architecture decisions. Open questions re
 
 ## Open decisions
 
-- implementation language/runtime (DEC-020 proposed)
-- desktop framework (DEC-020 proposed)
 - first-release desktops
 - package formats
 - persistence engine
 - exact native integration mechanisms
 - file-manager integration depth
 - launcher/taskbar integration depth
-- update mechanism
 - first-release package-management scope
 - first-release destructive storage scope
 - exact privilege helper design
