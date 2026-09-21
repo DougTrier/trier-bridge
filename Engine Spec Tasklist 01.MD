@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner's console acceptance |
-| **Last completed** | IMP-07.12 closed: shutdown timer/cancel, familiar tool names open pages, findstr /R and /L, Event Viewer Boot view; CODE-QUALITY-REPORT refreshed for candidate 28f6988 (2026-09-21 01:20 PM CDT) |
-| **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
+| **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner |
+| **Last completed** | IMP-07.13 closed: nslookup's resolver calls bounded by a wall-clock timeout, closing Foundation 07's last open item; IMP-06.08 polkit-caching false-alarm clarified (2026-09-21 01:45 PM CDT) |
+| **Implementation** | Foundations 01–07 fully closed (13/13, 9/9); Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | 94 / 100, unchanged on refresh for candidate 28f6988 (cognitive outliers 33 → 31, cyclomatic and suppressions unchanged; see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-02.07 generic read-only fallback qualification; owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06, whether the VM window can close for the queued page walks |
+| **Next bounded step** | scoped but not started: IMP-02.07 needs either a second distro/desktop (IMP-08.03, its own owner-run VM) or an owner-approved masked-service fixture inside the existing VM (fault injection against a shared, in-use environment needs a named approval under `AGENTS.md` section 15) — owner decides which; otherwise owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06, whether the VM window can close for the queued page walks |
 
 ---
 
@@ -234,6 +234,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior. Evidence: `docs/VALIDATION.md` entries IMP-06.04/06.05 (stale target, denial without an agent) and IMP-06.07 (granted and dismissed prompts through a real polkit agent, user-manager re-exec). Limitation recorded: systemd 255 reports a dismissed prompt as access denied; expiry is polkit's cache and not exercised.
   - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
 - [x] **IMP-06.08** Run security/failure regression set. Evidence: `docs/TEST-STRATEGY.md` section 7 (mapping of SECURITY section 37 and Tests A–D to tests, gaps named) and `docs/VALIDATION.md` entry IMP-06.08 (Test B live through the terminal and polkit).
+  - 2026-09-21 01:45 PM CDT: Test B and a sibling test in `test_services_vm.py` clarified with a precondition (no cached `auth_admin_keep` polkit grant for the account running them) after a real false alarm from the owner's active console session; re-run over SSH both passed cleanly, confirming standard polkit behavior, not a defect. No code changed. Evidence: entry IMP-06.08 addendum.
 
 ---
 
@@ -248,10 +249,11 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-07.11** `findstr`, `find`, `where`, `set`, `path`, `tree`, `exit`, `%VAR%` expansion, teaching for attrib/icacls/takeown. Evidence: entry IMP-07.11.
 - [x] **IMP-07.10** `shutdown /s|/r [/t n]` as a confirmed logind action (execution deliberately unverified in the VM). Evidence: entry IMP-07.10.
 - [x] **IMP-07.12** `shutdown /t` arms a cancellable main-loop timer, `/a` cancels it; `taskmgr`/`devmgmt.msc`/`services.msc`/`eventvwr`/`msconfig`/`ncpa.cpl`/`appwiz.cpl`/`msinfo32`/`compmgmt.msc` open the matching page; `findstr /R` regular-expression matching and `/L` literal mode; Event Viewer Boot view reads this boot's kernel/audit records. Evidence: entry IMP-07.12 (unit- and integration-verified; timer fire/cancel-while-armed and the open-page desktop branch are unit-only this session).
+- [x] **IMP-07.13** `nslookup`'s resolver calls bounded by a wall-clock timeout, closing the one command found reachable from the Bridge Terminal that could hang with no native bound (TB-INV-101). Evidence: entry IMP-07.13. No Cancel-button UI added; that is separate, larger scope.
 - [x] **IMP-07.09** Familiar commands beyond the MVP list: `explorer`, `start`, `net start|stop` (and teaching for user/use/share/view), `date`, `time`, `taskkill /IM`, teaching entries for sfc, chkdsk, xcopy, robocopy, gpedit. Evidence: entry IMP-07.09.
 - [x] **IMP-07.08** Network diagnostics a Windows user types first: `ping`, `tracert`, `nslookup`, `ipconfig /flushdns` (plus Test-Connection, Resolve-DnsName, Clear-DnsClientCache). Evidence: entry IMP-07.08.
 - [x] **IMP-07.07** Implement selected compatibility cmdlets only through typed operations. Evidence: entry IMP-07.06/07 (16 cmdlet names translate to Bridge commands with a visible note; Get-EventLog and Get-WmiObject teach; unknown parameters refuse the line).
-- [x] **IMP-07.08** Run injection/quoting/path/Unicode/timeout/cancellation tests. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection, quoting, Unicode, length); timeout/cancellation of long commands still open.
+- [x] **IMP-07.08** Run injection/quoting/path/Unicode/timeout/cancellation tests. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection, quoting, Unicode, length); timeout for the one command that could hang (`nslookup`'s resolver calls) closed by entry IMP-07.13. No Bridge Terminal Cancel-button UI exists; that is separate, larger scope, not claimed here.
 
 ---
 

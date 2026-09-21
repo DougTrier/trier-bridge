@@ -1,6 +1,6 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-21 01:22 PM CDT  
+**Last updated:** 2026-09-21 01:47 PM CDT  
 **Owner:** Doug Trier  
 **Project state:** FOUNDATIONS 01–07 CLOSED; FOUNDATION 08 AUTOMATED PARTS DONE; ACCEPTANCE CASES NEED THE OWNER  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
@@ -28,7 +28,8 @@ Administration and command translation are deeper layers.
 
 ### Completed design foundation
 
-- IMP-07.12: shutdown timer arms a cancellable main-loop timer and `/a` cancels it; `taskmgr`/`devmgmt.msc`/`services.msc`/`eventvwr`/`msconfig`/`ncpa.cpl`/`appwiz.cpl`/`msinfo32`/`compmgmt.msc` open the matching page; `findstr /R` regular-expression matching and `/L` literal mode; Event Viewer Boot view reads this boot's kernel/audit records independently of the 500-entry general read, resolving the IMP-04.03 Boot-view limitation. CODE-QUALITY-REPORT refreshed for candidate `28f6988` (2026-09-21 01:20 PM CDT); host and VM gates clean; live checks over SSH for the shutdown preview, findstr /R and /L, and the boot-scoped read cross-checked against `journalctl -k -b`. This session's VM integration run had narrower live coverage than the prior candidate (test password not set for grant-path tests, no console session), noted in entry IMP-07.12 as an evidence gap, not a code regression.
+- IMP-07.13: `nslookup`'s resolver calls (`socket.getaddrinfo`/`getfqdn`, the only blocking call reachable from a Bridge command with no native timeout) now bounded to 5 seconds, closing Foundation 07's last open item (TB-INV-101). Foundation 07 is fully closed, 13/13. Along the way, the owner ran the full VM integration suite from the console with the test password set and saw two failures in `test_authorization_vm.py`/`test_services_vm.py`; investigated live, both were a real but benign cause (the account's active console session carried a cached `auth_admin_keep` polkit grant from an earlier interactive authentication), confirmed by re-running the same tests over SSH where they passed cleanly; both test docstrings now state that precondition so it reads as expected next time, not a false alarm. No code defect; nothing changed in the product's privilege model (2026-09-21 01:47 PM CDT).
+- IMP-07.12: shutdown timer arms a cancellable main-loop timer and `/a` cancels it; `taskmgr`/`devmgmt.msc`/`services.msc`/`eventvwr`/`msconfig`/`ncpa.cpl`/`appwiz.cpl`/`msinfo32`/`compmgmt.msc` open the matching page; `findstr /R` regular-expression matching and `/L` literal mode; Event Viewer Boot view reads this boot's kernel/audit records independently of the 500-entry general read, resolving the IMP-04.03 Boot-view limitation. CODE-QUALITY-REPORT refreshed for candidate `28f6988` (2026-09-21 01:20 PM CDT); host and VM gates clean; live checks over SSH for the shutdown preview, findstr /R and /L, and the boot-scoped read cross-checked against `journalctl -k -b`. A fuller VM integration run with the owner's test password (51 passed, 3 skipped, all needing a console) closed the initial narrower-coverage gap; the only remaining unverified pieces are the timer-fire-while-armed sequence and the taskmgr/eventvwr open-page branch while the app is actually running, both needing a live desktop session this SSH-based work does not have.
 - corrected product concept and target audience
 - Product North Star
 - engineering architecture baseline

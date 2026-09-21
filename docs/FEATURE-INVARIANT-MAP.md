@@ -1,6 +1,6 @@
 # Feature to Invariant Map
 
-**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 01:32 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
+**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 01:44 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
 
 | Evidence entry | Feature | Invariants and security rules cited |
 |---|---|---|
@@ -34,7 +34,8 @@
 | IMP-07.10 | shutdown /s and /r through logind | TB-INV-004, TB-INV-078, TB-INV-094, TB-INV-104, TB-INV-109, TB-INV-110 |
 | IMP-07.11 | findstr, find, where, set, path, tree, %VAR% expansion, exit | TB-INV-080, TB-INV-098, TB-INV-099, TB-INV-100, TB-INV-105 |
 | IMP-07.12 | shutdown timer and cancel, tool names open pages, findstr /R and /L; Event Viewer Boot view | TB-INV-045, TB-INV-068, TB-INV-094, TB-INV-099, TB-INV-100, TB-INV-104, TB-INV-146, TB-INV-147 |
+| IMP-07.13 | nslookup's resolver calls bounded by a wall-clock timeout (TB-INV-101) | TB-INV-041, TB-INV-101 |
 | TOOL-06 | Stack-dependent engineering tools: normalized test results, quality evidence, derived docs | TB-INV-004, TB-INV-109, TB-INV-110 |
 | TOOL-05 | Read-only tools run unmodified on Linux | none cited |
 
-99 distinct invariant and security IDs are cited by 32 entries.
+101 distinct invariant and security IDs are cited by 33 entries.
