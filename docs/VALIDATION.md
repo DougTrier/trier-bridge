@@ -603,6 +603,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the reboot and power-off calls are unverified by execution (running them would end the VM session and the owner's work); the delay waits inside the worker thread, so closing the window during the wait cancels nothing already promised, which the preview does not say yet.
 - **Evidence state:** UNIT_VERIFIED plus a live plan; execution NOT VERIFIED by design
 
+### IMP-07.11 — findstr, find, where, set, path, tree, %VAR% expansion, exit
+
+- **Timestamp:** 2026-09-21 07:30 PM CDT
+- **Candidate revision:** 9df0709
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); unit tests on real files under the checkout
+- **Files/modules:** `trier_bridge/bridge/grammar.py` (specs; a known switch now wins over a Linux path for path-taking commands), `commands.py` (`_search`, `cmd_findstr`, `cmd_find`, `cmd_where`, `cmd_set`, `cmd_path`, `cmd_tree`, `cmd_exit`, `expand_vars`, `WINDOWS_VARS`), `tests/unit/test_familiar_commands2.py`
+- **Invariant impact:** TB-INV-099/100 (search and tree output bounded; binary files skipped; no escape interpretation), TB-INV-098 (`set` never prints variables whose names look like secrets), TB-INV-080 (`%USERPROFILE%`, `%TEMP%`, `%COMPUTERNAME%` and friends resolve to their Linux values; unknown names stay as typed), TB-INV-105 (attrib, icacls, cacls, takeown explain: permissions are set in Files or with chmod/chown)
+- **Expected result:** `findstr /I beta docs\*.txt` lists matching lines per file and counts with /C; `find "text" file` behaves like Windows find including /V; `where python` prints the program path; `set USERPROFILE` shows the home folder; `tree` shows folders (files with /F, dot-folders with /A) and is bounded; `echo %COMPUTERNAME%` prints the host name.
+- **Observed result:** four unit tests passed in the VM (137 unit total): search on two files with the binary one skipped, line numbers, counts, inverted match, missing-file and no-match failures; where for present and absent programs; set/path/variables; tree with hidden and file switches; teaching entries. Host and VM `tools/dev.py all` clean.
+- **Tests/checks:** `tools/dev.py all` (host, VM); `pytest tests/unit/test_familiar_commands2.py` in the VM.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** findstr takes plain text, not regular expressions; wildcards only in the file name part; tree stops at six levels or the output cap; `set X=Y` (assignment) is not offered, the Command Prompt session keeps no variables.
+- **Evidence state:** UNIT_VERIFIED on Ubuntu 24.04.5 (real files)
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

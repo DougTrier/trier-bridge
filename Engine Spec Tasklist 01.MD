@@ -19,7 +19,7 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner's console acceptance |
-| **Last completed** | shutdown /s and /r through logind (IMP-07.10); quality report refreshed (2026-09-21 06:50 PM CDT) |
+| **Last completed** | findstr, find, where, set, path, tree, %VAR% expansion (IMP-07.11) (2026-09-21 07:30 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
@@ -234,6 +234,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-07.04** Reject unknown/unparsed syntax without shell fallback. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection tests).
 - [x] **IMP-07.05** Implement bounded output/history/redaction. Evidence: `docs/VALIDATION.md` entry IMP-07.
 - [x] **IMP-07.06** Integrate real `pwsh` where selected/available. Evidence: `docs/VALIDATION.md` entry IMP-07.06/07 (`powershell` Bridge command and Terminal button open an installed pwsh in the desktop terminal; explains the snap when absent; never bundled).
+- [x] **IMP-07.11** `findstr`, `find`, `where`, `set`, `path`, `tree`, `exit`, `%VAR%` expansion, teaching for attrib/icacls/takeown. Evidence: entry IMP-07.11.
 - [x] **IMP-07.10** `shutdown /s|/r [/t n]` as a confirmed logind action (execution deliberately unverified in the VM). Evidence: entry IMP-07.10.
 - [x] **IMP-07.09** Familiar commands beyond the MVP list: `explorer`, `start`, `net start|stop` (and teaching for user/use/share/view), `date`, `time`, `taskkill /IM`, teaching entries for sfc, chkdsk, xcopy, robocopy, gpedit. Evidence: entry IMP-07.09.
 - [x] **IMP-07.08** Network diagnostics a Windows user types first: `ping`, `tracert`, `nslookup`, `ipconfig /flushdns` (plus Test-Connection, Resolve-DnsName, Clear-DnsClientCache). Evidence: entry IMP-07.08.
