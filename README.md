@@ -162,7 +162,7 @@ As of September 20, 2026:
 - eight implementation foundation stages defined
 - implementation stack **not selected**
 - production code **not started**
-- CQS **NOT MEASURED**
+- CQS **94 / 100** (all eight categories measured; release still locked)
 - runtime qualification **NOT RUN**
 
 The project is intentionally separating design claims from implementation evidence.

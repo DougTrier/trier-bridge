@@ -23,7 +23,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
-| **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
+| **CQS** | 94 / 100, all eight categories measured for the first time (cognitive complexity and bandit now in the pinned toolchain; see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
 | **Next bounded step** | CQ-03 concurrency contract in ENGINEERING (done in section 14.1; close in report) → CQ-09 performance budget → owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06 |

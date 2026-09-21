@@ -1,11 +1,11 @@
 # CODE-QUALITY-REPORT.md
 # Trier Bridge Code Quality Report
 
-**Candidate:** commit `4385ef7` (Foundations 01–07 closed, SCOPE-14 integrations, Foundation 08 automated parts done, CQ-05..08 remediated; package 0.1.0~dev1)  
-**Timestamp:** 2026-09-21 11:30 AM CDT  
-**CQS:** **NOT MEASURED**  
-**Assessed weight:** 85 / 100 (seven of eight categories have current evidence)  
-**Observed on assessed weight:** 82.5 of 85 (not normalized to 100 by rule)  
+**Candidate:** commit `72745c6` (Foundations 01–07 closed, SCOPE-14 integrations, Foundation 08 automated parts done, CQ-02..09 remediated; package 0.1.0~dev1)  
+**Timestamp:** 2026-09-21 12:40 PM CDT  
+**CQS:** **94 / 100** (all eight categories measured; first numeric result)  
+**Assessed weight:** 100 / 100  
+**Observed:** 94 of 100  
 **Release quality:** NOT ASSESSED (no release candidate; release locked)
 
 Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with evidence. A category with any unmeasured criterion is NOT MEASURED as a whole; a numeric CQS exists only when all eight categories are measured.
@@ -18,9 +18,9 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 |---|---|
 | Source scope | `trier_bridge/` (10,995 lines, 60 files), `tests/` (2,836 lines, 33 files: unit, integration, the polkit test agent), `tools/dev.py`, `data/integrations/tb_nautilus.py` |
 | Environment | `tb-ubuntu-desktop-2404` (Ubuntu 24.04.5, GNOME 46 Wayland, software rendering) and Windows host `.venv` with identical tool versions |
-| Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 |
-| Commands | `python3 tools/dev.py all`; `flake8 --select=C901 --max-complexity=10 trier_bridge`; `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script (line counts, suppression and broad-catch inventory, longest functions) |
-| Test results | host: 99 unit passed, 5 skipped (need `gi` or POSIX permission bits); VM: 115 unit passed, 1 skipped (needs three programs for one file type), 42 integration passed, 1 skipped (console-only over SSH) |
+| Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), flake8-cognitive-complexity 0.1.0, bandit 1.6.2, mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 (all from the Ubuntu 24.04 archive, mirrored on the host) |
+| Commands | `python3 tools/dev.py all` (now includes `security` and `complexity`); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script (line counts, suppression and broad-catch inventory, longest functions) |
+| Test results | host: 100 unit passed, 5 skipped (need `gi` or POSIX permission bits); VM: 116 unit passed, 1 skipped (needs three programs for one file type), 42 integration passed, 1 skipped (console-only over SSH); bandit: 0 findings after four `assert` statements were replaced by explicit checks |
 
 ---
 
@@ -30,14 +30,14 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 |---|---:|---|---:|---|
 | Architecture / boundaries | 20 | purposes and dependency direction documented in package docstrings and `docs/ENGINEERING.md` (1); acyclic: `core` imports only the standard library; `system`, `state`, `operations`, `bridge`, `integrations`, `apps`, `desktop` import `core`/`config`; `ui` imports all of them; nothing imports `ui` except `__main__` (1); single mutable-state authority per kind: `config.py` writes files, `state/journal.py` owns operation records, `state/preferences.py` owns preferences, `integrations/ledger.py` owns the integration record and re-reads before every change (1); explicit domain/interfaces/adapters: typed `Operation`/`OperationResult`, `StableIdentity` protocol with four implementations (process, unit, file, default-app), adapters `system/*` behind `Bus` (1); cohesive responsibilities, no generic managers (1) | 20 | MEASURED |
 | Readability / naming | 15 | Trier Bridge vocabulary throughout (Operation, CapabilityState, ProcessIdentity, UnitIdentity, FileIdentity, MimeIdentity, TerminatePlan, FilePlan, ServicePlan, DefaultAppPlan, Integration) (1); accurate names (1); understandable control flow: fifteen functions above cyclomatic 10 are dispositioned below; none is flagged for splitting (1); consistent state/result terms matching `docs/STATE-AND-PERSISTENCE.md` (1); coherent module scope (1) | 15 | MEASURED |
-| Complexity | 15 | cyclomatic: 15 functions above 10, maximum 18 (`MainWindow._build_page`, a flat dispatch); `read_devices`, `execute_service`, `read_storage`, and `plan_file` were decomposed today (0.5); cognitive complexity: no tool in the pinned toolchain, not measured (NM); nesting review: deepest nesting three levels (0.5); function/module scope: longest function 92 lines (`Discovery.environment`), largest module `ui/window.py` 480 lines (0.5); duplicated decision review: one state machine, one identity comparison per kind, one redaction function, one atomic write, one ledger, one plan→confirm→execute shape reused by four operation kinds (1) | — | **NOT MEASURED** (one criterion) |
+| Complexity | 15 | cyclomatic: 15 functions above 10, maximum 18 (`MainWindow._build_page`, a flat dispatch); `read_devices`, `execute_service`, `read_storage`, and `plan_file` were decomposed today (0.5); cognitive complexity: 24 functions above 15 (flake8-cognitive-complexity, threshold 15), maximum 31, all dispositioned below; three are queued for decomposition (0.5); nesting review: deepest nesting three levels (0.5); function/module scope: longest function 92 lines (`Discovery.environment`), largest module `ui/window.py` 480 lines (0.5); duplicated decision review: one state machine, one identity comparison per kind, one redaction function, one atomic write, one ledger, one plan→confirm→execute shape reused by four operation kinds (1) | 9 | MEASURED |
 | Documentation / rationale | 15 | API ownership/errors/side effects in module and class docstrings (1); privilege/security assumptions stated (`operations/*`, `integrations/*`, `bridge/*`, `docs/PRIVILEGE-MODEL.md` section 8) (1); persistence/recovery documented (`config.py`, `state/journal.py`, `integrations/ledger.py`) (1); concurrency/lifecycle: worker threads hand results to the main loop through `GLib.idle_add`; the polkit test agent documents its own thread and private connection; the contract is written in `docs/ENGINEERING.md` section 14.1 (1); compatibility decisions cite `TB-INV-###` and decision IDs (1) | 15 | MEASURED |
 | Testing / regression | 15 | tests map to invariants by `TB-T###` in docstrings (1); 115 unit tests on real files, real child processes, the real Trash, the real mimeapps.list; no mocks (1); integration/negative tests against live services: 42 in the VM (systemd, polkit through a real agent, NetworkManager, udisks2, journald, sysfs, D-Bus activation, loopback ext4 faults) (1); failure/lifecycle/recovery cases: state-machine refusals, disk-full and kill-mid-write recovery, stale identity for four target kinds, PARTIAL restart, denied and dismissed authorization, read-only ledger (1); candidate-specific regression evidence: `docs/TEST-STRATEGY.md` section 7 maps SECURITY section 37 to tests with gaps named; same revision run on host and VM; installed `.deb` exercised through AT-SPI (1) | 15 | MEASURED |
-| Static-analysis health | 10 | build diagnostics: package builds with no warnings; lintian silent (1); lint and type analysis: flake8 and mypy strict clean (1); security/safety findings: no dedicated analyzer; manual grep shows zero subprocess/shell/os.system in the product, the single match is a docstring saying so (0.5); suppression inventory: 119, all of three documented kinds, listed below (1); resource/nullability/unsafe/boundary warnings: mypy strict with `warn_unreachable` clean (1) | 9 | MEASURED |
+| Static-analysis health | 10 | build diagnostics: package builds with no warnings; lintian silent (1); lint and type analysis: flake8 and mypy strict clean (1); security/safety findings: bandit 1.6.2 over the product reports zero findings (four low-severity `assert` uses were replaced by explicit checks today); manual grep still shows zero subprocess/shell/os.system in the product (1); suppression inventory: 119, all of three documented kinds, listed below (1); resource/nullability/unsafe/boundary warnings: mypy strict with `warn_unreachable` clean (1) | 10 | MEASURED |
 | Dependency hygiene | 5 | necessity: no runtime dependency beyond Ubuntu Desktop defaults; `python3-nautilus` is a Recommends used only when the Files integration is on (1); pins: `docs/TOOLCHAIN.md` and `debian/control` version floors (1); license/provenance: all first-party Apache-2.0 plus Ubuntu packages (1); maintenance/security/platform: Ubuntu 24.04 LTS set (1); transitive/package cost: 86 KB `.deb`, Installed-Size 469 KB, zero new packages pulled (1) | 5 | MEASURED |
 | Dead code / duplication | 5 | unused paths: pyflakes clean (1); unreachable branches: mypy `warn_unreachable` clean (1); exact duplicates: none found by reading; the two directory classes are now `config.Paths` and `integrations.catalog.UserDirs` (1); semantic duplicates / state authority: one authority each (1); standalone foundations distinguished and labelled (1) | 5 | MEASURED |
 
-**Why NOT MEASURED:** the complexity category has no cognitive-complexity evidence because no such analyzer is in the pinned Ubuntu toolchain. Adding one is a toolchain change (`docs/TOOLCHAIN.md` section 5); until then this report lists the observed criteria separately, as the standard requires.
+**Complexity is measured for the first time:** `python3-flake8-cognitive-complexity` 0.1.0 is in the Ubuntu 24.04 archive and is now pinned (`docs/TOOLCHAIN.md`), so the category has all five criteria and the CQS is numeric. The score is honest about the outliers: they are dispositioned, not hidden, and the three largest are queued (CQ-10).
 
 ---
 
@@ -56,6 +56,39 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | `config.py: atomic_write_bytes` | 12 | The whole atomic-write protocol including temp-file creation failure. Kept; covered by disk-full and kill tests. |
 | `ui/window.py: _on_row_selected`, `system/network.py: read_network` | 12, 12 | Flat per-section start and per-device walk. Kept. |
 | `bridge/cmdlets.py: translate`, `catalog/model.py: Catalog.load`, `integrations/tray.py: Tray.menu_call`, `operations/defaults.py: execute_default` | 11 each | One branch per parameter form, per schema rule, per protocol method, per verify outcome. Kept. |
+
+---
+
+## Cognitive-complexity outlier disposition (> 15, flake8-cognitive-complexity)
+
+| Function | Cognitive | Disposition |
+|---|---:|---|
+| `system/processes.py: ProcessSampler.sample` | 31 | procfs parsing for every process with per-field tolerance and CPU delta bookkeeping. **CQ-10.** |
+| `operations/files.py: execute_file` | 31 | revalidate, one GIO call per verb, error classification, per-verb verify in one place so the journal sees every step. **CQ-10** (move the per-verb call and verify into a table). |
+| `system/network.py: read_network` | 29 | NetworkManager object walk: devices, active connections, IP4/IP6 configs, DNS. **CQ-10.** |
+| `capability/discovery.py: Discovery.environment` | 29 | one guarded read per fact; nesting stays at two levels. Kept. |
+| `system/devices.py: _class_devices` | 28 | the per-class sysfs pass with skip rules and name rules already split out. Kept; a further split would scatter the skip rules. |
+| `bridge/grammar.py: tokenize` | 25 | the CMD quoting state machine; each branch is one quoting rule with a test. Kept. |
+| `operations/defaults.py: execute_default` | 24 | revalidate, write, verify with plain results; reviewed. Kept. |
+| `ui/window.py: _on_row_selected` | 22 | one `if` per page that must start loading; flat. Kept. |
+| `bridge/cmdlets.py: translate` | 22 | parameter grammar for cmdlets; each branch has a unit test. Kept. |
+| `apps/inventory.py: installed_apps` | 22 | walks several application directories with provenance rules. Kept; candidate after CQ-10. |
+| `ui/app.py: _dev_snapshot` | 21 | development aid only, never on the product path. Kept. |
+| `config.py: atomic_write_bytes` | 20 | the atomic-write protocol; covered by fault tests. Kept. |
+| `bridge/grammar.py: parse` | 20 | grammar plus cmdlet hook. Kept. |
+| `bridge/commands.py: cmd_dir` | 20 | Windows-style listing with sizes, dates, hidden filter. Kept. |
+| `ui/window.py: _build_page` | 19 | flat page dispatch. Kept. |
+| `system/journal.py: newest` | 19 | sd-journal cursor walk with bounded reads. Kept. |
+| `bridge/commands.py: cmd_netstat` | 19 | /proc/net parsing for TCP/UDP tables. Kept. |
+| `ui/network.py: _show` | 18 | row building for adapters and addresses. Kept. |
+| `catalog/model.py: Catalog.load` | 18 | one branch per schema rule. Kept. |
+| `system/startup.py: read_startup` | 17 | autostart entry parsing with hidden/only-show-in rules. Kept. |
+| `system/devices.py: IdDatabase._load` | 17 | pci.ids/usb.ids parser. Kept. |
+| `bridge/commands.py: cmd_ipconfig` | 17 | ipconfig rendering per adapter. Kept. |
+| `ui/devices.py: _show` | 16 | row building per device category. Kept. |
+| `operations/process.py: execute_terminate` | 16 | the TERM/KILL lifecycle. Kept. |
+
+The 15 cyclomatic outliers above and these 24 overlap in 11 functions. The host mirror of the plugin (PyPI 0.1.0) reports 20 of the 24; the VM run with the Ubuntu package is the one this report uses. Both lists are produced by `python3 tools/dev.py complexity` and must be re-dispositioned here whenever a function enters either list.
 
 ---
 
@@ -94,19 +127,20 @@ No baseline files, no disabled rules, no lowered thresholds. Broad `except Excep
 | ID | Priority (CODE-QUALITY section 7) | Task | State |
 |---|---|---|---|
 | CQ-01 | 8 compatibility | Integration tests against live services. | done (42 in the VM) |
-| CQ-02 | 10 complexity | Decide whether to add a cognitive-complexity analyzer to `docs/TOOLCHAIN.md`. | open (none in the Ubuntu archive) |
+| CQ-02 | 10 complexity | Decide whether to add a cognitive-complexity analyzer to `docs/TOOLCHAIN.md`. | done: `python3-flake8-cognitive-complexity` 0.1.0 (Ubuntu archive) pinned; `tools/dev.py complexity` reports |
 | CQ-03 | 11 documentation | Document the concurrency/lifecycle contract (worker threads hand results to the main loop through `GLib.idle_add`; no shared mutable state) in `docs/ENGINEERING.md`. | done (section 14.1) |
-| CQ-04 | 2 security | Evaluate `python3-bandit` from the Ubuntu archive as the security analyzer. | open |
+| CQ-04 | 2 security | Evaluate `python3-bandit` from the Ubuntu archive as the security analyzer. | done: bandit 1.6.2 pinned; `tools/dev.py security` gates on any finding |
 | CQ-05 | 10 complexity | Split `execute_service` into per-action verification helpers. | done (revalidate, call, per-kind verify) |
 | CQ-06 | 10 complexity | Decompose `read_storage` per object kind as `read_devices` was. | done |
 | CQ-07 | 11 readability | Rename `integrations.catalog.Paths` (user home dirs) so it cannot be confused with `config.Paths`. | done (`UserDirs`) |
 | CQ-08 | 10 complexity | Split `plan_file` per verb. | done (mkdir, rmdir, trash, transfer) |
 | CQ-09 | 9 performance | Write a performance budget (startup, idle CPU, memory per page) into `docs/ENGINEERING.md` and measure on hardware with a GPU. | budget written (section 11.1); GPU measurement open |
+| CQ-10 | 10 complexity | Decompose the three largest cognitive outliers: `ProcessSampler.sample` (31), `execute_file` (31), `read_network` (29). | open |
 
 ---
 
 ## Current result
 
-> **CQS: NOT MEASURED** (assessed weight 85 of 100; observed 82.5 of 85; complexity category incomplete)
+> **CQS: 94 / 100** (all eight categories measured: architecture 20, readability 15, complexity 9, documentation 15, testing 15, static analysis 10, dependencies 5, dead code 5)
 
-This is the truthful result for candidate `4385ef7`.
+This is the truthful result for candidate `72745c6`. It is an engineering quality score, not a release verdict: release stays locked and the hard gates above still list what is unverified.
