@@ -22,6 +22,7 @@ Files:
 
 - `New-TbDesktopVm.ps1` creates the VM. Elevated PowerShell required.
 - `Remove-TbDesktopVm.ps1` turns it off, unregisters it, and deletes its folder. Elevated PowerShell required.
+- `tb-pad.py` / `tb-pad.cmd` shared notepad and file drop between host and VM (see below).
 - `autoinstall/user-data`, `autoinstall/meta-data` are the unattended-install answers. They are copied onto a 64 MB seed disk labeled `CIDATA`, which the Ubuntu installer reads as a cloud-init NoCloud datasource.
 
 Storage: `G:\tb-vms\iso\` holds the ISO and `SHA256SUMS`; `G:\tb-vms\<vm-name>\` holds the disks. Nothing is placed in the Hyper-V default path on C:.
@@ -57,6 +58,33 @@ powershell -ExecutionPolicy Bypass -File "G:\0001 Trier Bridge\tools\env\Remove-
 ```
 
 The ISO folder is kept for reuse; delete it by hand if no longer wanted.
+
+## Shared notepad and file drop (tb-pad)
+
+Hyper-V has no clipboard for Linux guests, so `tb-pad.py` serves a small page reachable from both the host and the VM. No guest changes, no RDP, no sudo.
+
+Start it on the host, which also opens the page (closing the console window or Ctrl+C stops it):
+
+```bash
+tools\env\tb-pad --open
+```
+
+The Windows desktop folder `Trier Bridge` holds a shortcut that does exactly that, plus shortcuts for the VM console and the project. The Ubuntu desktop has a `tb-pad` launcher that opens the same page; it finds the host through the VM's default gateway, so it keeps working if the switch subnet changes after a host reboot.
+
+The server binds only to the host's address on the Default Switch (read from `ipconfig`, normally `172.20.240.1`), so nothing off that switch can reach it, and it has no login by design. Page: textarea, Save, Ctrl+S, `raw`, `files`.
+
+From a shell (host has `curl`; Ubuntu Desktop ships `wget`, not `curl`):
+
+| Action | Host (curl) | VM (wget) |
+|---|---|---|
+| read the note | `curl -s http://172.20.240.1:8000/text` | `wget -qO- http://172.20.240.1:8000/text` |
+| run the note as a script | | `wget -qO- http://172.20.240.1:8000/text \| sh` |
+| replace the note from a file | `curl --data-binary @f http://172.20.240.1:8000/text` | `wget -qO- --post-file=f http://172.20.240.1:8000/text` |
+| upload a file | `curl -T f http://172.20.240.1:8000/files/f` | `wget -qO- --method=PUT --body-file=f http://172.20.240.1:8000/files/f` |
+| download a file | `curl -O http://172.20.240.1:8000/files/f` | `wget http://172.20.240.1:8000/files/f` |
+| list files | open `/files/` | open `/files/` |
+
+State (the note and dropped files) lives under `reports/local/pad/`, which is gitignored so pasted commands and files never enter history; `--state DIR` keeps it elsewhere. Other options: `--port`, `--peer`, `--bind`, `--allow-any`. File names are restricted to a safe character set, path escapes are rejected, uploads are capped at 64 MB, and chunked uploads (piped `curl -T -`) are accepted.
 
 ## Evidence
 

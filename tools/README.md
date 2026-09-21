@@ -52,6 +52,7 @@ Requires Python 3.12 or newer on PATH. No packages beyond the standard library.
 | `tb headers` | Source-header compliance per `docs/LICENSING.md`. | Once code exists. |
 | `tb all` | `links`, `inv`, `terms`, `headers` in one run. | Pre-review gate. |
 | `tb-env.ps1 [-Json]` | Host environment profile for evidence records. | When recording an environment in `docs/VALIDATION.md`. |
+| `env\tb-pad --open` | Shared notepad and file drop reachable from the host and the test VM. | Whenever text or files need to cross into or out of the VM. |
 
 `<file>` arguments accept a path or a bare name; `SECURITY.md` resolves to `docs/SECURITY.md`.
 
@@ -82,5 +83,5 @@ tools/
   tb-env.ps1      host profile (PowerShell-native)
   tb-config.json  ignore lists, file classes, term rules, header policy
   tbtools/        common, snapshot, ledger, links, invariants, terms, headers, outline
-  env/            disposable test environments: Hyper-V VM create/remove scripts, autoinstall seed, README
+  env/            test environment: Hyper-V VM create/remove scripts, autoinstall seed, tb-pad notepad/file drop, README
 ```
