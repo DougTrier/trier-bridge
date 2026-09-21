@@ -447,30 +447,3 @@ class SettingsPage(Gtk.Box):  # type: ignore[misc]
                 group.add(row)
         page.add(group)
         self.append(_scrolled(page))
-
-
-class EntryPointPage(Gtk.Box):  # type: ignore[misc]
-    """Printers / Network: the familiar entry points now; live status in Foundation 04."""
-
-    def __init__(
-        self,
-        title: str,
-        description: str,
-        actions: tuple[tuple[str, str, Callable[[], LaunchResult]], ...],
-        notify: Callable[[str], None],
-    ) -> None:
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
-        page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title=title, description=description)
-        for label, subtitle, action in actions:
-            row = _row(title=label, subtitle=subtitle)
-            row.add_suffix(
-                _open_button(
-                    "Open",
-                    f"{label}. Nothing is changed by opening it.",
-                    partial(_report, notify, action),
-                )
-            )
-            group.add(row)
-        page.add(group)
-        self.append(_scrolled(page))

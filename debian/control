@@ -17,7 +17,7 @@ Depends: ${python3:Depends},
          python3-gi (>= 3.48),
          gir1.2-gtk-4.0 (>= 4.14),
          gir1.2-adw-1 (>= 1.5)
-Recommends: python3-nautilus (>= 4.0)
+Recommends: python3-cups, python3-nautilus (>= 4.0)
 Description: Windows-to-Linux experience compatibility layer
  Trier Bridge gives Windows users a familiar place for the things they
  already know how to do on Linux. It runs entirely as the signed-in user,

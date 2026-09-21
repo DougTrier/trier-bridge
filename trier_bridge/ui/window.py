@@ -38,10 +38,12 @@ from ..catalog.model import Catalog  # noqa: E402
 from ..desktop.launch import Launcher, LaunchResult  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
 from ..desktop.screenshot import ScreenshotRequest  # noqa: E402
-from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
+from .pages import AppsPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
 from .devices import DeviceManagerPage, StartupPage  # noqa: E402
 from .disks import DisksPage  # noqa: E402
 from .eventviewer import EventViewerPage  # noqa: E402
+from .help import HelpPage  # noqa: E402
+from .printers import PrintersPage  # noqa: E402
 from .integrations import IntegrationsPage, SetupDialog  # noqa: E402
 from .network import NetworkPage  # noqa: E402
 from .services import ServicesPage  # noqa: E402
@@ -281,6 +283,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 self._services.start()
             if section.key == "startup":
                 self._startup.start()
+            if section.key == "printers":
+                self._printers.start()
             if section.key == "integrations":
                 self._integrations.refresh()
             self._title.set_title(section.title)
@@ -374,19 +378,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             self._events = EventViewerPage()
             return self._events
         if section.key == "printers":
-            return EntryPointPage(
-                "Printers",
-                "Add a printer, see queues, and pick a default in the Printers settings. "
-                "Live printer status inside Trier Bridge arrives in a later foundation.",
-                (
-                    (
-                        "Printers settings",
-                        "Windows: Printers & scanners · Linux: GNOME Settings (CUPS)",
-                        lambda: self._launcher.open_settings_panel("printers"),
-                    ),
-                ),
-                self.notify,
-            )
+            self._printers = PrintersPage(self._launcher, self.notify)
+            return self._printers
         if section.key == "network":
             self._network = NetworkPage(self._launcher, self.notify)
             return self._network
@@ -421,12 +414,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             self._sysinfo = SystemInfoPage(discover)
             return self._sysinfo
         if section.key == "help":
-            return self._status(
-                "Help",
-                "The Manual is optional. A normal user should be productive without it. "
-                "Help content arrives with the features it explains.",
-                "help-browser-symbolic",
-            )
+            app = self.get_application()
+            return HelpPage(self._catalog, app.paths, self._launcher, self.notify)
         if section.key == "integrations":
             app = self.get_application()
             self._integrations = IntegrationsPage(app.ledger, self.notify)

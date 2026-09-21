@@ -40,7 +40,7 @@ warn_unreachable = true
 packages = ["trier_bridge"]
 # PyGObject has no complete type stubs on the target; UI modules isolate gi imports.
 [[tool.mypy.overrides]]
-module = ["gi", "gi.*"]
+module = ["gi", "gi.*", "cups"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
