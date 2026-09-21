@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | Page walks for drive letters, Files, Network, and the interrupted-operation banner, plus `test_journeys_vm.py`. Correction (2026-09-21 01:55 PM CDT): a main `trier-bridge --section home` window has in fact been running continuously since 08:58 AM CDT, holding the `org.triertech.TrierBridge` D-Bus name (`pgrep -a trier-bridge` misses it because its process name is `python3`, not `trier-bridge` — an easy trap for a future session); a fresh test-launched instance would activate that one instead of starting cleanly, so it needs quitting first. Separately, and regardless of that window's state: these all need `Atspi.get_desktop()`, which only works from a process launched inside the interactive console login session — proven not reproducible over SSH even with every session env var copied (entry IMP-03.09 addendum, 2026-09-21). Needs someone at the VM console to quit the lingering window, open a terminal there, and run `WAYLAND_DISPLAY=wayland-0 python3 -m pytest tests/integration/test_journeys_vm.py -m integration`, plus walk Disk Management/Files/Network by hand or script from that same terminal. |
+| **Active task** | Resolved 2026-09-21 02:20 PM CDT. Root cause was not "SSH vs. console" (that was a wrong intermediate conclusion, corrected in the IMP-03.09 addendum): `at-spi-bus-launcher`'s socket file had been deleted from the filesystem while its process kept the descriptor open, so *no* new connection — SSH or console — could reach it. The owner restarted the stuck launcher/dbus-daemon/registryd trio at the console (`kill 70301 70315 70352`; D-Bus-activated back within seconds); a stale single-instance window running since 08:58 AM was also closed. `test_journeys_vm.py` then passed 3/3 from the owner's own terminal; Disk Management and Network page walks (including the IPv4 dialog) were then driven and recorded over SSH once the bus was healthy — entries IMP-04.07 and IMP-06.06 addenda. Only the Files page walk remains queued; nothing is blocking it now except doing it. |
 | **Last completed** | IMP-07.13 closed: nslookup's resolver calls bounded by a wall-clock timeout, closing Foundation 07's last open item; IMP-06.08 polkit-caching false-alarm clarified (2026-09-21 01:45 PM CDT) |
 | **Implementation** | Foundations 01–07 fully closed (13/13, 9/9); Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | 94 / 100, unchanged on refresh for candidate 28f6988 (cognitive outliers 33 → 31, cyclomatic and suppressions unchanged; see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | scoped but not started: IMP-02.07 needs either a second distro/desktop (IMP-08.03, its own owner-run VM) or an owner-approved masked-service fixture inside the existing VM (fault injection against a shared, in-use environment needs a named approval under `AGENTS.md` section 15) — owner decides which; otherwise owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06, whether the VM window can close for the queued page walks |
+| **Next bounded step** | Files page AT-SPI walk (drive letters shown there, per IMP-04.07); IMP-02.07 scoped but not started, needs either a second distro/desktop (IMP-08.03, its own owner-run VM) or an owner-approved masked-service fixture inside the existing VM (fault injection against a shared, in-use environment needs a named approval under `AGENTS.md` section 15) — owner decides which; otherwise owner: TB-IA acceptance at the console, screenshot on hardware |
 
 ---
 
@@ -190,6 +190,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **IMP-03.08** Screenshot/clipboard/common shortcut support.
   - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); Ctrl+Shift+Esc shipped as an individual Shortcuts integration (entry SCOPE-14). Print Screen is now an action through the desktop portal (entry IMP-03.08) but the GNOME backend never answers in the GPU-less VM, so the screenshot itself stays NOT VERIFIED until run on hardware; clipboard stays teaching only. Item stays open for that verification.
 - [x] **IMP-03.09** Everyday office-user interaction tests. Evidence: `docs/VALIDATION.md` entry IMP-03.09 (three journeys driven through AT-SPI in the console session). Usability acceptance by a person stays under IMP-08.04.
+  - 2026-09-21 02:20 PM CDT: reconfirmed (3/3 passed again from the owner's own console terminal) after fixing an unrelated, session-specific accessibility-bus outage; the fix and root-cause correction are recorded as an addendum on this entry.
 
 ---
 
@@ -208,6 +209,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 ---
 
 - [x] **IMP-04.07** (Evidence: entry IMP-04.07.) Drive letters as a familiar label (DEC-024): C: for the Linux system drive, D:, E:, ... for other mounted volumes, shown in Disk Management, Files, and the Command Prompt next to the real path; `C:\Users\<name>` resolves to `/home/<name>`.
+  - 2026-09-21 02:20 PM CDT: the Disk Management page walk done and recorded (entry IMP-04.07 addendum) — C:/D: shown correctly with mount point, filesystem, and free space. The Files page walk is still queued.
 
 ---
 
@@ -230,6 +232,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
 - [x] **IMP-06.05** Implement selected service control. Evidence: `docs/VALIDATION.md` entry IMP-06.05.
 - [x] **IMP-06.06** Implement selected network/package mutations only if separately qualified. Evidence: entry IMP-06.06 (network translation layer on a dummy interface; packages out of scope by DEC-024).
+  - 2026-09-21 02:20 PM CDT: the Network page walk done and recorded (entry IMP-06.06 addendum) — adapter facts, Disconnect/IPv4… buttons, and the IPv4 dialog (switch, three entry rows, Cancel/Apply) all confirmed over AT-SPI; closed with Cancel, nothing changed on the real adapter.
   - 2026-09-21 (DEC-024): packages are out of scope for good (no App Center, no install/remove). Network changes are in scope as a translation layer: adapter on/off, connect/disconnect a profile, static IPv4 address/gateway/DNS, back to automatic; each a typed class C operation through NetworkManager under polkit, qualified on a dummy interface in the VM, never on its uplink.
 - [x] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior. Evidence: `docs/VALIDATION.md` entries IMP-06.04/06.05 (stale target, denial without an agent) and IMP-06.07 (granted and dismissed prompts through a real polkit agent, user-manager re-exec). Limitation recorded: systemd 255 reports a dismissed prompt as access denied; expiry is polkit's cache and not exercised.
   - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
