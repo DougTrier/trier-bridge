@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-08.01 clean-chroot build (sbuild) and IMP-08.03 single-profile statement; acceptance cases 08.04/05/06 need a person |
-| **Last completed** | SCOPE-14: setup screen, Integrations page, tray icon T, search provider, Files extension, shortcut; all verified live from the installed .deb (2026-09-21 03:55 AM CDT) |
-| **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
+| **Active task** | Quality remediation CQ-05..08 while the acceptance cases (IMP-08.04/05/06) wait for a person at the console |
+| **Last completed** | IMP-08.01: clean sbuild chroot build identical to two in-VM builds; SCOPE-06..13 and ARC-03..14 closed with evidence (2026-09-21 10:30 AM CDT) |
+| **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-08.01 clean-chroot build → IMP-08.03 profile statement → CODE-QUALITY-REPORT refresh → SCOPE-06..13 and ARC-03..14 write-ups → acceptance cases with the owner |
+| **Next bounded step** | CQ-07 rename → CQ-05 split execute_service → CQ-06 read_storage → CQ-08 plan_file → IMP-03.08 clipboard/screenshot beyond teaching → acceptance cases with the owner |
 
 ---
 
@@ -235,17 +235,22 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Foundation 08 — Integrated qualification and packaging
 
-- [ ] **IMP-08.01** Build selected native packages/installers.
+- [x] **IMP-08.01** Build selected native packages/installers. Evidence: entries IMP-01 (reproducible in one environment), SCOPE-14 (contents), IMP-08.01 (clean `sbuild` chroot build identical to the in-VM build; changelog dating defect found and fixed).
   - 2026-09-21: the `.deb` now carries the tray, search provider, Files extension, catalog, and three man pages; built and installed from the tree in the VM, lintian silent (entry SCOPE-14). Open: a build from a clean chroot and a second environment.
 - [x] **IMP-08.02** Verify clean install/upgrade/uninstall and ownership. Evidence: `docs/VALIDATION.md` entry IMP-08.02 (purge, reinstall, in-place upgrade dev0 → dev1 with per-user state byte-identical). Open: downgrade and a second environment.
   - 2026-09-21: install and purge verified on the VM with integrations on: `apt-get purge` left nothing under `/usr` (113 owned paths gone) and kept every per-user file (ledger, autostart entry, search-provider files); reinstall restored the three commands and the existing autostart entry started the tray as login would. Open: upgrade between two versions (only one version exists) and a second environment.
 - [ ] **IMP-08.03** Run selected distro/desktop matrix.
+  - 2026-09-21: the first-release matrix is one cell, Ubuntu 24.04 LTS / GNOME 46 Wayland (`docs/PLATFORMS.md` section 10), and that cell is verified by every entry. A second environment (another machine, an X11 session, an Ubuntu flavour) is the open work; nothing beyond the one cell is claimed.
 - [ ] **IMP-08.04** Run office-user usability acceptance.
+  - 2026-09-21: needs a person at the console (TB-IA cases, `docs/VALIDATION.md` section 6). What automation already covers: every page and dialog reachable and named over AT-SPI, the setup flow, file operations, and default apps driven through the accessibility interface (entries SCOPE-14, IMP-03.03, IMP-03.05).
 - [ ] **IMP-08.05** Run Windows power-user continuity acceptance.
+  - 2026-09-21: needs a person. Automation covers the Bridge Terminal vocabulary (entries IMP-07, IMP-07.06/07), Task Manager, Services, Event Viewer, Device Manager, Disk Management against live facts (IMP-04, IMP-06.04, IMP-06.05).
 - [ ] **IMP-08.06** Run accessibility/localization acceptance.
+  - 2026-09-21: `docs/ACCESSIBILITY.md`: TB-A11Y-01..05 verified over AT-SPI; 06 (keyboard only), 07 (Orca), 08 (large text, high contrast) need a person; no localization exists yet (English only).
 - [x] **IMP-08.07** Run security/recovery/fault qualification. Evidence: entries IMP-05 (disk full, read-only, permission loss, kill mid-write on a real loopback filesystem), IMP-06.04/06.05/06.07 (stale target, denial, dismissal, grant, backend re-exec), IMP-06.08 (regression mapping with named gaps).
 - [x] **IMP-08.08** Run performance/resource qualification. Evidence: entry IMP-08.08 (startup, memory, idle CPU, tray, search provider, package size; Task Manager CPU defect found and fixed). Open: a written budget and a measurement on hardware with a GPU.
 - [ ] **IMP-08.09** Produce exact release CQS and known-limitations report.
+  - 2026-09-21: release is locked (owner direction); the current report is `CODE-QUALITY-REPORT.md` (CQS NOT MEASURED by rule until a cognitive-complexity analyzer exists, CQ-02); known limitations are the Failures/limitations lines of every entry and the gaps in `docs/TEST-STRATEGY.md` section 7.
 
 ---
 

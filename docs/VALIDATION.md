@@ -477,6 +477,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** no performance budget is written down yet (candidate for `docs/ENGINEERING.md`); figures come from one VM under software rendering, not from hardware with a GPU; the after-fix number was taken from the checkout run, the installed package is rebuilt from the same revision next.
 - **Evidence state:** DISTRO_VERIFIED (measured) on Ubuntu 24.04.5; defect fixed and re-measured
 
+### IMP-08.01 — Clean-chroot build (sbuild) reproduces the in-VM build bit for bit
+
+- **Timestamp:** 2026-09-21 10:30 AM CDT
+- **Candidate revision:** d689fb6 (package 0.1.0~dev1)
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02) as the build host; a fresh `noble` buildd chroot created with `sbuild-createchroot` from archive.ubuntu.com (main and universe; `pybuild-plugin-pyproject` lives in universe); `sbuild` 0.85 as shipped by Ubuntu 24.04
+- **Files/modules:** `debian/*`, `debian/source/format` (`3.0 (native)`), `debian/changelog`
+- **Invariant impact:** TB-INV-027/028 (build provenance: the same source yields the same package in a clean environment), TB-SEC release-provenance gate (`CODE-QUALITY-REPORT.md`), TB-INV-004 (the earlier mismatch is reported and explained, not hidden)
+- **Expected result:** the source package builds in a clean chroot with only declared build dependencies; the resulting `.deb` is identical to two consecutive in-VM builds of the same tree; lintian is silent; the chroot-built package installs.
+- **Observed result:** `dpkg-buildpackage -S` produced `trier-bridge_0.1.0~dev1.dsc` and `.tar.xz`; `sbuild -d noble` installed the five declared build dependencies inside the chroot and built the package. SHA-256 of in-VM build 1, in-VM build 2 (two seconds later), and the chroot build: all `d2d599d0…507e49`. lintian silent; `apt-get install --reinstall` of the chroot build succeeded and `trier-bridge --version` reports 0.1.0.dev1. **Found on the way:** the first chroot build differed from the in-VM build only in file mtimes because the dev1 changelog entry carried a time later than the build itself, so `SOURCE_DATE_EPOCH` clamping did nothing; dating the entry at its real time fixed it (commit d689fb6). File contents had been identical throughout (`diff -r` of the unpacked trees was empty).
+- **Tests/checks:** `dpkg-buildpackage -S -us -uc -d`; `sbuild -d noble --no-run-lintian`; `dpkg-buildpackage -us -uc -b` twice; `sha256sum`; `dpkg-deb -R` + `diff -r`; `lintian`; `apt-get install`.
+- **Artifacts/logs:** `/tmp/sbuild3.log`, `/tmp/b1.log`, `/tmp/b2.log` in the VM; session transcript.
+- **Failures/limitations:** one build host (the VM) and one chroot; a build on a different machine has not been compared yet. The chroot was created with `--components=main` first and needed universe added; `docs/PACKAGING.md` should say so for the next person.
+- **Evidence state:** DISTRO_VERIFIED on Ubuntu 24.04.5; reproducible across environment
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

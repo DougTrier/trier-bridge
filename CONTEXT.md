@@ -1,8 +1,8 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-21 04:15 AM CDT  
+**Last updated:** 2026-09-21 10:30 AM CDT  
 **Owner:** Doug Trier  
-**Project state:** INTEGRATIONS SHIPPED AND VERIFIED; QUALIFICATION (FOUNDATION 08) AND REMAINING 03/06/07 ITEMS NEXT  
+**Project state:** FOUNDATIONS 01–07 CLOSED; FOUNDATION 08 AUTOMATED PARTS DONE; ACCEPTANCE CASES NEED THE OWNER  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
 **CQS:** NOT MEASURED  
 
@@ -52,6 +52,7 @@ Administration and command translation are deeper layers.
 - SCOPE-01..05 written from an in-guest research probe: delivery model, privilege model (no helper needed), packaging, research plan with findings, test strategy (2026-09-20 11:55 PM CDT)
 - live research R2/R17/R18 done in the VM session; stack proposal `docs/STACK-SELECTION.md` written as DEC-020 (proposed) (2026-09-21 12:05 AM CDT)
 - R1 Nautilus extension load and R12 PowerShell-on-Linux verified after the owner enabled sudo in the VM (2026-09-21 12:20 AM CDT)
+- Foundations 03/06/07 mutations closed (file operations, default apps, polkit grant/dismiss via a real test agent, PowerShell entry and cmdlet names, sc stop through the terminal); regression set mapped; SCOPE-06..13 and ARC-03..14 closed; upgrade in place, purge, performance measurement (Task Manager CPU defect fixed), clean sbuild chroot build identical to in-VM builds (2026-09-21 10:30 AM CDT)
 - SCOPE-14 done: first-run setup screen, Integrations page (per-item switches, whole-group, Turn everything off), tray icon T (StatusNotifierItem + dbusmenu), GNOME search provider, Files context-menu extension, Ctrl+Shift+Esc shortcut; all verified live from the installed `.deb`; purge/reinstall verified; CODE-QUALITY-REPORT refreshed for candidate 078048d (2026-09-21 04:10 AM CDT)
 - Services control (user scope verified, system denial verified) and Bridge Terminal read-only vocabulary verified live (2026-09-21 03:15 AM CDT)
 - Foundation 05 complete with loopback fault tests; End task (first typed mutation) verified live (2026-09-21 03:05 AM CDT)
@@ -62,12 +63,12 @@ Administration and command translation are deeper layers.
 
 ### Not yet done
 
-- Foundation 03 mutations: file operations (IMP-03.03/04), app install/default-app changes (IMP-03.05), office-user interaction tests (IMP-03.09)
-- Foundation 06: finite privileged-operation schema and authorization binding written down (IMP-06.01/02), network/package mutations (IMP-06.06), the polkit grant/cancel/backend-restart set driven end to end (IMP-06.07), security/failure regression set (IMP-06.08)
-- Foundation 07: real `pwsh` mode and compatibility cmdlets (IMP-07.06/07)
-- Foundation 08: build from a clean chroot, upgrade between versions, distro/desktop matrix beyond Ubuntu 24.04, the TB-IA acceptance cases (need a person at the console), performance and fault qualification, exact release CQS
-- SCOPE-06..13 and ARC-03..14 write-ups (several are satisfied by the code and evidence but not yet closed as documents)
-- first-release derivative and desktop/session matrix freeze
+- acceptance cases that need a person at the console: office-user usability (IMP-08.04), Windows power-user continuity (IMP-08.05), keyboard-only, Orca, large text (IMP-08.06, TB-A11Y-06..08)
+- IMP-03.08 screenshot/clipboard behaviour beyond teaching; IMP-03.09 office-user interaction tests
+- IMP-06.06 network and package mutations: deliberately not started; needs its own qualification and an owner decision
+- IMP-08.03 a second environment (another machine, X11, an Ubuntu flavour); IMP-08.09 release CQS (release locked)
+- SCOPE-12 name and trademark check before any public step
+- quality remediation CQ-02..09 (`CODE-QUALITY-REPORT.md`)
 - release (locked; local Git only)
 
 ---

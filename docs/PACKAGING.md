@@ -48,6 +48,10 @@ Not in the package: polkit rules (never), a systemd system service (none in the 
 - **Architecture** is declared (`amd64` first); dpkg refuses mismatches (TB-INV-030).
 - **Dependencies** are declared explicitly and kept minimal. Every runtime dependency is justified in the dependency inventory (`CODE-QUALITY.md` section 21). A dependency already present on Ubuntu Desktop by default costs nothing; one that pulls a new stack onto the machine is a review item.
 
+## 4a. Clean build
+
+A clean build uses `sbuild` with a `noble` buildd chroot that carries **main and universe** (`pybuild-plugin-pyproject` is in universe): `sudo sbuild-createchroot noble /srv/chroot/noble-amd64-sbuild http://archive.ubuntu.com/ubuntu`, then add `universe` to the chroot's `/etc/apt/sources.list`, then `dpkg-buildpackage -S -us -uc -d` and `sbuild -d noble trier-bridge_<version>.dsc`. The result must match `dpkg-buildpackage -us -uc -b` from the same tree byte for byte; it does when the top `debian/changelog` entry is not dated in the future (`SOURCE_DATE_EPOCH` comes from that date and only clamps mtimes newer than it). Evidence: `VALIDATION.md` entry IMP-08.01.
+
 ## 5. Updates
 
 First release: updates arrive the same way the package did. Until a signed repository exists, that means a new `.deb` installed by the user. No self-update mechanism is built (ARC-12: deferred by this document). When a repository is introduced, it is signed with a project key, the key handling is an owner-gated release step (TB-INV-219), and the app's Updates view shows Trier Bridge updates through PackageKit like any other package.
