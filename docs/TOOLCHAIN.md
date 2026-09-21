@@ -32,6 +32,7 @@ Not bundled, only invoked if installed: `pwsh` (PowerShell snap 7.6.5 observed).
 | black | `black` | 24.2.0-1ubuntu1 | formatting, line length 100 |
 | flake8 | `python3-flake8` | 7.0.0-1 | lint (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0) |
 | debhelper | `debhelper` | 13.14.1ubuntu5 | `.deb` build |
+| Python build dependency | `python3-all` | 3.12.3-0ubuntu2.1 | required by `Build-Depends` |
 | dh-python | `dh-python` | 6.20240401 | Python packaging helper |
 | pybuild pyproject plugin | `pybuild-plugin-pyproject` | 6.20240401 | build from `pyproject.toml` |
 | setuptools | `python3-setuptools` | 68.1.2-2ubuntu1.2 | build backend |
@@ -54,6 +55,7 @@ Host mirror (Windows, `.venv`, gitignored): `black==24.2.0`, `mypy==1.9.0`, `pyt
 A build is reproducible when, from a clean `git archive` of a tagged revision on the VM with the packages above:
 
 1. `python3 tools/dev.py all` exits 0;
+   (`dpkg-buildpackage -us -uc -b` produces `trier-bridge_<version>_all.deb`; `lintian` is clean apart from justified overrides;)
 2. the `.deb` builds with `SOURCE_DATE_EPOCH` set to the commit time;
 3. building twice yields identical package hashes;
 4. the package content matches the ownership table in `PACKAGING.md`.

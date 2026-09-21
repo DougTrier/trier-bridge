@@ -61,10 +61,10 @@ Rejected alternatives are recorded above so the decision can be revisited with n
 ## 5. What Foundation 01 pins if this is accepted
 
 - Python 3.12.x, PyGObject 3.48.x, GTK 4.14.x, libadwaita 1.5.x as minimum versions (the Ubuntu 24.04 set).
-- Development tools: `ruff` (lint and format), `mypy` (strict), `pytest` (with real objects only, per `TEST-STRATEGY.md`), `lintian` for packages.
+- Development tools from the Ubuntu 24.04 archive: `black` (format), `flake8` (lint), `mypy` (strict), `pytest` (with real objects only, per `TEST-STRATEGY.md`), `lintian` for packages. (`ruff` is not in the archive; see `TOOLCHAIN.md`.)
 - Module skeleton following `ENGINEERING.md` section 4; source headers verified by `tb headers`.
 - The first measured baseline for `CODE-QUALITY-REPORT.md`.
 
-## 6. Decision requested
+## 6. Decision
 
-Accept ARC-01 and ARC-02 as above (recorded as DEC-020, proposed), or name the alternative to evaluate further. Evaluating candidate B live in the VM is possible once a Rust toolchain can be installed there (requires sudo in the guest).
+Accepted as DEC-020 on 2026-09-21 under owner delegation. Candidate B can still be evaluated live in the VM if a measured hotspot ever calls for it.

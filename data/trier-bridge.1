@@ -1,0 +1,49 @@
+.\" Copyright 2026 Doug Trier
+.\" SPDX-License-Identifier: Apache-2.0
+.TH TRIER-BRIDGE 1 "2026-09-21" "trier-bridge 0.1.0~dev0" "User Commands"
+.SH NAME
+trier-bridge \- Windows-to-Linux experience compatibility layer
+.SH SYNOPSIS
+.B trier-bridge
+.RI [ \-\-version ]
+.RI [ \-\-verbose ]
+.SH DESCRIPTION
+.B Trier Bridge
+gives Windows users a familiar place for the things they already know how to do
+on Linux: files, apps, settings, printers, network, and familiar troubleshooting
+tools such as Task Manager, Event Viewer, Device Manager, Disk Management, and
+Services. Linux stays authoritative underneath. The application runs entirely as
+the signed-in user; it installs no daemon and no privileged helper. Privileged
+operations, when they exist, go through the system's own polkit-mediated
+services and prompt the way GNOME Settings does.
+.PP
+This is a development build. Views that are not implemented say so and change
+nothing on the computer.
+.SH OPTIONS
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.B \-\-verbose
+Also write the log to standard error.
+.SH FILES
+Trier Bridge writes only under its own per-user directories:
+.TP
+.I ~/.config/trier-bridge/
+preferences and the integration ledger
+.TP
+.I ~/.local/state/trier-bridge/logs/
+bounded, redacted log files
+.TP
+.I ~/.local/state/trier-bridge/journal/
+operation journal and recovery records
+.PP
+Removing the package does not delete these per-user files; the application
+offers "Remove all integrations" and the directories above can be deleted by
+the user.
+.SH ENVIRONMENT
+Standard XDG base directory variables are honoured.
+.SH AUTHOR
+Doug Trier
+.SH LICENSE
+Apache License, Version 2.0.
