@@ -589,6 +589,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** `start` knows six program names; anything else must be a path or address; `net start|stop` targets system services only (like `sc`); the Files window opened by `explorer` stays open after the test.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-07.10 — shutdown /s and /r through logind
+
+- **Timestamp:** 2026-09-21 06:50 PM CDT
+- **Candidate revision:** f8746cb
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); logind answers `CanPowerOff`/`CanReboot` = challenge for the tb account over SSH (polkit asks)
+- **Files/modules:** `trier_bridge/bridge/grammar.py`, `commands.py` (`cmd_shutdown`, `power_ability`, `power_action`), `tests/unit/test_shutdown.py`
+- **Invariant impact:** TB-INV-094/104 (the command yields a plan; nothing happens before the dialog), TB-INV-109/110 (one logind call under polkit with ALLOW_INTERACTIVE_AUTHORIZATION; the product holds no privilege), TB-INV-078 (the preview names the consequence for unsaved work and other signed-in users), TB-INV-004 (`/a` says there is nothing scheduled instead of pretending)
+- **Expected result:** `shutdown /r /t 10` returns a plan reading "Restart this computer after 10 seconds? ..."; `/s` the same for power off; a denied account gets DENIED before any plan; malformed forms are refused; the power action itself was **never executed** in the VM.
+- **Observed result:** live in the VM: NEEDS_CONFIRMATION with the preview "Restart this computer after 10 seconds? Unsaved work in other programs may be lost; other users signed in here are affected too. Linux will ask for permission."; unit tests cover every refusal and the plan heading; the execution path is the same `ActionPlan` dialog as flushdns and was not confirmed by any test. Full VM integration run: 53 passed with the 3 journeys excluded while the owner's window is open (56 in all).
+- **Tests/checks:** `tools/dev.py all` (host and VM); `pytest tests/unit/test_shutdown.py` in the VM.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the reboot and power-off calls are unverified by execution (running them would end the VM session and the owner's work); the delay waits inside the worker thread, so closing the window during the wait cancels nothing already promised, which the preview does not say yet.
+- **Evidence state:** UNIT_VERIFIED plus a live plan; execution NOT VERIFIED by design
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

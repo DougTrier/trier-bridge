@@ -20,7 +20,7 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | Environment | `tb-ubuntu-desktop-2404` (Ubuntu 24.04.5, GNOME 46 Wayland, software rendering) and Windows host `.venv` with identical tool versions |
 | Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), flake8-cognitive-complexity 0.1.0, bandit 1.6.2, mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 (all from the Ubuntu 24.04 archive, mirrored on the host) |
 | Commands | `python3 tools/dev.py all` (now includes `security` and `complexity`); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script (line counts, suppression and broad-catch inventory, longest functions) |
-| Test results | host: 105 unit passed, 10 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 133 unit passed, 1 skipped; integration 57 in the console session (network dummy interface, diagnostics, familiar commands included); bandit: 0 findings |
+| Test results | host: 105 unit passed, 10 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 133 unit passed, 1 skipped; integration 56 in the console session (network dummy interface, diagnostics, familiar commands included); bandit: 0 findings |
 
 ---
 
