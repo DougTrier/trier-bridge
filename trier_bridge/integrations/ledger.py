@@ -11,7 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration ledger: the exact record that makes every integration reversible."""
+"""Integration ledger: the exact record that makes every integration reversible.
+
+The file is shared between the Bridge window and the tray process (its menu can
+turn the tray integration off), so the ledger re-reads the file before every
+query and every change instead of trusting an in-memory copy.
+"""
 from __future__ import annotations
 
 import time
@@ -42,6 +47,13 @@ class IntegrationLedger:
         self._applied: dict[str, AppliedIntegration] = {}
         self._load()
 
+    def reload(self) -> None:
+        """Re-read the file; the tray process may have changed it."""
+        self._applied = {}
+        self.setup_completed = False
+        self.read_only = False
+        self._load()
+
     def _load(self) -> None:
         try:
             doc = load_json(self.path)
@@ -67,24 +79,30 @@ class IntegrationLedger:
         return self.path.is_file()
 
     def is_applied(self, integration_id: str) -> bool:
+        self.reload()
         return integration_id in self._applied
 
     def get(self, integration_id: str) -> AppliedIntegration | None:
+        self.reload()
         return self._applied.get(integration_id)
 
     def applied_ids(self) -> list[str]:
+        self.reload()
         return sorted(self._applied)
 
     def record(self, rec: AppliedIntegration) -> None:
+        self.reload()
         rec.app_version = rec.app_version or self.app_version
         self._applied[rec.integration_id] = rec
         self._save()
 
     def forget(self, integration_id: str) -> None:
+        self.reload()
         self._applied.pop(integration_id, None)
         self._save()
 
     def mark_setup_completed(self) -> None:
+        self.reload()
         self.setup_completed = True
         self._save()
 

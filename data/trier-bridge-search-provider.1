@@ -1,0 +1,28 @@
+.\" Copyright 2026 Doug Trier
+.\" SPDX-License-Identifier: Apache-2.0
+.TH TRIER-BRIDGE-SEARCH-PROVIDER 1 "2026-09-21" "trier-bridge 0.1.0~dev0" "User Commands"
+.SH NAME
+trier-bridge-search-provider \- Windows words in the GNOME desktop search
+.SH SYNOPSIS
+.B trier-bridge-search-provider
+.SH DESCRIPTION
+A GNOME Shell search provider (SearchProvider2). When the "Windows words in the
+desktop search" integration is on, typing a Windows name such as "Add or Remove
+Programs" or "Task Manager" in Activities shows the matching Trier Bridge entry;
+choosing it opens Trier Bridge at that place.
+.PP
+It is started by D-Bus activation only while a search is running and exits after
+a minute without requests. It is not started at all unless the integration is on.
+Answers come from the concept catalog shipped in
+.IR /usr/share/trier-bridge/catalog .
+.SH FILES
+.TP
+.I ~/.local/share/gnome-shell/search-providers/org.triertech.TrierBridge.search-provider.ini
+tells GNOME Shell about the provider (written by the integration)
+.TP
+.I ~/.local/share/dbus-1/services/org.triertech.TrierBridge.SearchProvider.service
+lets the session bus start it on demand (written by the integration)
+.SH SEE ALSO
+.BR trier-bridge (1)
+.SH AUTHOR
+Doug Trier

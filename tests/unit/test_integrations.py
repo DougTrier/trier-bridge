@@ -98,6 +98,20 @@ def test_tray_autostart_entry_is_per_user_and_hidden(tmp_path: Path) -> None:
     assert not (paths.config / "autostart" / "org.triertech.TrierBridge.Tray.desktop").exists()
 
 
+def test_ledger_follows_changes_made_by_another_process(tmp_path: Path) -> None:
+    """The tray process can turn itself off; the window must see that, not a stale copy."""
+    paths = _paths(tmp_path)
+    window = IntegrationLedger(tmp_path / "ledger.json")
+    tray = IntegrationLedger(tmp_path / "ledger.json")
+    assert catalog.apply("tray-icon", window, paths).ok
+    assert tray.is_applied("tray-icon")
+    assert catalog.remove("tray-icon", tray).ok
+    assert not window.is_applied("tray-icon")
+    assert catalog.apply("familiar-launchers", tray, paths).ok
+    window.mark_setup_completed()
+    assert IntegrationLedger(tmp_path / "ledger.json").applied_ids() == ["familiar-launchers"]
+
+
 def test_ledger_survives_reload_and_marks_setup(tmp_path: Path) -> None:
     ledger = IntegrationLedger(tmp_path / "ledger.json")
     ledger.mark_setup_completed()

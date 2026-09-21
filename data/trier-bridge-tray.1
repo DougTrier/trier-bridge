@@ -1,0 +1,32 @@
+.\" Copyright 2026 Doug Trier
+.\" SPDX-License-Identifier: Apache-2.0
+.TH TRIER-BRIDGE-TRAY 1 "2026-09-21" "trier-bridge 0.1.0~dev0" "User Commands"
+.SH NAME
+trier-bridge-tray \- the Trier Bridge tray icon "T"
+.SH SYNOPSIS
+.B trier-bridge-tray
+.RI [ \-\-verbose ]
+.SH DESCRIPTION
+Shows a small "T" in the top bar with a menu that opens Trier Bridge, opens its
+Integrations page, or turns the tray icon off. It is a StatusNotifierItem and is
+displayed by the desktop's AppIndicator support (enabled by default on Ubuntu).
+.PP
+It runs only if the user turned the "Tray icon T at login" integration on; then
+a per-user autostart entry starts it at login. Turning the integration off, from
+the menu or from the Integrations page, closes the icon and deletes that entry.
+If no StatusNotifier host is present it exits after two minutes.
+.SH OPTIONS
+.TP
+.B \-\-verbose
+Also write the log to standard error.
+.SH FILES
+.TP
+.I ~/.config/autostart/org.triertech.TrierBridge.Tray.desktop
+the autostart entry written by the integration
+.TP
+.I ~/.config/trier-bridge/integrations.json
+the integration ledger it updates when turned off from its menu
+.SH SEE ALSO
+.BR trier-bridge (1)
+.SH AUTHOR
+Doug Trier
