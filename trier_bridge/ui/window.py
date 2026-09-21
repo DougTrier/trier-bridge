@@ -40,6 +40,7 @@ from .devices import DeviceManagerPage, StartupPage  # noqa: E402
 from .disks import DisksPage  # noqa: E402
 from .eventviewer import EventViewerPage  # noqa: E402
 from .network import NetworkPage  # noqa: E402
+from .services import ServicesPage  # noqa: E402
 from .taskmanager import TaskManagerPage  # noqa: E402
 
 
@@ -128,7 +129,7 @@ SECTIONS: tuple[Section, ...] = (
         "Troubleshooting",
         available=True,
     ),
-    Section("services", "Services", "system-run-symbolic", "Services", "Advanced"),
+    Section("services", "Services", "system-run-symbolic", "Services", "Advanced", available=True),
     Section(
         "terminal", "Command Prompt", "utilities-terminal-symbolic", "Command Prompt", "Advanced"
     ),
@@ -263,6 +264,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 self._disks.start()
             if section.key == "devices":
                 self._devices.start()
+            if section.key == "services":
+                self._services.start()
             if section.key == "startup":
                 self._startup.start()
             self._title.set_title(section.title)
@@ -337,6 +340,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if section.key == "devices":
             self._devices = DeviceManagerPage()
             return self._devices
+        if section.key == "services":
+            app = self.get_application()
+            self._services = ServicesPage(getattr(app, "journal", None), self.notify)
+            return self._services
         if section.key == "startup":
             self._startup = StartupPage()
             return self._startup
