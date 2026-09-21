@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 import threading
 from functools import partial
+from pathlib import Path
 from typing import Callable
 
 import gi
@@ -35,6 +36,7 @@ from ..apps.inventory import DefaultApp, InstalledApp, default_apps, installed_a
 from ..catalog.model import Catalog, Concept, Equivalence, RouteKind  # noqa: E402
 from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
 from ..system.driveletters import letters  # noqa: E402
+from .filebrowser import FileBrowserPage  # noqa: E402
 from ..operations.defaults import (  # noqa: E402
     Candidate,
     DefaultAppPlan,
@@ -189,7 +191,10 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
 
 
 class FilesPage(Gtk.Box):  # type: ignore[misc]
-    """Familiar places, opened in the desktop's own file manager (TB-INV-073: real paths shown)."""
+    """Familiar places. Real local folders browse in-app (DEC-025, Phase 1); the three
+    GVfs-virtual locations (Recycle Bin, Removable drives, Network) still hand off to
+    Files, the Linux file manager, since they are not real paths ``filelisting`` can read.
+    """
 
     PLACES = (
         ("This Computer", "home", "Your home folder"),
@@ -206,20 +211,52 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
 
     def __init__(self, launcher: Launcher, notify: Callable[[str], None]) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self._stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
+        self._stack.set_vexpand(True)
+        self._stack.add_named(self._build_overview(launcher, notify), "overview")
+
+        browser_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        back_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        back_bar.set_margin_start(12)
+        back_bar.set_margin_top(6)
+        back = Gtk.Button(label="◀ Familiar places")
+        back.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            ["Return to the familiar places list. Nothing changes."],
+        )
+        back.connect("clicked", lambda *_: self._stack.set_visible_child_name("overview"))
+        back_bar.append(back)
+        browser_box.append(back_bar)
+        self._browser = FileBrowserPage(launcher, notify)
+        browser_box.append(self._browser)
+        self._stack.add_named(browser_box, "browser")
+
+        self.append(self._stack)
+
+    def _build_overview(self, launcher: Launcher, notify: Callable[[str], None]) -> Gtk.Widget:
         page = Adw.PreferencesPage()
         group = Adw.PreferencesGroup(
             title="Familiar places",
             description=(
-                "These open in Files, the Linux file manager. The real folder path is shown "
-                "under each name."
+                "Browse opens the place right here in Trier Bridge. Open uses Files, the "
+                "Linux file manager, instead."
             ),
         )
         for title, key, hint in self.PLACES:
-            path = folder_path(key) if "://" not in key else key
+            is_virtual = "://" in key
+            path = key if is_virtual else folder_path(key)
             subtitle = path or "Not set up on this computer"
             if hint:
                 subtitle = f"{hint} · {subtitle}"
             row = _row(title=title, subtitle=subtitle)
+            if path and not is_virtual:
+                row.add_suffix(
+                    _open_button(
+                        "Browse",
+                        f"Browse {title} in Trier Bridge. Nothing is changed.",
+                        partial(self._browse, Path(path)),
+                    )
+                )
             if path:
                 row.add_suffix(
                     _open_button(
@@ -233,11 +270,18 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
         drives = Adw.PreferencesGroup(
             title="Drives",
             description="C: is the Linux system drive; other mounted volumes get the next letters. "
-            "The real folder is shown and is what Files opens.",
+            "The real folder is shown; Browse stays in Trier Bridge, Open uses Files.",
         )
         for d in letters():
             what = "/" if d.mount_point == "/" else d.mount_point
             row = _row(title=f"{d.display}  {d.label}", subtitle=what)
+            row.add_suffix(
+                _open_button(
+                    "Browse",
+                    f"Browse {d.display} ({what}) in Trier Bridge. Nothing is changed.",
+                    partial(self._browse, Path(what)),
+                )
+            )
             row.add_suffix(
                 _open_button(
                     "Open",
@@ -259,7 +303,11 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
         ):
             tips.add(_row(title=t, subtitle=s))
         page.add(tips)
-        self.append(_scrolled(page))
+        return _scrolled(page)
+
+    def _browse(self, path: Path) -> None:
+        self._browser.navigate_to(path)
+        self._stack.set_visible_child_name("browser")
 
     @staticmethod
     def _open(launcher: Launcher, notify: Callable[[str], None], key: str, title: str) -> None:
