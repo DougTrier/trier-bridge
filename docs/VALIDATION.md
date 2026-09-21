@@ -635,7 +635,7 @@ Do not record planned behavior as observed evidence.
 ### IMP-07.13 — nslookup's resolver calls bounded by a wall-clock timeout (TB-INV-101)
 
 - **Timestamp:** 2026-09-21 01:45 PM CDT
-- **Candidate revision:** working tree at parent `d914efa` (not yet committed at time of writing; see the commit that carries this entry)
+- **Candidate revision:** e6ad2f8 (tested in the VM as a working-tree stash-commit archive against parent d914efa, before this commit existed)
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); tree pushed by `git archive` of a stash-commit over SSH (working-tree changes, no separate commit yet); host `.venv` for the platform-independent checks
 - **Files/modules:** `trier_bridge/system/netdiag.py` (`_bounded`, `RESOLVE_TIMEOUT_S`, `lookup`), `tests/unit/test_netdiag.py` (`test_bounded_enforces_a_real_wall_clock_deadline`)
 - **Invariant impact:** TB-INV-101 (commands that may hang must have documented timeout/cancellation behavior) — an audit of every blocking call reachable from a Bridge command found exactly one with no native bound: `socket.getaddrinfo`/`socket.getfqdn` inside `nslookup`'s `lookup()`. Every D-Bus call already goes through `Bus`, bounded by `CALL_TIMEOUT_MS` (TB-INV-041); `ping`/`tracert` hand off to a separate terminal window and return immediately; file/tree/search commands read local disk only. This closes the "timeout/cancellation of long commands still open" caveat left on the second IMP-07.08 ledger line for the one command it actually applied to.
