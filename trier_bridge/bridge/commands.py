@@ -180,11 +180,8 @@ def _text_lines(target: Path) -> list[str] | CommandOutput:
     return raw[:MAX_FILE_BYTES].decode("utf-8", "replace").splitlines()
 
 
-def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOutput:
-    """The shared body of findstr and find: bounded, read-only, binary files skipped."""
-    pattern = cmd.args[0]
-    fold = "i" in cmd.switches
-    needle = pattern.casefold() if fold else pattern
+def _search_targets(session: Session, files: list[str]) -> list[Path] | CommandOutput:
+    """The files a search names, wildcards allowed in the file name part."""
     targets: list[Path] = []
     for spec_text in files:
         p = _path_arg(session, spec_text)
@@ -198,32 +195,46 @@ def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOu
             return CommandOutput(Exit.FAILED, (f"File not found - {spec_text}",), "grep", False)
     if not targets:
         return CommandOutput(Exit.FAILED, ("File not found",), "grep", False)
+    return targets
+
+
+def _match_lines(text: list[str], needle: str, fold: bool, invert: bool) -> list[tuple[int, str]]:
+    out = []
+    for no, line in enumerate(text, 1):
+        hay = line.casefold() if fold else line
+        matched = needle in hay
+        if invert:
+            matched = not matched
+        if matched:
+            out.append((no, line))
+    return out
+
+
+def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOutput:
+    """The shared body of findstr and find: bounded, read-only, binary files skipped."""
+    pattern = cmd.args[0]
+    fold = "i" in cmd.switches
+    needle = pattern.casefold() if fold else pattern
+    targets = _search_targets(session, files)
+    if isinstance(targets, CommandOutput):
+        return targets
     lines: list[str] = []
     for t in targets:
         text = _text_lines(t)
         if isinstance(text, CommandOutput):
             return text
-        hits = 0
-        for no, line in enumerate(text, 1):
-            hay = line.casefold() if fold else line
-            matched = needle in hay
-            if "v" in cmd.switches:
-                matched = not matched
-            if not matched:
-                continue
-            hits += 1
-            if "c" in cmd.switches:
-                continue
-            prefix = f"{t.name}:" if len(targets) > 1 else ""
+        hits = _match_lines(text, needle, fold, "v" in cmd.switches)
+        if "c" in cmd.switches:
+            lines.append(f"{t.name}: {len(hits)}")
+            continue
+        prefix = f"{t.name}:" if len(targets) > 1 else ""
+        for no, line in hits:
             number = f"{no}:" if "n" in cmd.switches else ""
             lines.append(f"{prefix}{number}{line}")
-        if "c" in cmd.switches:
-            lines.append(f"{t.name}: {hits}")
     if not lines:
         return CommandOutput(Exit.FAILED, (f"No lines contain '{pattern}'.",), "grep", True)
-    return _bounded(
-        lines, "grep" + (" -i" if fold else "") + (" -n" if "n" in cmd.switches else "")
-    )
+    flags = (" -i" if fold else "") + (" -n" if "n" in cmd.switches else "")
+    return _bounded(lines, "grep" + flags)
 
 
 def cmd_findstr(cmd: BridgeCommand, session: Session) -> CommandOutput:
