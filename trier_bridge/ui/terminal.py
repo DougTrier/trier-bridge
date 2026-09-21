@@ -97,6 +97,14 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         self.append(bar)
         self._append(f"Trier Bridge Terminal, Bridge Mode. Current folder: {self._session.cwd}\n")
 
+    def change_folder(self, folder: Path) -> None:
+        """Start at a folder chosen in Files (integration); nothing is run."""
+        if folder.is_dir():
+            self._session.cwd = folder
+            self._append(f"Current folder: {folder}\n")
+        else:
+            self._append(f"Folder not found: {folder}\n")
+
     # ---- output buffer, bounded --------------------------------------------------
     def _append(self, text: str) -> None:
         end = self._buffer.get_end_iter()

@@ -27,7 +27,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..config import atomic_write_text
+from ..config import StateWriteError, atomic_write_text
 from ..resources import data_dir
 from .ledger import AppliedIntegration, IntegrationLedger
 
@@ -132,6 +132,16 @@ FAMILIAR_LAUNCHERS: tuple[tuple[str, str, str, str], ...] = (
 
 CATALOG: tuple[Integration, ...] = (
     Integration(
+        "tray-icon",
+        "Essentials",
+        "Tray icon T at login",
+        "Shows a small T in the top bar with a menu to open Trier Bridge or change "
+        "integrations; it starts at login.",
+        "Closes the icon and deletes its autostart entry from your home folder.",
+        "StatusNotifier icon through the AppIndicator extension; per-user XDG autostart entry",
+        True,
+    ),
+    Integration(
         "search-provider",
         "Essentials",
         "Windows words in the desktop search",
@@ -201,6 +211,17 @@ def _apply_search_provider(paths: Paths, written: list[str]) -> None:
         "[Shell Search Provider]\n"
         f"DesktopId={APP_ID}.desktop\nBusName={BUS_NAME}\n"
         f"ObjectPath={OBJ_PATH}\nVersion=2\n",
+        written,
+    )
+
+
+def _apply_tray_icon(paths: Paths, written: list[str]) -> None:
+    exe = shutil.which("trier-bridge-tray") or "/usr/bin/trier-bridge-tray"
+    _write(
+        paths.config / "autostart" / f"{APP_ID}.Tray.desktop",
+        _desktop_entry("Trier Bridge tray icon", "The T in the top bar", exe, "")
+        .replace("Terminal=false", "Terminal=false\nNoDisplay=true")
+        .replace("StartupNotify=true", "X-GNOME-Autostart-enabled=true"),
         written,
     )
 
@@ -276,7 +297,9 @@ def apply(
     rec = AppliedIntegration(integration_id, time.time())
     written: list[str] = []
     try:
-        if integration_id == "search-provider":
+        if integration_id == "tray-icon":
+            _apply_tray_icon(paths, written)
+        elif integration_id == "search-provider":
             _apply_search_provider(paths, written)
         elif integration_id == "familiar-launchers":
             _apply_familiar_launchers(paths, written)
@@ -290,7 +313,12 @@ def apply(
         log.exception("apply %s failed", integration_id)
         return ApplyResult(False, f"{item.title} could not be set up and was left off. {exc}")
     rec.files_written = written
-    ledger.record(rec)
+    try:
+        ledger.record(rec)
+    except StateWriteError as exc:  # unrecorded means unremovable: undo now
+        for f in written:
+            Path(f).unlink(missing_ok=True)
+        return ApplyResult(False, f"{item.title} was not recorded and was left off. {exc}")
     return ApplyResult(True, f"{item.title}: on.", tuple(written))
 
 

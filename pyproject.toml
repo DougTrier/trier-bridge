@@ -19,6 +19,7 @@ dependencies = []
 [project.scripts]
 trier-bridge = "trier_bridge.__main__:main"
 trier-bridge-search-provider = "trier_bridge.integrations.search_provider:main"
+trier-bridge-tray = "trier_bridge.integrations.tray:main"
 
 [build-system]
 requires = ["setuptools>=68"]

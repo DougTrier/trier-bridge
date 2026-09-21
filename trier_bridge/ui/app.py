@@ -32,6 +32,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from .. import APP_ID, APP_NAME, __version__  # noqa: E402
 from ..config import Paths  # noqa: E402
+from ..integrations.ledger import IntegrationLedger  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
 from ..state.preferences import Preferences  # noqa: E402
 from .window import MainWindow  # noqa: E402
@@ -48,17 +49,41 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         self.journal = journal
         self.options = options or {}
         self.preferences = Preferences(paths.preferences_file)
+        self.ledger = IntegrationLedger(paths.integration_ledger_file, __version__)
         GLib.set_application_name(APP_NAME)
         GLib.set_prgname("trier-bridge")  # AT-SPI application name (RESEARCH F17)
         self._window: MainWindow | None = None
         self._add_action("about", self._on_about)
         self._add_action("quit", lambda *_: self.quit())
+        self._add_param_action("open-section", self._on_open_section)
+        self._add_param_action("open-concept", self._on_open_concept)
+        self._add_param_action("open-terminal-at", self._on_open_terminal_at)
         self.set_accels_for_action("app.quit", ["<Control>q"])
 
     def _add_action(self, name: str, callback: Any) -> None:
         action = Gio.SimpleAction.new(name, None)
         action.connect("activate", callback)
         self.add_action(action)
+
+    def _add_param_action(self, name: str, callback: Any) -> None:
+        action = Gio.SimpleAction.new(name, GLib.VariantType.new("s"))
+        action.connect("activate", callback)
+        self.add_action(action)
+
+    def _on_open_section(self, _action: Any, param: Any) -> None:
+        self.do_activate()
+        if self._window is not None:
+            self._window.select_section(str(param.get_string()))
+
+    def _on_open_concept(self, _action: Any, param: Any) -> None:
+        self.do_activate()
+        if self._window is not None:
+            self._window.open_concept(str(param.get_string()))
+
+    def _on_open_terminal_at(self, _action: Any, param: Any) -> None:
+        self.do_activate()
+        if self._window is not None:
+            self._window.open_terminal_at(str(param.get_string()))
 
     def do_activate(self) -> None:
         if self._window is None:
@@ -68,6 +93,12 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         section = self.options.get("section", "")
         if section:
             self._window.select_section(section)
+        concept = self.options.get("open", "")
+        if concept:
+            self._window.open_concept(concept)
+        self.options = {}
+        if not self.ledger.setup_completed and not self.ledger.read_only:
+            GLib.idle_add(self._window.show_setup)
         self._window.present()
 
     def _on_about(self, *_: Any) -> None:
@@ -133,5 +164,18 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
 def run(
     argv: list[str], paths: Paths, journal: OperationJournal, options: dict[str, str] | None = None
 ) -> int:
-    app = TrierBridgeApplication(paths, journal, options)
+    opts = options or {}
+    app = TrierBridgeApplication(paths, journal, opts)
+    app.register(None)
+    if app.get_is_remote():
+        # Already running: hand the request to that window and leave (single instance).
+        if opts.get("cwd") and opts.get("section") == "terminal":
+            app.activate_action("open-terminal-at", GLib.Variant("s", opts["cwd"]))
+        elif opts.get("section"):
+            app.activate_action("open-section", GLib.Variant("s", opts["section"]))
+        elif opts.get("open"):
+            app.activate_action("open-concept", GLib.Variant("s", opts["open"]))
+        else:
+            app.activate()
+        return 0
     return int(app.run(argv))

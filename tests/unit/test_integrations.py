@@ -86,6 +86,18 @@ def test_files_menu_needs_the_shipped_extension(
     assert catalog.remove("files-menu", ledger).ok
 
 
+def test_tray_autostart_entry_is_per_user_and_hidden(tmp_path: Path) -> None:
+    paths = _paths(tmp_path)
+    ledger = IntegrationLedger(tmp_path / "ledger.json")
+    res = catalog.apply("tray-icon", ledger, paths)
+    assert res.ok and len(res.files) == 1
+    entry = (paths.config / "autostart" / "org.triertech.TrierBridge.Tray.desktop").read_text()
+    assert "NoDisplay=true" in entry and "X-GNOME-Autostart-enabled=true" in entry
+    assert "Exec=" in entry and "trier-bridge-tray" in entry
+    assert catalog.remove("tray-icon", ledger).ok
+    assert not (paths.config / "autostart" / "org.triertech.TrierBridge.Tray.desktop").exists()
+
+
 def test_ledger_survives_reload_and_marks_setup(tmp_path: Path) -> None:
     ledger = IntegrationLedger(tmp_path / "ledger.json")
     ledger.mark_setup_completed()

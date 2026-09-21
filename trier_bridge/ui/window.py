@@ -41,6 +41,7 @@ from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, Settin
 from .devices import DeviceManagerPage, StartupPage  # noqa: E402
 from .disks import DisksPage  # noqa: E402
 from .eventviewer import EventViewerPage  # noqa: E402
+from .integrations import IntegrationsPage, SetupDialog  # noqa: E402
 from .network import NetworkPage  # noqa: E402
 from .services import ServicesPage  # noqa: E402
 from .taskmanager import TaskManagerPage  # noqa: E402
@@ -276,11 +277,35 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 self._services.start()
             if section.key == "startup":
                 self._startup.start()
+            if section.key == "integrations":
+                self._integrations.refresh()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
             prefs = getattr(self.get_application(), "preferences", None)
             if prefs is not None and prefs.get("last_section") != section.key:
                 prefs.set("last_section", section.key)  # durability reported by the result
+
+    def open_concept(self, concept_id: str) -> None:
+        """Open a catalog concept by id (search provider results arrive this way)."""
+        concept = self._catalog.get(concept_id)
+        if concept is None:
+            self.notify("That entry is not in this build of Trier Bridge. Nothing was changed.")
+            return
+        res = self._router.open(concept)
+        self.notify(res.plain if res.ok else f"{res.plain} Nothing was changed.")
+
+    def open_terminal_at(self, folder: str) -> None:
+        self._select("terminal")
+        self._terminal.change_folder(Path(folder))
+
+    def show_setup(self) -> bool:
+        """First-run setup: shown once, never again unless the ledger is reset."""
+        app = self.get_application()
+        SetupDialog(app.ledger, self.notify, self._after_setup).present(self)
+        return False
+
+    def _after_setup(self) -> None:
+        self._integrations.refresh()
 
     def select_section(self, key: str) -> None:
         """Public for tests and development aids: select a sidebar section by key."""
@@ -355,9 +380,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if section.key == "terminal":
             app = self.get_application()
             start = str(getattr(app, "options", {}).get("cwd", "")) or None
-            return TerminalPage(
+            self._terminal = TerminalPage(
                 getattr(app, "journal", None), self.notify, Path(start) if start else None
             )
+            return self._terminal
         if section.key == "startup":
             self._startup = StartupPage()
             return self._startup
@@ -379,13 +405,9 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 "help-browser-symbolic",
             )
         if section.key == "integrations":
-            return self._status(
-                "Integrations",
-                "Nothing has been integrated into your desktop. The setup screen that lets you "
-                "choose integrations in groups arrives in a later foundation. Until then Trier "
-                "Bridge is only this window.",
-                "emblem-system-symbolic",
-            )
+            app = self.get_application()
+            self._integrations = IntegrationsPage(app.ledger, self.notify)
+            return self._integrations
         return self._status(section.title, NOT_YET, section.icon)
 
     def _status(self, title: str, description: str, icon: str) -> Gtk.Widget:
