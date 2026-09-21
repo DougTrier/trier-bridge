@@ -16,6 +16,7 @@
 Development aids (never active unless the environment variable is set):
   TRIER_BRIDGE_DEV_SNAPSHOT=<file.png>  save an image of the main window after it is shown
   TRIER_BRIDGE_DEV_QUIT_AFTER=<seconds> quit automatically (automated runs)
+  TRIER_BRIDGE_DEV_SECTION=<key>       open that sidebar section at start
 """
 from __future__ import annotations
 
@@ -72,6 +73,9 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
     def _install_dev_aids(self, window: MainWindow) -> None:
         snapshot = os.environ.get("TRIER_BRIDGE_DEV_SNAPSHOT", "")
         quit_after = os.environ.get("TRIER_BRIDGE_DEV_QUIT_AFTER", "")
+        section = os.environ.get("TRIER_BRIDGE_DEV_SECTION", "")
+        if section:
+            window.select_section(section)
         if snapshot:
             GLib.timeout_add(1500, self._dev_snapshot, window, snapshot)
         if quit_after:

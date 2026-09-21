@@ -20,7 +20,6 @@ carries an accessible label and description (TB-INV-209).
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,6 +30,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk  # noqa: E402
 
 from .. import APP_NAME, __version__  # noqa: E402
+from ..capability.model import CapabilityRecord, EnvironmentProfile  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -69,6 +69,14 @@ SECTIONS: tuple[Section, ...] = (
     Section("services", "Services", "system-run-symbolic", "Services", "Advanced"),
     Section(
         "terminal", "Command Prompt", "utilities-terminal-symbolic", "Command Prompt", "Advanced"
+    ),
+    Section(
+        "sysinfo",
+        "System Information",
+        "dialog-information-symbolic",
+        "System Information (msinfo32)",
+        "Advanced",
+        available=True,
     ),
     Section(
         "integrations",
@@ -155,8 +163,14 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if row is not None:
             section = SECTIONS[row.get_index()]
             self._content_stack.set_visible_child_name(section.key)
+            if section.key == "sysinfo":
+                self._sysinfo.start()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
+
+    def select_section(self, key: str) -> None:
+        """Public for tests and development aids: select a sidebar section by key."""
+        self._select(key)
 
     def _select(self, key: str) -> None:
         for index, section in enumerate(SECTIONS):
@@ -179,6 +193,16 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
     def _build_page(self, section: Section) -> Gtk.Widget:
         if section.key == "home":
             return self._home_page()
+        if section.key == "sysinfo":
+            from ..capability.discovery import Discovery
+            from .sysinfo import SystemInfoPage
+
+            def discover() -> tuple[EnvironmentProfile, list[CapabilityRecord]]:
+                d = Discovery()
+                return d.environment(), d.capabilities()
+
+            self._sysinfo = SystemInfoPage(discover)
+            return self._sysinfo
         if section.key == "help":
             return self._status(
                 "Help",
@@ -202,14 +226,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         return page
 
     def _home_page(self) -> Gtk.Widget:
-        session = os.environ.get("XDG_SESSION_TYPE", "unknown")
-        desktop = os.environ.get("XDG_CURRENT_DESKTOP", "unknown")
         text = (
-            f"Trier Bridge {__version__} (Foundation 01 shell).\n\n"
-            "This build shows where familiar things will live. It does not read or change "
-            "anything on this computer yet.\n\n"
-            f"Session: {session}. Desktop: {desktop}. "
-            "(These two facts come from the session environment, not from a system scan.)"
+            f"Trier Bridge {__version__} (Foundation 02).\n\n"
+            "This build shows where familiar things will live. The only thing it reads on this "
+            "computer is the read-only check under System Information; it changes nothing."
         )
         return self._status("Everything you know. Linux underneath.", text, "go-home-symbolic")
 
