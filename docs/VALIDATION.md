@@ -449,6 +449,34 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** gaps stay listed in the table: symlink escape and mount boundary (no recursive operation exists yet), dependency failure and live PARTIAL restart, packages and network (no mutation exists), expiry/replay (polkit's own), keyboard-driven Cancel paths exercised by hand only.
 - **Evidence state:** INTEGRATION_VERIFIED on Ubuntu 24.04.5; gaps recorded
 
+### IMP-08.02 — Install, upgrade in place, purge; per-user state and ownership
+
+- **Timestamp:** 2026-09-21 09:40 AM CDT
+- **Candidate revision:** fdc7569 (package versions 0.1.0~dev0 → 0.1.0~dev1)
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); apt on the `.deb` files built from the tree in the VM
+- **Files/modules:** `debian/*`, `data/org.triertech.TrierBridge.metainfo.xml` (release entries), `data/*.1`, `pyproject.toml`, `trier_bridge/__init__.py`
+- **Invariant impact:** TB-INV-025/026 (the package touches `/usr` only; per-user files are the user's and survive purge and upgrade), TB-INV-029 (a newer build read the dev0 ledger and preferences unchanged; no schema bump was needed), DEC-018 g/DEC-019 (integrations kept across the upgrade; no setup screen shown again)
+- **Expected result:** purge removes every packaged path and nothing under the home; reinstall restores the commands; upgrading dev0 → dev1 over a running tray keeps the ledger and preferences byte-identical, the window opens without the setup screen, and the Integrations page shows the same switches.
+- **Observed result:** purge: 113 owned paths gone, 0 left under `/usr`, 7 per-user entries kept, the running tray kept running; reinstall restored three commands and the existing autostart entry started the tray as login would. Upgrade: `Unpacking trier-bridge (0.1.0~dev1) over (0.1.0~dev0)` then `Setting up`; `trier-bridge --version` reported dev1; `integrations.json` and `preferences.json` SHA-256 identical before and after; the dev1 window showed no setup screen and the Integrations page read tray-icon, search provider, and launchers as on; the old tray process (dev0 code) kept running until the next login. lintian silent on dev1.
+- **Tests/checks:** `apt-get purge`, `apt-get install`, `dpkg -L`, `sha256sum`, AT-SPI walk of the Integrations page.
+- **Artifacts/logs:** session transcript; `/tmp/upgrade.log` in the VM.
+- **Failures/limitations:** downgrade dev1 → dev0 was not exercised (the dev0 file had been removed before the attempt); an upgrade across a state-schema change has not happened yet (no schema change exists); a second environment is still missing (IMP-08.03).
+- **Evidence state:** DISTRO_VERIFIED on Ubuntu 24.04.5
+
+### IMP-08.08 — Performance and resource measurement (with one defect found and fixed)
+
+- **Timestamp:** 2026-09-21 09:40 AM CDT
+- **Candidate revision:** fdc7569
+- **Environment/profile:** tb-ubuntu-desktop-2404: 4 vCPU, 10 GB RAM, Hyper-V without GPU acceleration (`hyperv_drm`; GTK falls back to software rendering, so memory figures are an upper bound for this stack), installed package for the window and tray, checkout for the after-fix Task Manager run
+- **Files/modules:** `trier_bridge/ui/taskmanager.py` (row reuse), measurement aid `vm_perf.sh` (outside the repo)
+- **Invariant impact:** TB-INV-203 (no background indexing exists; the only periodic work is the Task Manager sampler while its page is visible), TB-INV-004 (measurements reported as observed; no budget document exists yet, so no pass/fail claim is made)
+- **Expected result:** the window opens in about a second, is idle when idle, and each background process is small and quiet; any page that burns CPU while idle is a defect.
+- **Observed result:** launch to window frame 0.93–0.95 s (three runs, installed command). Window RSS 257 MB on Home, 268 MB Task Manager, 286 MB Event Viewer, 296 MB Services, 280 MB Device Manager; 16 threads; idle CPU 0 ticks in 10 s on Home, Event Viewer, Services, Device Manager. **Defect:** the Task Manager page used 941 ticks in 10 s (94% of a core) because the list rebuilt every row every 2 s; after reusing rows it uses 25 ticks in 10 s with 230 processes (sampler alone 9 ms per sample). Tray icon: 24.8 MB RSS, 0 CPU over 10 s, 4 hours up. Search provider: 42 ms cold (D-Bus activation to first answer), 4 ms warm, 23 MB, exits after 60 s idle. Package: 87,748 bytes, Installed-Size 469 KB; per-user state 1.8 KB config, 12.6 KB state (logs and journal).
+- **Tests/checks:** `vm_perf.sh` (timestamps around launch, AT-SPI poll for the frame, `/proc/<pid>/stat` utime+stime deltas, `ps` RSS); `tools/dev.py all` after the fix; AT-SPI walk of the fixed page (140 End task buttons, no tracebacks).
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** no performance budget is written down yet (candidate for `docs/ENGINEERING.md`); figures come from one VM under software rendering, not from hardware with a GPU; the after-fix number was taken from the checkout run, the installed package is rebuilt from the same revision next.
+- **Evidence state:** DISTRO_VERIFIED (measured) on Ubuntu 24.04.5; defect fixed and re-measured
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
