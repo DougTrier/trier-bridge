@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | SCOPE-14 — integration catalog and first-run setup screen (tray icon, search provider, Files extension shipped) |
-| **Last completed** | Services control and Bridge Terminal verified live; 39 integration tests (2026-09-21 03:15 AM CDT) |
-| **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only (2026-09-21) |
+| **Active task** | CODE-QUALITY-REPORT refresh done; next Foundation 08 qualification (IMP-08.02 upgrade path, IMP-08.07 fault set) and the remaining Foundation 03/06/07 items |
+| **Last completed** | SCOPE-14: setup screen, Integrations page, tray icon T, search provider, Files extension, shortcut; all verified live from the installed .deb (2026-09-21 03:55 AM CDT) |
+| **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | SCOPE-14 setup screen + integration ledger → ship search provider, tray icon, Files extension in the .deb → CODE-QUALITY-REPORT refresh → Foundation 08 qualification |
+| **Next bounded step** | IMP-08.02 install/upgrade/purge on the installed package → IMP-06.07 denial/cancel/expiry/backend-restart set → IMP-07.06 pwsh mode → IMP-03.03/05 file and app mutations |
 
 ---
 
@@ -103,7 +103,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **SCOPE-11** Local pre-commit gate convention (`tools\tb all` before every commit; optional local git hook), since there is no CI.
 - [ ] **SCOPE-12** Name and trademark check on "Trier Bridge" before any public step.
 - [ ] **SCOPE-13** Observability specification: log location, levels, redaction, audit placement (SECURITY.md section 26 fields).
-- [ ] **SCOPE-14** Integration catalog and setup flow: the list of every shippable integration, its named group (feature subset), its desktop extension point, its activation/reversal mechanism, and the first-run setup screen plus tray-icon options flow that presents them (DEC-019). Includes the Ubuntu GNOME tray/AppIndicator research item.
+- [x] **SCOPE-14** Integration catalog and setup flow: the list of every shippable integration, its named group (feature subset), its desktop extension point, its activation/reversal mechanism, and the first-run setup screen plus tray-icon options flow that presents them (DEC-019). Includes the Ubuntu GNOME tray/AppIndicator research item. Evidence: `docs/VALIDATION.md` entry SCOPE-14; catalog in `trier_bridge/integrations/catalog.py` and `docs/DELIVERY-MODEL.md` section 3 (shipped set marked). Roadmap items (desktop places, Super+E, notifications, pwsh entry) stay in the delivery model as unshipped.
 
 ---
 
@@ -178,7 +178,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-03.06** Printer/device entry points. Evidence: Printers page routes to the GNOME Settings printers panel; Bluetooth/devices via catalog (entry IMP-03). Live status is Foundation 04.
 - [x] **IMP-03.07** Wi-Fi/network entry points. Evidence: Network page routes to wifi/network panels (entry IMP-03).
 - [ ] **IMP-03.08** Screenshot/clipboard/common shortcut support.
-  - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); keyboard shortcut integration waits for the setup screen (SCOPE-14).
+  - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); Ctrl+Shift+Esc shipped as an individual Shortcuts integration (entry SCOPE-14). Remaining: screenshot/clipboard behaviors beyond teaching.
 - [ ] **IMP-03.09** Everyday office-user interaction tests.
 
 ---
@@ -237,6 +237,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 # Foundation 08 — Integrated qualification and packaging
 
 - [ ] **IMP-08.01** Build selected native packages/installers.
+  - 2026-09-21: the `.deb` now carries the tray, search provider, Files extension, catalog, and three man pages; built and installed from the tree in the VM, lintian silent (entry SCOPE-14). Open: a build from a clean chroot and a second environment.
 - [ ] **IMP-08.02** Verify clean install/upgrade/uninstall and ownership.
 - [ ] **IMP-08.03** Run selected distro/desktop matrix.
 - [ ] **IMP-08.04** Run office-user usability acceptance.

@@ -31,7 +31,7 @@
 | `/usr/lib/trier-bridge/` | application code and adapters | package |
 | `/usr/share/applications/` | one visible launcher; the familiar-tool entries with `NoDisplay=true` until a user enables them (`DELIVERY-MODEL.md` section 3) | package |
 | `/usr/share/gnome-shell/search-providers/` | not used; the search provider is enabled per user under `~/.local/share/` so setup choice controls it | — |
-| `/usr/lib/x86_64-linux-gnu/nautilus/extensions-4/` or `/usr/share/nautilus-python/extensions/` | the Files integration, present but inert until the user enables it | package |
+| `/usr/share/trier-bridge/integrations/` | the Files extension source (`tb_nautilus.py`), inert until the user turns the integration on; it is then copied under the user's home and removed from there when turned off | package |
 | `/usr/share/trier-bridge/` | concept catalog data, help content, integration catalog, icons (original assets only) | package |
 | `/usr/share/doc/trier-bridge/` | `copyright` (Apache-2.0), `NOTICE`, changelog | package |
 | `/usr/share/man/man1/trier-bridge.1` | man page | package |

@@ -27,22 +27,22 @@ Native packages install silently (apt has no UI), so the setup screen appears on
 2. The user opens Trier Bridge from the application grid (its `.desktop` entry is the one visible entry the package provides).
 3. The setup screen shows every integration, organized into groups. A recommended group is preselected but nothing is applied until the user clicks Apply. Each item states in one line what it changes and how it is undone.
 4. Apply writes only per-user files under `~/.config/trier-bridge/`, `~/.local/share/`, and `~/.config/autostart/`, and records what it wrote in an integration ledger so removal is exact.
-5. The same page is reachable any time from the tray icon and from the window. Toggling an item off removes exactly what it added. "Remove all integrations" restores the pre-setup state.
+5. The same page is reachable any time from the tray icon and from the window. Toggling an item off removes exactly what it added. "Turn everything off" restores the pre-setup state.
 
 Uninstalling the package removes everything under `/usr`. Per-user files are the user's; the package cannot safely walk every home directory, so Trier Bridge offers "Remove all integrations" before uninstall and documents the per-user paths (TB-INV-026).
 
-## 3. Integration catalog (seed for SCOPE-14)
+## 3. Integration catalog (shipped set and roadmap)
 
-Every entry names its desktop extension point, the exact reversal, and the evidence that the extension point exists on the first target. Global key/mouse rebinding and file-association changes are individual items and never part of a default group (DEC-019).
+Every entry names its desktop extension point, the exact reversal, and the evidence that the extension point exists on the first target. Global key/mouse rebinding and file-association changes are individual items and never part of a default group (DEC-019). The shipped set is the one in `trier_bridge/integrations/catalog.py` and is verified in `docs/VALIDATION.md` entry SCOPE-14; the remaining rows are roadmap.
 
 | Group | Item | Extension point | Reversal | Evidence (Ubuntu 24.04.5 GNOME 46) |
 |---|---|---|---|---|
-| **Essentials** (recommended) | Tray icon at login | `~/.config/autostart/trier-bridge-tray.desktop`; StatusNotifier via the AppIndicator extension | delete the autostart entry | `ubuntu-appindicators` enabled by default |
-| Essentials | Familiar tool names in the app grid and Activities search (Task Manager, Event Viewer, Device Manager, Disk Management, Services, Network Connections, Installed Apps, Command Prompt) | package-provided `.desktop` entries hidden by default; setup unhides them per user via `~/.local/share/applications/` overrides | restore the override files | 113 system `.desktop` entries; user overrides directory present |
-| Essentials | Windows-term search in Activities ("Add or Remove Programs" finds Installed Apps) | GNOME Shell `SearchProvider2` D-Bus interface plus a provider `.ini` | remove the user provider `.ini` | 8 providers installed; interface XML present |
-| **Files** | "Trier Bridge" actions in the Files right-click menu (Open Command Prompt here, familiar Properties, Send to) | Nautilus extension API (libnautilus-extension 4; `python3-nautilus` in the archive) or, with no dependency, the Nautilus scripts folder | remove the extension or script files | `libnautilus-extension.so.4` present; `python3-nautilus` 4.0 available; scripts dir exists |
+| **Essentials** (recommended) | Tray icon T at login (**shipped**) | `~/.config/autostart/org.triertech.TrierBridge.Tray.desktop`; `trier-bridge-tray` speaks StatusNotifierItem and dbusmenu over the session bus to the AppIndicator extension | close the icon and delete the autostart entry | `ubuntu-appindicators` enabled by default (inactive while the screen is locked) |
+| Essentials | Familiar tool names in the app grid (Task Manager, Event Viewer, Device Manager, Disk Management, Services, Network Connections, Installed Apps, Command Prompt) (**shipped**) | eight per-user `.desktop` entries written to `~/.local/share/applications/`, each launching `trier-bridge --section <key>` | delete those eight files | user applications directory present; entries listed by the app grid |
+| Essentials | Windows-term search in Activities ("Add or Remove Programs" finds Installed Apps) (**shipped**) | GNOME Shell `SearchProvider2` served by `trier-bridge-search-provider`, started by D-Bus activation from a per-user service file plus a provider `.ini` | remove the two per-user files | provider answered over D-Bus and opened the running window (entry SCOPE-14) |
+| **Files** | "Open Command Prompt here (Trier Bridge)" on folders in the Files right-click menu (**shipped**; familiar Properties and Send to are roadmap) | Nautilus python extension copied from `/usr/share/trier-bridge/integrations/` to `~/.local/share/nautilus-python/extensions/` (`python3-nautilus`, a Recommends) | delete the extension file and its compiled copy | Nautilus compiled and loaded it (entry SCOPE-14) |
 | Files | "This Computer" and familiar places on the desktop | desktop launcher files shown by the Desktop Icons extension | delete the launchers | `ding` extension active |
-| **Shortcuts** (individual items) | Ctrl+Shift+Esc opens Task Manager | per-user GNOME custom keybinding via gsettings | remove the keybinding entry | GlobalShortcuts portal absent on 24.04; gsettings route is the supported one |
+| **Shortcuts** (individual items) | Ctrl+Shift+Esc opens Task Manager (**shipped**) | per-user GNOME custom keybinding via gsettings, previous list recorded | remove the keybinding entry and restore the recorded list | verified on and off (entry SCOPE-14) |
 | Shortcuts | Super+E opens the file entry | same mechanism; only bound if free | same | conflict check required before binding (TB-INV-076) |
 | **Notifications** | Operation results as desktop notifications | Notification portal / GNOME notifications | disable in preferences | portal present |
 | **Advanced** | PowerShell entry uses real `pwsh` | invokes an installed `pwsh`; never bundled | nothing to undo | `powershell` 7.6.5 available as a snap |
