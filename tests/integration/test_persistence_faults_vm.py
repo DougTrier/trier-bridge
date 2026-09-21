@@ -49,14 +49,16 @@ def test_disk_full_keeps_the_last_known_good_state(tiny_fs: Path) -> None:
     prefs = Preferences(state / "prefs.json")
     assert prefs.set("mode", "bridge").durable
     filler = tiny_fs / "filler"
-    with filler.open("wb") as fh:  # consume everything the filesystem will give
+    fd = os.open(filler, os.O_WRONLY | os.O_CREAT)  # unbuffered: every write hits the disk
+    try:
         for chunk in (65536, 4096, 512, 64, 1):
             try:
                 while True:
-                    fh.write(b"\0" * chunk)
-                    fh.flush()
+                    os.write(fd, b"\0" * chunk)
             except OSError:
                 continue
+    finally:
+        os.close(fd)
     extra = []
     for i in range(64):  # and every remaining inode/block a new temp file might use
         try:

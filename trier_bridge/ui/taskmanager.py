@@ -159,7 +159,8 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
                 end.update_property(
                     [Gtk.AccessibleProperty.DESCRIPTION],
                     [
-                        f"Ask {s.name} to close. Unsaved work may be lost. You will be asked to confirm."
+                        f"Ask {s.name} to close. Unsaved work may be lost. "
+                        "You will be asked to confirm."
                     ],
                 )
                 end.connect("clicked", lambda *_, s=s: self._on_end(s, False))

@@ -33,7 +33,7 @@ from ..core.identity import ProcessIdentity
 from ..core.operations import Operation, OperationResult
 from ..core.state import AuthorizationState, OperationState, PrivilegeClass
 from ..state.journal import OperationJournal
-from ..system.processes import ProcessKind, is_still_same
+from ..system.processes import ProcessKind, has_ended, is_still_same
 
 VERIFY_TIMEOUT_S = 3.0
 
@@ -115,11 +115,18 @@ def execute_terminate(
         journal.advance(rec, OperationState.AUTHORIZED)
 
     def finish(
-        state: OperationState, plain: str, technical: str = "", next_step: str = ""
+        state: OperationState,
+        plain: str,
+        technical: str = "",
+        next_step: str = "",
+        succeeded: tuple[str, ...] = (),
+        failed: tuple[str, ...] = (),
     ) -> OperationResult:
         if journal is not None and rec is not None:
             journal.advance(rec, state, plain, technical)
-        return OperationResult(op.operation_id, state, plain, technical, next_step)
+        return OperationResult(
+            op.operation_id, state, plain, technical, next_step, succeeded, failed
+        )
 
     # Revalidate immediately before acting (TB-INV-050, TB-INV-121).
     if not is_still_same(plan.identity, proc):
@@ -149,7 +156,7 @@ def execute_terminate(
         journal.advance(rec, OperationState.VERIFYING)
     deadline = time.monotonic() + VERIFY_TIMEOUT_S
     while time.monotonic() < deadline:
-        if not is_still_same(plan.identity, proc):
+        if has_ended(plan.identity, proc):
             return finish(
                 OperationState.VERIFIED,
                 f"{plan.label} has ended.",
@@ -170,4 +177,6 @@ def execute_terminate(
         "It may be waiting to save or ignoring the request.",
         technical="SIGTERM sent; process still present after verify timeout",
         next_step="Wait a moment, then use Force end if it does not close.",
+        succeeded=("asked the program to close",),
+        failed=("the program has not closed yet",),
     )

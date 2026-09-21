@@ -271,6 +271,18 @@ class ProcessSampler:
         return rows, totals
 
 
+def has_ended(identity: ProcessIdentity, proc: Path = Path("/proc")) -> bool:
+    """True when the process is gone or is a zombie (exited, not yet reaped by its parent)."""
+    try:
+        text = (proc / str(identity.pid) / "stat").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True
+    fields = parse_stat_fields(text)
+    if fields is None or int(fields["starttime"]) != identity.start_ticks:
+        return True
+    return str(fields["state"]) in ("Z", "X")
+
+
 def is_still_same(identity: ProcessIdentity, proc: Path = Path("/proc")) -> bool:
     """Revalidate immediately before any action: same PID and same start time (TB-INV-050)."""
     try:
