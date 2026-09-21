@@ -185,7 +185,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Foundation 04 — Read-only familiar system tools
 
-- [ ] **IMP-04.01** Task Manager observation.
+- [x] **IMP-04.01** Task Manager observation. Evidence: `docs/VALIDATION.md` entry IMP-04.01 (live procfs sampler, identity, Unknown-not-zero, page verified in session).
 - [ ] **IMP-04.02** Startup Apps observation.
 - [ ] **IMP-04.03** Event Viewer / journal presentation.
 - [ ] **IMP-04.04** Device Manager inventory.
@@ -193,6 +193,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **IMP-04.06** Network Connections inventory.
 - [ ] **IMP-04.07** Installed software provenance inventory.
 - [ ] **IMP-04.08** Verify missing metrics remain Unknown/Unavailable, not zero.
+  - 2026-09-21: verified for processes (first-sample CPU, unreadable memory) and discovery records; remaining tools verify as they land.
 
 ---
 

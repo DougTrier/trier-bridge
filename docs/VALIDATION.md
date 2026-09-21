@@ -267,6 +267,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** two defects found and fixed during the run (snap entries invisible to `Gio.AppInfo.get_all` outside a graphical session; Adw rows parsed `&` as markup). Not yet: right-click integration (needs the Nautilus extension and the setup screen, SCOPE-14), uninstall and default-app changes (mutations, Foundation 06), printer/network live status (Foundation 04), office-user acceptance (IMP-03.09, needs a person at the console).
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED for the read-only slice on Ubuntu 24.04.5 GNOME Wayland
 
+### IMP-04.01 — Task Manager observation
+
+- **Timestamp:** 2026-09-21 02:45 AM CDT
+- **Candidate revision:** 888e679
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); unit and integration checks over SSH; page run in the console Wayland session
+- **Files/modules:** `trier_bridge/system/processes.py`, `trier_bridge/ui/taskmanager.py`, `tests/unit/test_processes.py`, `tests/integration/test_processes_vm.py`
+- **Invariant impact:** TB-INV-050 (PID plus start time identity, revalidation helper), TB-INV-131 (Unknown never 0: first-sample CPU, unreadable memory), TB-INV-132/133 (native visibility respected; command line only in tooltip, truncated), TB-INV-136 (PID 1 and kernel threads non-actionable), TB-INV-199/200 (one procfs pass per 2 s, only while the page is visible), TB-INV-066 (apps, background, kernel kept distinct)
+- **Expected result:** sampler matches independent /proc reads; kernel threads and PID 1 classified critical; CPU percent unknown on the first sample then measured; page renders live rows with the observation-only banner and no crash.
+- **Observed result:** 4 live integration tests passed (this process found with the kernel start time and uid; PID 1 critical, kernel threads present with empty cmdline; CPU unknown then measured within bounds; system processes report memory or not-readable). Page in the session: banner exposed over AT-SPI, rows for python3, gnome-shell, firefox, systemd; 0 tracebacks, 0 markup errors. Unit: 58 passed on host and VM; integration total 15 passed.
+- **Tests/checks:** `python3 tools/dev.py all`; `pytest tests/integration -m integration`; AT-SPI walk.
+- **Artifacts/logs:** session transcript (self-snapshot did not render for this page; AT-SPI walk is the evidence).
+- **Failures/limitations:** APP versus USER classification is not yet distinguished (no window/desktop-entry correlation); no End task (Foundation 06); Startup tab not yet present (IMP-04.02).
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5 GNOME Wayland
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
