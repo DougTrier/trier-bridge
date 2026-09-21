@@ -23,7 +23,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
-| **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
+| **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
 | **Next bounded step** | IMP-08.02 install/upgrade/purge on the installed package → IMP-06.07 denial/cancel/expiry/backend-restart set → IMP-07.06 pwsh mode → IMP-03.03/05 file and app mutations |
@@ -239,6 +239,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **IMP-08.01** Build selected native packages/installers.
   - 2026-09-21: the `.deb` now carries the tray, search provider, Files extension, catalog, and three man pages; built and installed from the tree in the VM, lintian silent (entry SCOPE-14). Open: a build from a clean chroot and a second environment.
 - [ ] **IMP-08.02** Verify clean install/upgrade/uninstall and ownership.
+  - 2026-09-21: install and purge verified on the VM with integrations on: `apt-get purge` left nothing under `/usr` (113 owned paths gone) and kept every per-user file (ledger, autostart entry, search-provider files); reinstall restored the three commands and the existing autostart entry started the tray as login would. Open: upgrade between two versions (only one version exists) and a second environment.
 - [ ] **IMP-08.03** Run selected distro/desktop matrix.
 - [ ] **IMP-08.04** Run office-user usability acceptance.
 - [ ] **IMP-08.05** Run Windows power-user continuity acceptance.
