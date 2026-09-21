@@ -1,0 +1,73 @@
+# Trier Bridge stack-neutral ignore baseline.
+# Add stack-specific paths only after the implementation stack is selected.
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt.local
+secrets/
+private/
+local-only/
+
+# Logs / diagnostics / local evidence
+*.log
+logs/
+crash-dumps/
+tmp/
+temp/
+.cache/
+coverage/
+reports/local/
+artifacts/local/
+
+# Build outputs — generic
+build/
+dist/
+out/
+target/
+bin/
+obj/
+
+# Package outputs
+*.deb
+*.rpm
+*.AppImage
+*.snap
+*.flatpak
+*.flatpakref
+
+# Python if later selected
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node if later selected
+node_modules/
+
+# Rust local build if later selected
+target/
+
+# Local system fixtures must never be published
+fixtures/private/
+tests/private/
+support-bundles/
+
+# Generated machine evidence can be ignored unless a reviewed summary is tracked
+*.generated.json
+*.local.json

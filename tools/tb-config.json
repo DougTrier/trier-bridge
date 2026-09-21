@@ -1,0 +1,119 @@
+{
+  "ignore_dirs": [".git", "reports", "node_modules", "target", "build", "dist", "out", "bin", "obj", "__pycache__", ".venv", "venv", ".idea", ".vscode", ".cache"],
+  "ignore_globs": ["*.pyc", "*.log", "*.swp", "*~"],
+  "text_extensions": [".md", ".MD", ".txt", ".json", ".toml", ".yaml", ".yml", ".py", ".ps1", ".psm1", ".cmd", ".bat", ".sh", ".rs", ".ts", ".tsx", ".js", ".jsx", ".c", ".h", ".cpp", ".hpp", ".go", ".java", ".kt", ".cs", ".ini", ".cfg", ".xml", ".html", ".css", ".svg", ".desktop", ".service"],
+  "text_names": ["LICENSE", "NOTICE", ".gitignore", ".gitattributes"],
+  "brief_limit": 25,
+  "ledger_file": "Engine Spec Tasklist 01.MD",
+  "invariants_file": "docs/INVARIANTS.md",
+  "security_file": "docs/SECURITY.md",
+  "acceptance_file": "docs/VALIDATION.md",
+  "links": {
+    "mention_allow_files": ["docs/README.md", "docs/SECURITY.md", "tools/README.md"]
+  },
+  "headers": {
+    "extensions": [".py", ".ps1", ".psm1", ".cmd", ".bat", ".sh", ".rs", ".ts", ".tsx", ".js", ".jsx", ".c", ".h", ".cpp", ".hpp", ".go", ".java", ".kt", ".cs"],
+    "exclude_globs": ["**/vendor/**", "**/third_party/**", "**/generated/**", "**/*.lock"],
+    "max_lines": 20
+  },
+  "terms": {
+    "code_globs": ["**/*.py", "**/*.ps1", "**/*.psm1", "**/*.cmd", "**/*.bat", "**/*.sh", "**/*.rs", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.c", "**/*.h", "**/*.cpp", "**/*.hpp", "**/*.go", "**/*.java", "**/*.kt", "**/*.cs"],
+    "exclude_globs": ["tools/tb-config.json"],
+    "rules": [
+      {
+        "id": "TB-TERM-001",
+        "name": "utc-timestamp",
+        "pattern": "\\b\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}(?::\\d{2})?\\s*(?:UTC|Z)\\b",
+        "severity": "warn",
+        "message": "Project timestamps must be America/Chicago (CDT/CST), not UTC (AGENTS.md section 3)"
+      },
+      {
+        "id": "TB-TERM-002",
+        "name": "timestamp-without-zone",
+        "pattern": "\\b\\d{4}-\\d{2}-\\d{2} \\d{1,2}:\\d{2} (?:AM|PM)\\b(?! (?:CDT|CST))",
+        "severity": "warn",
+        "message": "Timestamp lacks CDT/CST zone label (AGENTS.md section 3)"
+      },
+      {
+        "id": "TB-TERM-003",
+        "name": "numeric-cqs",
+        "pattern": "\\bCQS\\s*[:=]\\s*\\**\\s*\\d{1,3}\\b",
+        "severity": "error",
+        "message": "A numeric CQS may only appear when all eight categories have measured evidence (CODE-QUALITY.md section 1)"
+      },
+      {
+        "id": "TB-TERM-004",
+        "name": "evidence-pass-claim",
+        "pattern": "\\bEvidence state:\\s*\\**\\s*PASS\\b",
+        "severity": "error",
+        "message": "PASS is not an evidence state; use the VALIDATION.md vocabulary with exact evidence"
+      },
+      {
+        "id": "TB-TERM-005",
+        "name": "stack-asserted",
+        "pattern": "\\b(?:we use|will use|is written in|is built (?:in|with)|implemented in)\\s+(?:Rust|Tauri|React|Python|Electron|Qt|GTK|Go|C\\+\\+|C#|\\.NET|Node(?:\\.js)?|TypeScript|Java|Kotlin)\\b",
+        "flags": "i",
+        "severity": "warn",
+        "message": "Implementation stack is an open decision (DECISIONS.md); do not assert one",
+        "exclude": ["tools/**"]
+      },
+      {
+        "id": "TB-TERM-006",
+        "name": "generic-root-api",
+        "pattern": "\\b(?:RunAsRoot|ExecuteShell(?:AsRoot)?|WriteFileAsRoot|WriteAnythingAsRoot|ChmodAnything|ChownAnything)\\s*\\(",
+        "severity": "error",
+        "message": "Generic privileged primitive is forbidden (TB-SEC-002, TB-INV-107)",
+        "code_only": true
+      },
+      {
+        "id": "TB-TERM-007",
+        "name": "shell-exec",
+        "pattern": "shell\\s*=\\s*True|\\bos\\.system\\s*\\(|\\bInvoke-Expression\\b|(?<![A-Za-z])iex\\s|\\b(?:bash|sh)\\s+-c\\s+[\"']",
+        "severity": "error",
+        "message": "Shell execution from constructed text is prohibited (TB-SEC-003, TB-INV-088)",
+        "code_only": true
+      },
+      {
+        "id": "TB-TERM-008",
+        "name": "sudo",
+        "pattern": "\\bsudo\\s+",
+        "severity": "warn",
+        "message": "No privileged shell shortcuts (TB-SEC-002, TB-INV-107)",
+        "code_only": true
+      },
+      {
+        "id": "TB-TERM-009",
+        "name": "secret-literal",
+        "pattern": "\\b(?:password|passwd|secret|token|api[_-]?key)\\b\\s*[:=]\\s*[\"'][^\"']{6,}[\"']",
+        "flags": "i",
+        "severity": "warn",
+        "message": "Possible secret literal (TB-SEC-015, TB-INV-123)",
+        "exclude": ["tools/env/autoinstall/**"]
+      },
+      {
+        "id": "TB-TERM-010",
+        "name": "todo-marker",
+        "pattern": "\\b(?:TODO|FIXME|XXX|HACK)\\b",
+        "severity": "info",
+        "message": "Open work marker",
+        "code_only": true
+      },
+      {
+        "id": "TB-TERM-011",
+        "name": "works-on-linux",
+        "pattern": "\\bworks on Linux\\b",
+        "flags": "i",
+        "severity": "info",
+        "message": "Support claims must name the exact environment (TB-INV-231)"
+      },
+      {
+        "id": "TB-TERM-012",
+        "name": "legacy-root-doc-link",
+        "pattern": "\\]\\((?:INVARIANTS|SECURITY|LICENSING|DECISIONS|ENGINEERING|CODE-QUALITY|PLATFORMS|VALIDATION|PRODUCT-CONCEPT|PRODUCT-NORTH-STAR)\\.md",
+        "severity": "warn",
+        "message": "Governing documents live under docs/; link to docs/<name>.md",
+        "include": ["*.md", "*.MD"]
+      }
+    ]
+  }
+}

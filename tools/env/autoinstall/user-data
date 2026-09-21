@@ -1,0 +1,38 @@
+#cloud-config
+# Copyright 2026 Doug Trier
+# SPDX-License-Identifier: Apache-2.0
+#
+# Trier Bridge disposable desktop test VM: unattended Ubuntu Desktop 24.04
+# install answers (subiquity autoinstall via NoCloud CIDATA seed disk).
+# Test-only identity. The password value is a SHA-512 crypt hash of the
+# documented test password (see tools/env/README.md), not a secret.
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  timezone: America/Chicago
+  source:
+    id: ubuntu-desktop
+    search_drivers: false
+  codecs:
+    install: false
+  drivers:
+    install: false
+  identity:
+    realname: Trier Bridge Test
+    username: tb
+    hostname: tb-ubuntu-desktop
+    password: "$6$JWUACAqLt4JjPYOd$t8uAGmsX/bt5JDuuHqkctg53LJbb3RMJPLr5fuG.7m87r3WNjKt.IbpQr53qpC/peWiikhf73kZfdxrgwL2uI/"
+  storage:
+    layout:
+      name: direct
+      match:
+        size: largest
+  updates: security
+  packages:
+    - python3
+    - git
+  late-commands:
+    - echo "tb-ubuntu-desktop-2404 installed by autoinstall" > /target/etc/tb-environment
+  shutdown: reboot
