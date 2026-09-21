@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-01 — Foundation 01: toolchain pins, skeleton, checks, reproducible build |
+| **Active task** | IMP-02 — Foundation 02: environment profile and capability discovery (read-only) |
 | **Last completed** | Live research R2/R17/R18 in the VM and stack proposal `docs/STACK-SELECTION.md` (2026-09-21 12:05 AM CDT) |
-| **Implementation** | AUTHORIZED 2026-09-21 (DEC-023); Foundation 01 in progress |
+| **Implementation** | Foundation 01 complete with evidence (2026-09-21); Foundation 02 starting |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
-| **CQS** | NOT MEASURED |
+| **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-01.01 toolchain pins → IMP-01.02 skeleton → IMP-01.04 check entry points → IMP-01.06 reproducible build in the VM |
+| **Next bounded step** | IMP-02.01 distro/version/arch detection → IMP-02.02 session facts → IMP-02.03 backends → capability states (read-only, side-effect free) |
 
 ---
 
@@ -144,13 +144,13 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 **Prerequisites:** ARC-01–ARC-03 and relevant quality/licensing decisions.
 
-- [ ] **IMP-01.01** Pin compiler/runtime/framework/build/package tool versions.
-- [ ] **IMP-01.02** Create clean module skeleton with no privileged mutation.
-- [ ] **IMP-01.03** Implement source-header/provenance checks.
-- [ ] **IMP-01.04** Configure build, static analysis, unit test, package-size, and dependency inventory entry points.
-- [ ] **IMP-01.05** Establish accessibility/theme/logging/config foundation.
-- [ ] **IMP-01.06** Verify clean reproducible build from documented environment.
-- [ ] **IMP-01.07** Produce first measured code-quality baseline; CQS only if all categories are measured.
+- [x] **IMP-01.01** Pin compiler/runtime/framework/build/package tool versions. Evidence: `docs/TOOLCHAIN.md` (Ubuntu 24.04 archive versions observed in the VM, host venv mirrors), 2026-09-21.
+- [x] **IMP-01.02** Create clean module skeleton with no privileged mutation. Evidence: `trier_bridge/` core, config, logging, ui; zero subprocess/shell use; no privileged component; `docs/VALIDATION.md` entry IMP-01.
+- [x] **IMP-01.03** Implement source-header/provenance checks. Evidence: `tools/tb.py headers` (35/35 compliant) wired into `tools/dev.py all`.
+- [x] **IMP-01.04** Configure build, static analysis, unit test, package-size, and dependency inventory entry points. Evidence: `tools/dev.py` (format, lint, typecheck, test, headers, inventory, size, all) run clean on host and VM; `debian/` build via `dpkg-buildpackage`.
+- [x] **IMP-01.05** Establish accessibility/theme/logging/config foundation. Evidence: AT-SPI labels and descriptions on every sidebar row (live walk in the VM session); libadwaita theme follows the desktop; `logging_setup.py` bounded and redacted (unit tests); `config.py` atomic XDG writes (unit tests).
+- [x] **IMP-01.06** Verify clean reproducible build from documented environment. Evidence: two builds of cd3ef65 with `SOURCE_DATE_EPOCH` gave identical SHA256 `8ac8408f2435b03cc3fa6bde19afaa2d02441f218ec5a47a8f58f83d0250b4d1`; lintian silent; install/run/purge clean in the VM (`docs/VALIDATION.md` entry IMP-01).
+- [x] **IMP-01.07** Produce first measured code-quality baseline; CQS only if all categories are measured. Evidence: `CODE-QUALITY-REPORT.md` 2026-09-21: seven of eight categories assessed with per-criterion evidence, CQS remains NOT MEASURED (complexity category lacks cognitive-complexity evidence).
 
 ---
 

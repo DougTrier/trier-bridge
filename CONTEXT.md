@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-21 12:05 AM CDT  
 **Owner:** Doug Trier  
-**Project state:** FOUNDATION 01 IN PROGRESS  
+**Project state:** FOUNDATION 02 IN PROGRESS  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
 **CQS:** NOT MEASURED  
 
@@ -52,6 +52,7 @@ Administration and command translation are deeper layers.
 - SCOPE-01..05 written from an in-guest research probe: delivery model, privilege model (no helper needed), packaging, research plan with findings, test strategy (2026-09-20 11:55 PM CDT)
 - live research R2/R17/R18 done in the VM session; stack proposal `docs/STACK-SELECTION.md` written as DEC-020 (proposed) (2026-09-21 12:05 AM CDT)
 - R1 Nautilus extension load and R12 PowerShell-on-Linux verified after the owner enabled sudo in the VM (2026-09-21 12:20 AM CDT)
+- Foundation 01 complete: typed core, atomic config, redacted logging, Adw shell with AT-SPI labels, reproducible `.deb` (identical hashes), install/purge clean; candidate cd3ef65 (2026-09-21 12:15 AM CDT)
 - pre-implementation gap review recorded as SCOPE-01..13; non-invasive directive DEC-018 accepted; delivery model DEC-019 proposed (2026-09-20)
 
 ### Not yet done
@@ -110,7 +111,7 @@ Before implementation:
 
 0. take the `clean-install` checkpoint of the test VM (ENV-03)
 1. review root/project documents for alignment (ALN-12)
-1a. Foundation 01: IMP-01.01 toolchain pins, IMP-01.02 skeleton, IMP-01.04 check entry points, IMP-01.06 reproducible build in the VM, IMP-01.07 quality baseline
+1a. Foundation 02: read-only capability discovery (distro, session, backends) with Supported/Unsupported/Unknown/Degraded/Error states and freshness; verified in the VM
 2. decide implementation stack
 3. research desktop integration mechanisms for the selected first-release environments
 4. select first-release distro/desktop qualification matrix

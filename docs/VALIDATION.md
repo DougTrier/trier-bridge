@@ -225,6 +225,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** vmconnect basic session has no clipboard for Linux guests; bootstrap used a temporary host HTTP server on the switch address. Profile is one VM, one desktop; proves nothing about other desktops or physical hardware.
 - **Evidence state:** DISTRO_VERIFIED (environment identity only; no product behavior claimed)
 
+### IMP-01 — Foundation 01: toolchain, skeleton, checks, reproducible package
+
+- **Timestamp:** 2026-09-21 12:15 AM CDT
+- **Candidate revision:** cd3ef65
+- **Environment/profile:** tb-ubuntu-desktop-2404 (Ubuntu 24.04.5, Wayland GNOME 46, Hyper-V Gen2; see ENV-02 profile); guest deviates from `clean-install` by sudo, python3-nautilus, powershell snap, dev toolchain packages
+- **Files/modules:** `pyproject.toml`, `.flake8`, `trier_bridge/` (core, config, logging_setup, ui, __main__), `tests/unit/`, `tools/dev.py`, `data/`, `debian/`, `docs/TOOLCHAIN.md`
+- **Invariant impact:** TB-INV-004, 006, 029, 049 to 054, 057, 078, 105, 106, 107, 121, 123, 181, 182, 192 to 195, 209, 223, 225 (implemented in core/config/logging/ui and covered by unit tests where marked TB-T###); no system mutation exists in this candidate
+- **Expected result:** all checks clean on host and VM; the window runs in the Wayland session with accessible labels; the package builds reproducibly, validates, installs, runs, and removes cleanly; no daemon, unit, autostart, or /etc change.
+- **Observed result:** `python3 tools/dev.py all` clean in the VM (black, flake8, mypy --strict, 33 unit tests, 35/35 headers). Window launched in the console Wayland session and exited 0; AT-SPI walk found the application `trier-bridge` with 14 list items carrying labels and descriptions, group headers, and status text (RESEARCH F17 method). Self-snapshot 960x640 reviewed. `dpkg-buildpackage -us -uc -b` twice with `SOURCE_DATE_EPOCH` = commit time gave identical SHA256 `8ac8408f2435b03cc3fa6bde19afaa2d02441f218ec5a47a8f58f83d0250b4d1`; lintian silent; `desktop-file-validate` valid; `appstreamcli validate` warns only `url-homepage-missing` (no public homepage exists by decision). `apt-get install ./trier-bridge_0.1.0~dev0_all.deb` succeeded; `trier-bridge --version` printed 0.1.0.dev0; no `trier-bridge` process, no system unit, no system autostart entry, no `/etc` change after install; `apt-get purge` left nothing under /usr; per-user state under `~/.local/state/trier-bridge` kept by design (TB-INV-026 documented in the man page).
+- **Tests/checks:** unit tests against real temporary files (no mocks, DEC-021); AT-SPI inspection in the live session; package lifecycle in the VM.
+- **Artifacts/logs:** snapshot `tb-shot.png` (scratchpad, not tracked); build logs `/tmp/b1.log`, `/tmp/b2.log` in the guest; session transcript.
+- **Failures/limitations:** one desktop, one distro, one VM; no integration or mutation tests exist yet (nothing mutates); the Hyper-V guest has no GPU so GTK used software rendering (libEGL warnings, harmless); AppStream homepage warning stands until a homepage exists.
+- **Evidence state:** DISTRO_VERIFIED (toolchain and package lifecycle); UNIT_VERIFIED (core); DESKTOP_VERIFIED (shell launches with AT-SPI exposure on Ubuntu 24.04 GNOME Wayland)
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
