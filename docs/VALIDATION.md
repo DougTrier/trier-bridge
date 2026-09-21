@@ -505,6 +505,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** after these requests `xdg-desktop-portal-gnome` crashed with SIGSEGV (08:23:31, `/var/crash/_usr_libexec_xdg-desktop-portal-gnome.1000.crash`; Ubuntu offered to send the report and the owner declined), so in this VM the backend not only stays silent but falls over; the request Trier Bridge sends is the documented portal call, and the same call from a plain script behaved the same way. The screenshot itself is NOT VERIFIED anywhere yet; it needs a desktop with a working compositor capture path (real hardware or a VM with GPU acceleration) and is added to the TB-IA acceptance list. Clipboard stays teaching only (Ctrl+C/V are the same; there is no built-in clipboard history on GNOME). The watchdog wording was verified by reading; its firing was exercised in the VM.
 - **Evidence state:** UNIT_VERIFIED for the route and request; the desktop behaviour is NOT VERIFIED (environment limitation)
 
+### IMP-03.09 — Office-user journeys as automated interaction tests (console session)
+
+- **Timestamp:** 2026-09-21 01:40 PM CDT
+- **Candidate revision:** 4c2daa6
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), console session (`WAYLAND_DISPLAY` set), the product started as a real process by the test
+- **Files/modules:** `tests/integration/test_journeys_vm.py`
+- **Invariant impact:** TB-INV-209 (every step is an accessible action: set text in the search entry, activate a button, read labels and the terminal text), TB-INV-105 (Registry Editor answered as No equivalent with no Open button), TB-INV-078/082 (a Windows command answered with this computer's facts and the Linux equivalent shown)
+- **Expected result:** three journeys pass without a pointer or keyboard: Home search "Add or Remove Programs" then Show leads to Installed Apps; "regedit" is said to have no equivalent; the Command Prompt answers `hostname` with the machine name.
+- **Observed result:** all three PASSED. Lessons kept in the test: search fields are role `entry`, plain entries role `text`; libatspi caches children and a test process must pump the GLib main context and clear the cache between polls; the sidebar rows carry no action, so the journey reaches Command Prompt through the same `--section` forwarding a launcher uses.
+- **Tests/checks:** `WAYLAND_DISPLAY=wayland-0 ... python3 -m pytest tests/integration/test_journeys_vm.py -m integration` in the VM session (skips without a console session).
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** these are interaction tests, not usability acceptance: whether an office user finds the flow natural is IMP-08.04 and needs a person; the journeys run only where a console session is available (they skip over plain SSH).
+- **Evidence state:** DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

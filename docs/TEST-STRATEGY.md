@@ -84,6 +84,10 @@ Discipline for a qualification run:
 4. Record the entry; classify with the `VALIDATION.md` vocabulary; never write PASS.
 5. Restore the checkpoint again before the next candidate.
 
+### 4.1 Journeys
+
+`tests/integration/test_journeys_vm.py` starts the product as a process and drives it through AT-SPI; it needs the console session variables (`WAYLAND_DISPLAY`, the session bus, `GTK_A11Y=atspi`) and skips otherwise. Search fields are role `entry`, plain entries `text`; pump the GLib main context and clear the app's cache between polls, or libatspi will answer from a stale tree.
+
 ## 5. Mapping to invariants
 
 Every `TB-INV-###` has a default test identity `TB-T###` (INVARIANTS.md section 2). ARC-14 freezes the planned matrix: which layer covers each invariant, on which environment, with which real object. Until then, the invariant index tool (`tb inv`) reports which invariants no test references, so coverage gaps stay visible rather than assumed.

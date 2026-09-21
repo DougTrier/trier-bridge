@@ -19,7 +19,7 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | Waiting on the owner for the console acceptance cases (IMP-08.04/05/06, screenshot on hardware); automated work list is exhausted except CQ-02/03/04/09 and IMP-06.06 (owner decision) |
-| **Last completed** | IMP-08.01: clean sbuild chroot build identical to two in-VM builds; SCOPE-06..13 and ARC-03..14 closed with evidence (2026-09-21 10:30 AM CDT) |
+| **Last completed** | CQS 94/100 measured (bandit and cognitive complexity pinned), CQ-02..10 done, IMP-03.09 journeys automated through AT-SPI (2026-09-21 01:40 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
@@ -178,7 +178,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-03.07** Wi-Fi/network entry points. Evidence: Network page routes to wifi/network panels (entry IMP-03).
 - [ ] **IMP-03.08** Screenshot/clipboard/common shortcut support.
   - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); Ctrl+Shift+Esc shipped as an individual Shortcuts integration (entry SCOPE-14). Print Screen is now an action through the desktop portal (entry IMP-03.08) but the GNOME backend never answers in the GPU-less VM, so the screenshot itself stays NOT VERIFIED until run on hardware; clipboard stays teaching only. Item stays open for that verification.
-- [ ] **IMP-03.09** Everyday office-user interaction tests.
+- [x] **IMP-03.09** Everyday office-user interaction tests. Evidence: `docs/VALIDATION.md` entry IMP-03.09 (three journeys driven through AT-SPI in the console session). Usability acceptance by a person stays under IMP-08.04.
 
 ---
 
