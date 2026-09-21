@@ -29,11 +29,26 @@ from .logging_setup import configure
 log = logging.getLogger("trier_bridge")
 
 
+def parse_options(args: list[str]) -> dict[str, str]:
+    """Launch options from integrations: --section KEY, --open CONCEPT, --cwd PATH. Values only."""
+    out: dict[str, str] = {}
+    i = 1
+    while i < len(args):
+        a = args[i]
+        if a in ("--section", "--open", "--cwd") and i + 1 < len(args):
+            out[a[2:]] = args[i + 1]
+            i += 2
+            continue
+        i += 1
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv if argv is None else argv)
     if "--version" in args:
         print(f"trier-bridge {__version__}")
         return 0
+    options = parse_options(args)
     paths = resolve_paths()
     log_path = configure(paths.log_dir, also_stderr="--verbose" in args)
     log.info("trier-bridge %s starting; log at %s", __version__, log_path)
@@ -55,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    return run([a for a in args if a != "--verbose"], paths, journal)
+    return run([args[0]] if args else [], paths, journal, options)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,8 @@ carries an accessible label and description (TB-INV-209).
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -352,7 +354,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             return self._services
         if section.key == "terminal":
             app = self.get_application()
-            return TerminalPage(getattr(app, "journal", None), self.notify)
+            start = str(getattr(app, "options", {}).get("cwd", "")) or None
+            return TerminalPage(
+                getattr(app, "journal", None), self.notify, Path(start) if start else None
+            )
         if section.key == "startup":
             self._startup = StartupPage()
             return self._startup

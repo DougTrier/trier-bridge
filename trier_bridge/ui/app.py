@@ -40,10 +40,13 @@ log = logging.getLogger("trier_bridge.ui")
 
 
 class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
-    def __init__(self, paths: Paths, journal: OperationJournal) -> None:
+    def __init__(
+        self, paths: Paths, journal: OperationJournal, options: dict[str, str] | None = None
+    ) -> None:
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
         self.paths = paths
         self.journal = journal
+        self.options = options or {}
         self.preferences = Preferences(paths.preferences_file)
         GLib.set_application_name(APP_NAME)
         GLib.set_prgname("trier-bridge")  # AT-SPI application name (RESEARCH F17)
@@ -62,6 +65,9 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
             self._window = MainWindow(application=self)
             self._window.show_unresolved(self.journal.unresolved())
             self._install_dev_aids(self._window)
+        section = self.options.get("section", "")
+        if section:
+            self._window.select_section(section)
         self._window.present()
 
     def _on_about(self, *_: Any) -> None:
@@ -124,6 +130,8 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         return False
 
 
-def run(argv: list[str], paths: Paths, journal: OperationJournal) -> int:
-    app = TrierBridgeApplication(paths, journal)
+def run(
+    argv: list[str], paths: Paths, journal: OperationJournal, options: dict[str, str] | None = None
+) -> int:
+    app = TrierBridgeApplication(paths, journal, options)
     return int(app.run(argv))

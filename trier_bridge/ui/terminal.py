@@ -22,6 +22,8 @@ typed plan that goes through the same confirmation as Task Manager.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import logging
 import threading
 from typing import Callable
@@ -42,11 +44,16 @@ MAX_HISTORY = 200
 
 
 class TerminalPage(Gtk.Box):  # type: ignore[misc]
-    def __init__(self, journal: OperationJournal | None, notify: Callable[[str], None]) -> None:
+    def __init__(
+        self,
+        journal: OperationJournal | None,
+        notify: Callable[[str], None],
+        cwd: Path | None = None,
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._journal = journal
         self._notify = notify
-        self._session = Session()
+        self._session = Session(cwd if cwd is not None and cwd.is_dir() else None)
         self._history: list[str] = []
         self._hist_pos = 0
         self._busy = False
