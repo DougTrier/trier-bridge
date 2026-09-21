@@ -45,7 +45,8 @@ def test_no_equivalent_concepts_cannot_open() -> None:
     assert reg is not None and not reg.can_open  # educational only (TB-INV-105)
     assert "No direct equivalent" in reg.mapping_note()
     shot = cat.get("tb.screenshot")
-    assert shot is not None and not shot.can_open and shot.route.kind is RouteKind.TEACH
+    # Print Screen became an action the window performs through the portal (IMP-03.08)
+    assert shot is not None and shot.can_open and shot.route.kind is RouteKind.ACTION
 
 
 def test_malformed_catalog_is_a_hard_error(tmp_path: Path) -> None:

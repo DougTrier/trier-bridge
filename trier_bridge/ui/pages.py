@@ -49,9 +49,15 @@ log = logging.getLogger("trier_bridge.ui.pages")
 class Router:
     """Opens a concept: Trier Bridge sections in-window, everything else via the desktop."""
 
-    def __init__(self, select_section: Callable[[str], None], launcher: Launcher) -> None:
+    def __init__(
+        self,
+        select_section: Callable[[str], None],
+        launcher: Launcher,
+        actions: dict[str, Callable[[], LaunchResult]] | None = None,
+    ) -> None:
         self._select = select_section
         self._launcher = launcher
+        self._actions = actions or {}
 
     def open(self, concept: Concept) -> LaunchResult:
         if not concept.can_open:
@@ -59,6 +65,11 @@ class Router:
         if concept.route.kind is RouteKind.SECTION:
             self._select(concept.route.target)
             return LaunchResult(True, f"Showing {concept.title}.")
+        if concept.route.kind is RouteKind.ACTION:
+            action = self._actions.get(concept.route.target)
+            if action is None:
+                return LaunchResult(False, "That action is not available in this build.")
+            return action()
         return self._launcher.open(concept.route)
 
 
@@ -160,7 +171,7 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
             badge.set_valign(Gtk.Align.CENTER)
             row.add_suffix(badge)
         elif c.can_open:
-            label = "Show" if c.route.kind is RouteKind.SECTION else "Open"
+            label = {RouteKind.SECTION: "Show", RouteKind.ACTION: "Take"}.get(c.route.kind, "Open")
             row.add_suffix(
                 _open_button(
                     label, f"{label} {c.title}. {c.mapping_note()}", partial(self._open, c)

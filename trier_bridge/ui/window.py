@@ -35,8 +35,9 @@ from .. import APP_NAME  # noqa: E402
 from ..capability.model import CapabilityRecord, EnvironmentProfile  # noqa: E402
 from ..state.journal import JournalRecord  # noqa: E402
 from ..catalog.model import Catalog  # noqa: E402
-from ..desktop.launch import Launcher  # noqa: E402
+from ..desktop.launch import Launcher, LaunchResult  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
+from ..desktop.screenshot import ScreenshotRequest  # noqa: E402
 from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
 from .devices import DeviceManagerPage, StartupPage  # noqa: E402
 from .disks import DisksPage  # noqa: E402
@@ -175,7 +176,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._pages: dict[str, Gtk.Widget] = {}
         self._catalog = Catalog.load(catalog_path())
         self._launcher = Launcher()
-        self._router = Router(self.select_section, self._launcher)
+        self._router = Router(
+            self.select_section, self._launcher, {"screenshot": self._take_screenshot}
+        )
+        self._screenshot: ScreenshotRequest | None = None
         self._toasts = Adw.ToastOverlay()
 
         self._split = Adw.NavigationSplitView()
@@ -293,6 +297,25 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             return
         res = self._router.open(concept)
         self.notify(res.plain if res.ok else f"{res.plain} Nothing was changed.")
+
+    def _take_screenshot(self) -> LaunchResult:
+        """Print Screen: the desktop's own screenshot UI through the portal (IMP-03.08)."""
+        if self._screenshot is not None:
+            return LaunchResult(False, "The screenshot tool is already open.")
+
+        def done(result: LaunchResult) -> None:
+            self._screenshot = None
+            self.notify(result.plain)
+
+        self._screenshot = ScreenshotRequest(done)
+        started = self._screenshot.start()
+        if not started.ok:
+            self._screenshot = None
+        return started
+
+    def cancel_screenshot(self) -> None:
+        if self._screenshot is not None:
+            self._screenshot.cancel()
 
     def open_terminal_at(self, folder: str) -> None:
         self._select("terminal")

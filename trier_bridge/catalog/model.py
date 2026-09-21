@@ -40,6 +40,7 @@ class RouteKind(Enum):
     FOLDER = "folder"  # an XDG special folder or URI in the file manager
     APP = "app"  # a desktop application by desktop id
     TEACH = "teach"  # nothing to open; explanation only
+    ACTION = "action"  # something the Bridge window does through the desktop (screenshot)
 
 
 @dataclass(frozen=True)

@@ -17,6 +17,7 @@ Development aids (never active unless the environment variable is set):
   TRIER_BRIDGE_DEV_SNAPSHOT=<file.png>  save an image of the main window after it is shown
   TRIER_BRIDGE_DEV_QUIT_AFTER=<seconds> quit automatically (automated runs)
   TRIER_BRIDGE_DEV_SECTION=<key>       open that sidebar section at start
+  TRIER_BRIDGE_DEV_CANCEL_SCREENSHOT_AFTER=<seconds>  close an open portal screenshot request
 """
 from __future__ import annotations
 
@@ -123,6 +124,9 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         if snapshot:
             self._snapshot_tries = 0
             GLib.timeout_add(1500, self._dev_snapshot, window, snapshot)
+        cancel_shot = os.environ.get("TRIER_BRIDGE_DEV_CANCEL_SCREENSHOT_AFTER", "")
+        if cancel_shot:
+            GLib.timeout_add(int(float(cancel_shot) * 1000), self._dev_cancel_screenshot, window)
         if quit_after:
             try:
                 seconds = float(quit_after)
@@ -154,6 +158,10 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
                 log.warning("dev snapshot: renderer returned no texture")
         except Exception as exc:  # development aid only; never affects the product path
             log.warning("dev snapshot failed: %s", exc)
+        return False
+
+    def _dev_cancel_screenshot(self, window: MainWindow) -> bool:
+        window.cancel_screenshot()
         return False
 
     def _dev_quit(self) -> bool:
