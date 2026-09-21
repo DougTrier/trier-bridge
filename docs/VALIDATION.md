@@ -239,6 +239,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** one desktop, one distro, one VM; no integration or mutation tests exist yet (nothing mutates); the Hyper-V guest has no GPU so GTK used software rendering (libEGL warnings, harmless); AppStream homepage warning stands until a homepage exists.
 - **Evidence state:** DISTRO_VERIFIED (toolchain and package lifecycle); UNIT_VERIFIED (core); DESKTOP_VERIFIED (shell launches with AT-SPI exposure on Ubuntu 24.04 GNOME Wayland)
 
+### IMP-02 — Foundation 02: environment profile and capability discovery
+
+- **Timestamp:** 2026-09-21 12:25 AM CDT
+- **Candidate revision:** 07320ae
+- **Environment/profile:** tb-ubuntu-desktop-2404 (Ubuntu 24.04.5, kernel 7.0.0-31, Hyper-V; ENV-02), checks run over SSH (tty, remote) and the window run in the console Wayland session
+- **Files/modules:** `trier_bridge/capability/` (model, facts, discovery), `trier_bridge/ui/sysinfo.py`, `tests/unit/test_facts.py`, `tests/unit/test_capability_model.py`, `tests/integration/test_discovery_vm.py`
+- **Invariant impact:** TB-INV-016, 017, 018, 019, 020, 021, 022, 023, 035, 036, 037, 040, 041, 044, 046, 145 (implemented: identity from os-release; session facts from logind; five distinct states; evidence and freshness on every record; bounded D-Bus timeouts; structured errors; no side effects)
+- **Expected result:** discovery reports the real distro, kernel, architecture, virtualization, session type and remoteness, and one record per backend with a state, backend, version, and evidence; creates no files; the view renders the records.
+- **Observed result:** SSH run reported Ubuntu 24.04.5 LTS / 24.04 / like debian / x86_64 / kernel 7.0.0-31-generic / virtualization microsoft / session tty (user), remote yes; 16 records: systemd 255.4 SUPPORTED, NetworkManager 1.46.0 SUPPORTED, udisks2 2.10.1 SUPPORTED, polkit 124 SUPPORTED, logind SUPPORTED, PackageKit (apt backend) SUPPORTED, apt/dpkg SUPPORTED, snapd SUPPORTED, Flatpak UNSUPPORTED (absent), journal SUPPORTED (readable), CUPS SUPPORTED, BlueZ SUPPORTED (activatable), UPower SUPPORTED, portals SUPPORTED, GNOME Shell SUPPORTED, procfs SUPPORTED. Six integration tests passed, each comparing discovery with an independent live read (os-release, /proc, direct D-Bus property reads, filesystem facts), plus the side-effect test (no file created under a fresh XDG home). 43 unit tests passed on host and VM.
+- **Tests/checks:** `python3 tools/dev.py all`; `python3 -m pytest tests/integration -m integration`; discovery dump over SSH; System Information view opened in the console session.
+- **Artifacts/logs:** session transcript; snapshot `tb-shot2.png` (scratchpad).
+- **Failures/limitations:** one environment only; IMP-02.07 (generic fallback on other environments) has unit evidence for the unknown-distro path on real file text but no second live environment yet; `desktop` is taken from the session environment variable, so it reads Unknown over SSH by design.
+- **Evidence state:** INTEGRATION_VERIFIED and DISTRO_VERIFIED (Ubuntu 24.04.5 profile); IMP-02.07 NOT_RUN elsewhere
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

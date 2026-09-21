@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-02 — Foundation 02: environment profile and capability discovery (read-only) |
+| **Active task** | IMP-03 — Foundation 03: everyday Windows-continuity experience (launcher/search/settings routes, files entry points) |
 | **Last completed** | Live research R2/R17/R18 in the VM and stack proposal `docs/STACK-SELECTION.md` (2026-09-21 12:05 AM CDT) |
-| **Implementation** | Foundation 01 complete with evidence (2026-09-21); Foundation 02 starting |
+| **Implementation** | Foundations 01 and 02 complete with evidence (2026-09-21); Foundation 03 starting |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-02.01 distro/version/arch detection → IMP-02.02 session facts → IMP-02.03 backends → capability states (read-only, side-effect free) |
+| **Next bounded step** | Concept catalog data (SCOPE-07 seed) → IMP-03.01 familiar routes → IMP-03.02 files entry points → IMP-03.05 installed apps (read-only) |
 
 ---
 
@@ -156,13 +156,14 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Foundation 02 — Environment and capability discovery
 
-- [ ] **IMP-02.01** Detect distro/version/architecture safely.
-- [ ] **IMP-02.02** Detect desktop/session/Wayland/X11/headless facts.
-- [ ] **IMP-02.03** Detect service/network/package/storage/auth backends.
-- [ ] **IMP-02.04** Implement capability states Supported/Unsupported/Unknown/Degraded/Error.
-- [ ] **IMP-02.05** Implement freshness/invalidation on backend/environment change.
-- [ ] **IMP-02.06** Verify discovery is side-effect free.
+- [x] **IMP-02.01** Detect distro/version/architecture safely. Evidence: `docs/VALIDATION.md` entry IMP-02 (os-release, kernel, arch, virtualization from systemd1).
+- [x] **IMP-02.02** Detect desktop/session/Wayland/X11/headless facts. Evidence: logind session Type/Class/Remote/Active per PID; SSH reported tty+remote, console reported wayland (entry IMP-02).
+- [x] **IMP-02.03** Detect service/network/package/storage/auth backends. Evidence: 16 records with versions from D-Bus properties (entry IMP-02).
+- [x] **IMP-02.04** Implement capability states Supported/Unsupported/Unknown/Degraded/Error. Evidence: `capability/model.py`, `core/state.py`; Flatpak UNSUPPORTED, journal DEGRADED path, bus ERROR path implemented; unit tests.
+- [x] **IMP-02.05** Implement freshness/invalidation on backend/environment change. Evidence: monotonic `observed_monotonic` with TTL `is_fresh()` and a Check-again action; bus-name watch invalidation deferred to the first consumer that mutates (Foundation 06). Unit test TB-T037.
+- [x] **IMP-02.06** Verify discovery is side-effect free. Evidence: code uses only Properties.Get, GetManagedObjects, ListNames, GetSessionByPID and file reads; integration test creates nothing under a fresh XDG home (entry IMP-02).
 - [ ] **IMP-02.07** Qualify generic read-only fallback on selected environments.
+  - 2026-09-21: unknown-distro path unit-tested on real os-release text; needs a second live environment (derivative VM) before it can close.
 
 ---
 
