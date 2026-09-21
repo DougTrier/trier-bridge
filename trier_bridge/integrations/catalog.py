@@ -167,8 +167,8 @@ CATALOG: tuple[Integration, ...] = (
         "Trier Bridge actions in the Files right-click menu",
         "Adds 'Open Command Prompt here (Trier Bridge)' to the right-click menu "
         "of folders in Files.",
-        "Deletes one extension file from your home folder; Files returns to normal "
-        "after it restarts.",
+        "Deletes that extension file and the compiled copy Files made of it; Files "
+        "returns to normal after it restarts.",
         "Nautilus extension in ~/.local/share/nautilus-python/extensions (needs python3-nautilus)",
         False,
     ),
@@ -322,6 +322,19 @@ def apply(
     return ApplyResult(True, f"{item.title}: on.", tuple(written))
 
 
+def _remove_compiled_copies(source: Path) -> None:
+    """Files (Nautilus) compiles our extension into __pycache__; that copy goes too."""
+    cache = source.parent / "__pycache__"
+    if source.suffix != ".py" or not cache.is_dir():
+        return
+    for compiled in cache.glob(f"{source.stem}.*.pyc"):
+        compiled.unlink(missing_ok=True)
+    try:
+        cache.rmdir()  # only if nothing else is in it
+    except OSError:
+        pass
+
+
 def remove(integration_id: str, ledger: IntegrationLedger) -> ApplyResult:
     item = by_id(integration_id)
     rec = ledger.get(integration_id)
@@ -333,6 +346,7 @@ def remove(integration_id: str, ledger: IntegrationLedger) -> ApplyResult:
         try:
             if p.is_file():
                 p.unlink()
+            _remove_compiled_copies(p)
         except OSError as exc:
             failures.append(f"{p.name}: {exc}")
     if integration_id == "shortcut-task-manager":

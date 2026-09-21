@@ -82,8 +82,13 @@ def test_files_menu_needs_the_shipped_extension(
     assert not res.ok and "left off" in res.plain and not ledger.is_applied("files-menu")
     monkeypatch.delenv("TRIER_BRIDGE_DATA_DIR")
     res = catalog.apply("files-menu", ledger, paths)  # source tree ships it
-    assert res.ok and (paths.data / "nautilus-python/extensions/tb_nautilus.py").is_file()
+    ext_dir = paths.data / "nautilus-python/extensions"
+    assert res.ok and (ext_dir / "tb_nautilus.py").is_file()
+    # Files compiles the extension on load; removal takes that copy with it
+    (ext_dir / "__pycache__").mkdir()
+    (ext_dir / "__pycache__" / "tb_nautilus.cpython-312.pyc").write_bytes(b"\x00")
     assert catalog.remove("files-menu", ledger).ok
+    assert not (ext_dir / "tb_nautilus.py").exists() and not (ext_dir / "__pycache__").exists()
 
 
 def test_tray_autostart_entry_is_per_user_and_hidden(tmp_path: Path) -> None:
