@@ -49,7 +49,7 @@ Host mirror (Windows, `.venv`, gitignored): `black==24.2.0`, `mypy==1.9.0`, `pyt
 
 - `pyproject.toml`: project metadata, black, mypy (strict), pytest.
 - `.flake8`: lint settings (flake8 does not read `pyproject.toml`).
-- `tools/dev.py`: the single entry point (`format`, `lint`, `typecheck`, `security`, `complexity`, `test`, `headers`, `inventory`, `size`, `all`).
+- `tools/dev.py`: the single entry point (`format`, `lint`, `typecheck`, `security`, `complexity`, `test`, `headers`, `inventory`, `size`, `all`; `results` runs pytest and normalizes the outcome to `reports/local/test-results-<suite>.json`, the same shape on the host and in the VM; `evidence` collects complexity, bandit, suppression, size, and test counts to `reports/local/quality-evidence.json` for the quality report; `map` and `limitations` regenerate the derived `docs/FEATURE-INVARIANT-MAP.md` and `docs/KNOWN-LIMITATIONS.md` from `docs/VALIDATION.md`).
 - `tools/tb.py headers`: Apache header compliance for every source file.
 
 ## 4. Reproducibility contract (IMP-01.06)

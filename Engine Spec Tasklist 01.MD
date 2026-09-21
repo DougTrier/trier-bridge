@@ -77,7 +77,8 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [ ] **ENV-01** CANCELLED 2026-09-20: WSL instance scratched by owner (DEC-017 rejected). All Linux testing uses the Hyper-V VM under ENV-02.
 - [x] **ENV-02** Create the Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification. Evidence: created by owner via `New-TbDesktopVm.ps1` 2026-09-20 10:39 PM CDT (ISO VERIFIED); in-guest profile recorded 11:10 PM CDT in `docs/VALIDATION.md` entry ENV-02 (Ubuntu 24.04.5, Wayland GNOME 46, systemd 255, NM 1.46, udisks 2.10, polkit 124).
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
-- [ ] **ENV-03** Baseline `clean-install` checkpoint taken after first login and restore verified; removal procedure (`tools/env/Remove-TbDesktopVm.ps1`) kept available but the owner intends to keep the VM for other uses (2026-09-20).
+- [ ] **ENV-03** Baseline `clean-install` checkpoint taken after first login and restore verified;
+  - 2026-09-21 12:40 PM CDT: `Get-VMCheckpoint` (read-only) lists one checkpoint, `clean-install`, created 2026-09-20 11:12:55 PM CDT. A restore was not exercised: it would discard the owner's open window and the installed product; the owner decides when. removal procedure (`tools/env/Remove-TbDesktopVm.ps1`) kept available but the owner intends to keep the VM for other uses (2026-09-20).
   - 2026-09-21 12:20 AM CDT: owner enabled passwordless sudo for `tb` in the VM (`/etc/sudoers.d/tb`). Installed for research: `python3-nautilus` 4.0 (+ `gir1.2-nautilus-4.0`), `powershell` snap 7.6.5. Nautilus extension prototype at `~/.local/share/nautilus-python/extensions/tb_nautilus_probe.py` (log in `~/.local/share/tb-nautilus-probe.log`), reversible. None of this is in `clean-install`; a fresh baseline checkpoint should be taken once the morning checks are done.
   - 2026-09-21 12:05 AM CDT: research prototypes left in the guest for the morning check: per-user search provider under `~/.local/share/{dbus-1/services,gnome-shell/search-providers,applications}` and `~/.local/bin/tb-search-provider` (reversible with the recorded uninstall script). `~/tb-research` removed. Not part of `clean-install`.
   - 2026-09-20 11:40 PM CDT: `tools/env/tb-pad.py` shared notepad/file drop added and verified in both directions (host curl, guest wget); desktop launchers created on both sides. Guest deviation from baseline: `~/.local/bin/tb-pad-open.sh`, `~/Desktop/tb-pad.desktop` (not in the `clean-install` checkpoint).
@@ -111,14 +112,23 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 # Product and UX freeze
 
 - [ ] **DOC-01** Freeze MVP user journeys for typical office/home users.
+  - 2026-09-21 12:40 PM CDT: journeys are implemented and exercised (entry IMP-03.09; `docs/EXPERIENCE.md`); freeze is the owner's call under ALN-12/ALN-14. Awaiting owner freeze.
 - [ ] **DOC-02** Freeze familiar file/navigation behavior and desktop integration boundary.
+  - 2026-09-21 12:40 PM CDT: boundary as built: Files places and operations in `docs/DELIVERY-MODEL.md` section 3 and entry IMP-03.03; nothing outside the user's home or the desktop's own extension points. Awaiting owner freeze.
 - [ ] **DOC-03** Freeze app-launch/search/settings/default-app routing.
+  - 2026-09-21 12:40 PM CDT: routing as built: `data/catalog/concepts.json` (search, Settings routes), entries IMP-03 and IMP-03.05 (default apps). Awaiting owner freeze.
 - [ ] **DOC-04** Freeze printers/scanners/USB/network-share everyday journeys.
+  - 2026-09-21 12:40 PM CDT: printers live from CUPS (entry IMP-03.06/HELP); scanners, USB, and network shares route to the desktop's own tools (catalog) and are not reimplemented. Awaiting owner freeze.
 - [ ] **DOC-05** Freeze Task Manager/Startup/Network/Device/Disk/Event Viewer familiar-tool scope.
+  - 2026-09-21 12:40 PM CDT: scope as built: entries IMP-04, IMP-04.01, IMP-04.03, IMP-04.07 (drive letters), IMP-06.06 (network translation layer, DEC-024). Awaiting owner freeze.
 - [ ] **DOC-06** Freeze Services/Bridge Terminal/PowerShell advanced scope.
+  - 2026-09-21 12:40 PM CDT: scope as built: entries IMP-06.05 (Services), IMP-07 and IMP-07.06..07.11 (Bridge Terminal, PowerShell names). Awaiting owner freeze.
 - [ ] **DOC-07** Freeze Familiar/Bridge/native-detail progressive disclosure.
+  - 2026-09-21 12:40 PM CDT: disclosure as built: Familiar pages, Bridge Mode terminal with `linux` column, native detail through the desktop's own tools (`docs/EXPERIENCE.md`). Awaiting owner freeze.
 - [ ] **DOC-08** Complete loading/empty/unknown/unsupported/denied/error/partial/recovery designs.
+  - 2026-09-21 12:40 PM CDT: designs as built: `OperationState` and `CommandOutput` cover previewed/denied/partial/unknown/unsupported; empty and unknown views are truthful placeholders (entry IMP-01); recovery banner with Mark reviewed (entry IMP-05). Awaiting owner freeze.
 - [ ] **DOC-09** Review accessibility, large text, keyboard-only, screen-reader, and localization behavior.
+  - 2026-09-21 12:40 PM CDT: `docs/ACCESSIBILITY.md` TB-A11Y-01..05 verified over AT-SPI; keyboard-only, Orca, large text need a person (IMP-08.06); no localization yet. Awaiting owner freeze.
 
 ---
 

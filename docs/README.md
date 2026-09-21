@@ -61,7 +61,8 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 | `CONTRIBUTING.md` | Human contribution policy and review levels. |
 | `CODE-QUALITY-REPORT.md` | Current CQS report (94 / 100, measured). |
 | `ACCESSIBILITY.md` | Accessibility criteria TB-A11Y-01..09 and their evidence state. |
-| `FEATURE-INVARIANT-MAP.md` | Generated map from every evidence entry to the invariants it cites. |
+| `FEATURE-INVARIANT-MAP.md` | Generated map from every evidence entry to the invariants it cites (`tools/dev.py map`). |
+| `KNOWN-LIMITATIONS.md` | Generated known-limitations report: the failures/limitations and evidence state of every entry (`tools/dev.py limitations`, IMP-08.09). |
 | `LICENSE`, `NOTICE`, `SOURCE-HEADER.txt` | Apache-2.0 text, attribution, canonical source header. |
 | `tools/` | Read-only engineering tools (`tb context`, `tb all`, `tb section`, ...). See `tools/README.md`. |
 
