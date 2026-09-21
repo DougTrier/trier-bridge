@@ -40,6 +40,11 @@ hidden by default when browsing the system drive's own root, the same way
 Explorer hides its own protected operating system files — a second toggle,
 separate from dotfile hiding, that only does anything at true root and never
 claims those folders do not exist (DEC-025, TB-INV-242).
+
+Explorer's own keyboard bindings work on the selected row: Backspace goes up,
+Alt+Left/Right go back/forward, Delete moves to Trash, F2 renames, Ctrl+C/X/V
+copy/cut/paste — every one of them calling the exact same action the row's
+own menu or the toolbar buttons call, never a separate code path.
 """
 from __future__ import annotations
 
@@ -55,7 +60,8 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gtk  # noqa: E402
+gi.require_version("Gdk", "4.0")
+from gi.repository import Adw, Gdk, GLib, Gtk  # noqa: E402
 
 from ..core.operations import OperationResult  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
@@ -231,12 +237,17 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._status.set_visible(False)
         self.append(self._status)
 
-        self._list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        self._selected_entry: FileEntry | None = None
+        self._list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE)
         self._list.add_css_class("boxed-list")
         self._list.set_margin_start(12)
         self._list.set_margin_end(12)
         self._list.set_margin_bottom(12)
         self._list.connect("row-activated", self._on_row_activated)
+        self._list.connect("row-selected", self._on_row_selected)
+        keys = Gtk.EventControllerKey()
+        keys.connect("key-pressed", self._on_key_pressed)
+        self._list.add_controller(keys)
         scroller = Gtk.ScrolledWindow(child=self._list, hscrollbar_policy=Gtk.PolicyType.NEVER)
         scroller.set_vexpand(True)
         self.append(scroller)
@@ -416,6 +427,44 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         if activate is not None:
             activate()
 
+    def _on_row_selected(self, _box: Gtk.ListBox, row: Gtk.ListBoxRow | None) -> None:
+        self._selected_entry = getattr(row, "tb_entry", None) if row is not None else None
+
+    def _on_key_pressed(
+        self, _c: Gtk.EventControllerKey, keyval: int, _keycode: int, state: Gdk.ModifierType
+    ) -> bool:
+        """Explorer's own bindings (DEC-025), reusing the same actions the menus call."""
+        ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        alt = bool(state & Gdk.ModifierType.ALT_MASK)
+        if not ctrl and not alt and keyval == Gdk.KEY_BackSpace:
+            self._go_up()
+            return True
+        if alt and keyval == Gdk.KEY_Left:
+            self._go_back()
+            return True
+        if alt and keyval == Gdk.KEY_Right:
+            self._go_forward()
+            return True
+        if ctrl and keyval == Gdk.KEY_v:
+            self._do_paste()
+            return True
+        e = self._selected_entry
+        if e is None:
+            return False
+        if not ctrl and not alt and keyval == Gdk.KEY_Delete:
+            self._start_trash(e)
+            return True
+        if not ctrl and not alt and keyval == Gdk.KEY_F2:
+            self._start_rename(e)
+            return True
+        if ctrl and keyval == Gdk.KEY_c:
+            self._start_copy(e)
+            return True
+        if ctrl and keyval == Gdk.KEY_x:
+            self._start_cut(e)
+            return True
+        return False
+
     def _on_hidden_toggled(self, toggle: Gtk.ToggleButton) -> None:
         self._show_hidden = toggle.get_active()
         if self._current is not None:
@@ -426,6 +475,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         self._render()
 
     def _render(self) -> None:
+        self._selected_entry = None  # rows are rebuilt below; selection does not survive that
         q = self._search.get_text().strip().casefold()
         at_true_root = self._is_true_root(self._current)
         hidden_system_count = 0
@@ -444,6 +494,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         for r in shown[:VISIBLE_CAP]:
             row = Adw.ActionRow(use_markup=False, title=r.name, subtitle=r.subtitle)
             row.tb_activate = r.activate
+            row.tb_entry = r.entry
             row.update_property([Gtk.AccessibleProperty.LABEL], [f"{r.name}, {r.subtitle}"])
             if r.entry is not None:
                 menu_btn = Gtk.MenuButton(icon_name="view-more-symbolic")
