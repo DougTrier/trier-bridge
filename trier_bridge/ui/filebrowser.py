@@ -115,6 +115,20 @@ KIND_LABEL = {
     "unknown": "Unknown item",
 }
 
+# Icon by kind alone, from the standard Adwaita/freedesktop icon set — never a per-file content
+# lookup, so a large folder never pays an extra stat per row just to draw an icon.
+KIND_ICON = {
+    "dir": "folder-symbolic",
+    "file": "text-x-generic-symbolic",
+    "symlink_dir": "folder-symbolic",
+    "symlink_file": "text-x-generic-symbolic",
+    "symlink_broken": "dialog-warning-symbolic",
+    "device": "drive-harddisk-symbolic",
+    "socket": "network-transmit-receive-symbolic",
+    "fifo": "view-refresh-symbolic",
+    "unknown": "dialog-question-symbolic",
+}
+
 
 def _fmt_size(n: int | None) -> str:
     if n is None:
@@ -142,6 +156,7 @@ class _Row:
     subtitle: str
     hidden: bool
     activate: Callable[[], None]
+    icon: str = "text-x-generic-symbolic"
     entry: FileEntry | None = None  # None for This PC's drive rows: no file actions there
 
 
@@ -337,6 +352,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
                 subtitle=d.mount_point,
                 hidden=False,
                 activate=partial(self.navigate_to, Path(d.mount_point)),
+                icon="drive-harddisk-symbolic",
             )
             for d in self._letters
         ]
@@ -365,6 +381,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
                     subtitle=self._entry_subtitle(e),
                     hidden=e.hidden,
                     activate=partial(self._activate_entry, e),
+                    icon=KIND_ICON.get(e.kind, "text-x-generic-symbolic"),
                     entry=e,
                 )
                 for e in result.entries
@@ -495,6 +512,7 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
             row = Adw.ActionRow(use_markup=False, title=r.name, subtitle=r.subtitle)
             row.tb_activate = r.activate
             row.tb_entry = r.entry
+            row.add_prefix(Gtk.Image.new_from_icon_name(r.icon))
             row.update_property([Gtk.AccessibleProperty.LABEL], [f"{r.name}, {r.subtitle}"])
             if r.entry is not None:
                 menu_btn = Gtk.MenuButton(icon_name="view-more-symbolic")
