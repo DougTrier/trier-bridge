@@ -83,13 +83,23 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
 
     def _dev_snapshot(self, window: MainWindow, path: str) -> bool:
         try:
+            # Render the window's current widget tree to a texture through its own renderer.
             paintable = Gtk.WidgetPaintable.new(window)
-            image = paintable.get_current_image()
-            if isinstance(image, Gdk.Texture):
-                image.save_to_png(path)
-                log.info("dev snapshot saved to %s", path)
+            width = paintable.get_intrinsic_width() or window.get_width()
+            height = paintable.get_intrinsic_height() or window.get_height()
+            snapshot = Gtk.Snapshot()
+            paintable.snapshot(snapshot, width, height)
+            node = snapshot.to_node()
+            renderer = window.get_native().get_renderer()
+            if node is None or renderer is None:
+                log.warning("dev snapshot: nothing to render yet")
+                return False
+            texture = renderer.render_texture(node, None)
+            if isinstance(texture, Gdk.Texture):
+                texture.save_to_png(path)
+                log.info("dev snapshot saved to %s (%dx%d)", path, width, height)
             else:
-                log.warning("dev snapshot: no texture available")
+                log.warning("dev snapshot: renderer returned no texture")
         except Exception as exc:  # development aid only; never affects the product path
             log.warning("dev snapshot failed: %s", exc)
         return False
