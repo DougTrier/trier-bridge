@@ -46,10 +46,10 @@ Steps, in order:
 
    Must be clean (black, flake8, mypy strict, bandit, complexity, unit tests, headers). Expect about 11 unit skips on Windows (they need `gi`, CUPS, logind, or POSIX bits).
 
-2. Push the tree to the VM and run the same gate plus the integration suite there. The VM is reachable and already has a `~/tb` copy; replace it:
+2. Push the tree to the VM and run the same gate plus the integration suite there. The VM is reachable and already has a `~/tb` copy; extract over it **without deleting the directory first** — a `rm -rf ~/tb` while the owner has a terminal sitting inside that directory leaves their shell pointing at a deleted inode (`os.getcwd()` fails with ENOENT; happened 2026-09-21 01:57 PM CDT). Files removed from the tree since the last push may linger harmlessly; that's an acceptable trade for not yanking the directory out from under anyone using it. If you genuinely need a clean extraction, use a fresh directory name (`~/tb2`, timestamped) instead of deleting `~/tb`.
 
    ```bash
-   ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "rm -rf ~/tb && mkdir ~/tb" && git archive HEAD | ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "tar -x -C ~/tb"
+   ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "mkdir -p ~/tb" && git archive HEAD | ssh -i ~/.ssh/tb-ubuntu-desktop-2404 tb@172.20.252.59 "tar -x -C ~/tb"
    ```
 
    ```bash
