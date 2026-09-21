@@ -393,6 +393,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** systemd 255 reports a dismissed polkit prompt as `AccessDenied`, so the product cannot tell "cancelled" from "denied" for service control and says "did not grant permission" for both; the wording is accurate in both cases and nothing changes either way, but the CANCELLED state is reachable only where the backend distinguishes (documented in `docs/PRIVILEGE-MODEL.md`). Authorization expiry (`auth_admin_keep`) is polkit's own cache and was not exercised. The grant test skips when the password variable is absent, so an unattended run without it proves only the dismissed and re-exec paths.
 - **Evidence state:** INTEGRATION_VERIFIED on Ubuntu 24.04.5
 
+### IMP-07.06/07 — PowerShell entry through real pwsh; cmdlet names through typed operations
+
+- **Timestamp:** 2026-09-21 04:50 AM CDT
+- **Candidate revision:** 3a59f1f
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); `powershell` snap 7.6.5 installed (F19); GUI session env for the launch check
+- **Files/modules:** `trier_bridge/bridge/cmdlets.py`, `trier_bridge/bridge/grammar.py` (translation hook, `powershell` command), `trier_bridge/bridge/commands.py` (`cmd_powershell`, help), `trier_bridge/ui/terminal.py` (PowerShell button), `tests/unit/test_cmdlets.py`
+- **Invariant impact:** TB-INV-103/104 (cmdlet names run the same typed operations as the Bridge commands and show the translation; `Stop-Process -Id` yields the same TerminatePlan and confirmation as taskkill), TB-INV-085/086 (unknown parameters and extra arguments refuse the whole line), TB-INV-105 (Get-EventLog and Get-WmiObject teach; nothing is simulated), DEC-008 (PowerShell is never bundled; `powershell` opens an installed `pwsh`), TB-SEC-003/TB-INV-082 (the launch is a fixed program path handed to the desktop's terminal handler; Bridge Mode stays shell-free; `$PSVersionTable` is refused as shell syntax), SECURITY section 11 (execution policy explained, not simulated)
+- **Expected result:** `Get-Service ssh`, `Get-Process`, `gip` produce the sc query, tasklist, and ipconfig /all output with a "PowerShell X → Y" first line; `Get-Process -Name` refuses; `Get-EventLog` teaches; `powershell` opens pwsh in the user's terminal when installed and explains how to get it when not.
+- **Observed result:** live in the VM: `Get-Service ssh` → "PowerShell Get-Service → sc query" then ssh.service Running; `Get-Process` → tasklist table; `gip` → ipconfig /all; `Get-EventLog System` → PARSE_ERROR with the Event Viewer explanation, nothing run; `Get-Process -Name bash` → PARSE_ERROR naming the parameter; `help Get-Service` shows the mapping and `-name`. `powershell` reported OK with the snap path; a `gnome-terminal-server` window titled Terminal appeared (AT-SPI) and `/snap/powershell/405/opt/powershell/pwsh` was running; closed afterwards. Unit 99 passed on the host, 107 in the VM; integration 41 passed, 1 skipped.
+- **Tests/checks:** `tools/dev.py all` (host, VM); `pytest tests/integration -m integration`; `vm_pwsh_probe.py` (test aid outside the repo) in the GUI session; AT-SPI walk of the terminal.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the "not installed" branch was not exercised (pwsh is installed in the VM); the PowerShell button in the Terminal page was verified by the same command path, not clicked; cmdlet coverage is the listed set only (Get-Process, Stop-Process -Id/-Force, Get-Service, Get-NetIPConfiguration, Get-NetIPAddress, Get-NetTCPConnection, Get-ComputerInfo, Get-ChildItem, Set-Location, Get-Location, Get-Content, Clear-Host, Write-Output, Get-Help, plus teaching entries for Get-EventLog and Get-WmiObject); PowerShell pipelines and variables are refused as shell syntax by design.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED (launch) on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

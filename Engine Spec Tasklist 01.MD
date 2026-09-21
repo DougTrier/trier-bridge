@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-07.06/07 — PowerShell entry through real `pwsh` and compatibility cmdlets through typed operations |
+| **Active task** | IMP-03.03/04/05 — everyday file and app mutations (typed, confirmed, reversible where Linux allows) |
 | **Last completed** | SCOPE-14: setup screen, Integrations page, tray icon T, search provider, Files extension, shortcut; all verified live from the installed .deb (2026-09-21 03:55 AM CDT) |
 | **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-07.06 pwsh entry → IMP-07.07 cmdlet aliases in Bridge Mode → IMP-03.03/05 file and app mutations → IMP-06.08 regression set |
+| **Next bounded step** | IMP-03.03 file operations through the file manager and GIO → IMP-03.05 default-apps changes → IMP-06.08 regression set → IMP-08 qualification |
 
 ---
 
@@ -228,8 +228,8 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-07.03** Map commands to existing typed operation authority. Evidence: `docs/VALIDATION.md` entry IMP-07 (taskkill uses plan_terminate).
 - [x] **IMP-07.04** Reject unknown/unparsed syntax without shell fallback. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection tests).
 - [x] **IMP-07.05** Implement bounded output/history/redaction. Evidence: `docs/VALIDATION.md` entry IMP-07.
-- [ ] **IMP-07.06** Integrate real `pwsh` where selected/available.
-- [ ] **IMP-07.07** Implement selected compatibility cmdlets only through typed operations.
+- [x] **IMP-07.06** Integrate real `pwsh` where selected/available. Evidence: `docs/VALIDATION.md` entry IMP-07.06/07 (`powershell` Bridge command and Terminal button open an installed pwsh in the desktop terminal; explains the snap when absent; never bundled).
+- [x] **IMP-07.07** Implement selected compatibility cmdlets only through typed operations. Evidence: entry IMP-07.06/07 (16 cmdlet names translate to Bridge commands with a visible note; Get-EventLog and Get-WmiObject teach; unknown parameters refuse the line).
 - [x] **IMP-07.08** Run injection/quoting/path/Unicode/timeout/cancellation tests. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection, quoting, Unicode, length); timeout/cancellation of long commands still open.
 
 ---
