@@ -123,3 +123,20 @@ Ask the owner in one line whether the Trier Bridge window in the VM can be close
 - `reports/local/` is git-ignored by design; copy JSON there, never commit it.
 - When a document says something that the code contradicts, the code is not automatically right: check the invariant (`tb inv show`), then fix whichever is wrong and say which.
 - Leave this file in place. Fable's polish pass removes it or folds it into the ledger.
+
+---
+
+## Progress (Claude Sonnet 5)
+
+**2026-09-21 01:20 PM CDT — Section 3 complete.**
+
+- Host gate (`tools/dev.py all`): clean, 105 passed, 11 skipped.
+- Pushed HEAD (`28f6988`) to the VM by `git archive`; VM gate (`tools/dev.py all`): clean, 139 passed, 1 skipped.
+- VM normalized results: unit 139/1 skip; integration (journeys excluded) 46 passed, 8 skipped — 2 need a console session, 6 need `TRIER_BRIDGE_TEST_PASSWORD` (unset for this SSH-only session). This is narrower live coverage than the 53-passed/0-skipped run cited for candidate `87bd7d6`; noted as an environment gap in the evidence entry, not a code regression. **Flagging for the owner:** if you want the fuller integration run this session was missing, either set `TRIER_BRIDGE_TEST_PASSWORD` for a future SSH session or run it from the console.
+- Live checks over SSH, called directly against the Bridge command layer (no desktop session attached to this login): `shutdown /r /t 30` returned the expected preview and was never confirmed; `shutdown /a` correctly reported nothing scheduled; `findstr /R Tr.er docs\README.md` matched with `grep -E` equivalence; `findstr /L al.ha ...` stayed literal; an invalid `/R` pattern was refused; `taskmgr`/`eventvwr` returned the no-app FAILED branch with the correct `linux_equivalent`; the Boot view's boot-scoped read returned 200 kernel entries (0 audit) all carrying the current boot id, cross-checked against an independent `journalctl -k -b` read.
+- Complexity note: cyclomatic outliers unchanged (15 functions, same values as candidate `87bd7d6`); cognitive outliers dropped 33 → 31 (`journal.newest` and `cmd_shutdown` were split by this batch and fell below threshold; `_search` and `cmd_start` each grew by one branch).
+- Wrote `docs/VALIDATION.md` entry **IMP-07.12**; added a resolving sub-bullet under IMP-04.03; checked `IMP-07.12` in `Engine Spec Tasklist 01.MD` (Foundation 07 now 13/13); regenerated `docs/FEATURE-INVARIANT-MAP.md` and `docs/KNOWN-LIMITATIONS.md`; updated the resume dashboard and `CONTEXT.md`; refreshed `CODE-QUALITY-REPORT.md` for candidate `28f6988` (CQS carried forward at 94/100 — no criterion's 0/0.5/1 score changed, reasoning written into the report for review).
+- `tools\tb.py all`: clean (0/0/0, links/invariants/headers; 5 info-level term hits, same as before). `tools\tb.py snapshot` taken.
+- Two commits: `2cf93e0` (IMP-07.12 evidence + ledger/context) and `b8e327d` (CODE-QUALITY-REPORT refresh).
+
+**Not started:** section 4 (needs the owner's answer on the VM window) and everything after it. Did not touch anything in section 6.
