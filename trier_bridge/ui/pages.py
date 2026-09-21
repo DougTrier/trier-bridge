@@ -54,6 +54,13 @@ class Router:
         return self._launcher.open(concept.route)
 
 
+def _row(title: str = "", subtitle: str = "") -> Adw.ActionRow:
+    """ActionRow with markup off: titles come from data and the system, not from us."""
+    row = Adw.ActionRow(title=title, subtitle=subtitle)
+    row.set_use_markup(False)
+    return row
+
+
 def _scrolled(child: Gtk.Widget) -> Gtk.ScrolledWindow:
     s = Gtk.ScrolledWindow(child=child, hscrollbar_policy=Gtk.PolicyType.NEVER)
     s.set_vexpand(True)
@@ -125,7 +132,7 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
         matches = self._catalog.search(query)
         self._results.set_title(f"Results for “{query}”" if matches else "No matches")
         if not matches:
-            row = Adw.ActionRow(
+            row = _row(
                 title="Nothing matched those words",
                 subtitle="Try another Windows term, or look under Help. Nothing was changed.",
             )
@@ -136,7 +143,7 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
             self._add_concept(m.concept)
 
     def _add_concept(self, c: Concept) -> None:
-        row = Adw.ActionRow(title=c.title, subtitle=f"{c.linux}\n{c.mapping_note()}")
+        row = _row(title=c.title, subtitle=f"{c.linux}\n{c.mapping_note()}")
         row.set_subtitle_lines(3)
         if c.equivalence is Equivalence.NONE:
             badge = Gtk.Label(label="No equivalent")
@@ -191,7 +198,7 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
             subtitle = path or "Not set up on this computer"
             if hint:
                 subtitle = f"{hint} · {subtitle}"
-            row = Adw.ActionRow(title=title, subtitle=subtitle)
+            row = _row(title=title, subtitle=subtitle)
             if path:
                 row.add_suffix(
                     _open_button(
@@ -212,7 +219,7 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
             ),
             ("Delete", "Delete moves to the Recycle Bin (Trash); Shift+Delete deletes for good."),
         ):
-            tips.add(Adw.ActionRow(title=t, subtitle=s))
+            tips.add(_row(title=t, subtitle=s))
         page.add(tips)
         self.append(_scrolled(page))
 
@@ -254,7 +261,7 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         self.append(_scrolled(page))
         self._rows: list[Gtk.Widget] = []
         self._default_rows: list[Gtk.Widget] = []
-        self._loading = Adw.ActionRow(title="Reading installed programs…")
+        self._loading = _row(title="Reading installed programs…")
         self._list_group.add(self._loading)
         self._started = False
 
@@ -284,7 +291,7 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         self._list_group.remove(self._loading)
         self._render()
         for d in defaults:
-            row = Adw.ActionRow(title=d.label, subtitle=d.app_name or "Nothing is set")
+            row = _row(title=d.label, subtitle=d.app_name or "Nothing is set")
             self._defaults_group.add(row)
             self._default_rows.append(row)
         return False
@@ -299,7 +306,7 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         ]
         self._list_group.set_title(f"{len(shown)} of {len(self._apps)} programs")
         for a in shown[:200]:
-            row = Adw.ActionRow(title=a.name, subtitle=a.comment or a.desktop_id)
+            row = _row(title=a.name, subtitle=a.comment or a.desktop_id)
             badge = Gtk.Label(label=a.provenance.label)
             badge.add_css_class("caption")
             badge.add_css_class("dim-label")
@@ -316,7 +323,7 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
             self._list_group.add(row)
             self._rows.append(row)
         if len(shown) > 200:
-            more = Adw.ActionRow(title=f"{len(shown) - 200} more; narrow the search to see them")
+            more = _row(title=f"{len(shown) - 200} more; narrow the search to see them")
             self._list_group.add(more)
             self._rows.append(more)
 
@@ -340,7 +347,7 @@ class SettingsPage(Gtk.Box):  # type: ignore[misc]
         )
         for c in catalog.concepts:
             if c.route.kind in (RouteKind.GNOME_SETTINGS, RouteKind.APP) and c.group == "Everyday":
-                row = Adw.ActionRow(title=c.title, subtitle=f"{c.linux}\n{c.mapping_note()}")
+                row = _row(title=c.title, subtitle=f"{c.linux}\n{c.mapping_note()}")
                 row.set_subtitle_lines(3)
                 row.add_suffix(
                     _open_button(
@@ -368,7 +375,7 @@ class EntryPointPage(Gtk.Box):  # type: ignore[misc]
         page = Adw.PreferencesPage()
         group = Adw.PreferencesGroup(title=title, description=description)
         for label, subtitle, action in actions:
-            row = Adw.ActionRow(title=label, subtitle=subtitle)
+            row = _row(title=label, subtitle=subtitle)
             row.add_suffix(
                 _open_button(
                     "Open",

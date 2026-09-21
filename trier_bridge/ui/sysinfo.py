@@ -62,6 +62,13 @@ FRIENDLY = {
 }
 
 
+def _row(title: str = "", subtitle: str = "") -> Adw.ActionRow:
+    """ActionRow with markup off: titles come from data and the system, not from us."""
+    row = Adw.ActionRow(title=title, subtitle=subtitle)
+    row.set_use_markup(False)
+    return row
+
+
 class SystemInfoPage(Gtk.Box):  # type: ignore[misc]
     def __init__(self, discover: Any) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
@@ -76,7 +83,7 @@ class SystemInfoPage(Gtk.Box):  # type: ignore[misc]
                 "Nothing is changed by looking."
             ),
         )
-        self._status = Adw.ActionRow(title="Checking…")
+        self._status = _row(title="Checking…")
         self._env_group.add(self._status)
         self._page.add(self._env_group)
         self._page.add(self._cap_group)
@@ -130,16 +137,16 @@ class SystemInfoPage(Gtk.Box):  # type: ignore[misc]
         self._env_group.remove(self._status)
         for line in env.summary_lines():
             title, _, value = line.partition(": ")
-            row = Adw.ActionRow(title=title, subtitle=value)
+            row = _row(title=title, subtitle=value)
             row.update_property([Gtk.AccessibleProperty.LABEL], [f"{title}: {value}"])
             self._env_group.add(row)
             self._rows.append(row)
-        self._status = Adw.ActionRow(title="Sources", subtitle=", ".join(env.evidence) or "none")
+        self._status = _row(title="Sources", subtitle=", ".join(env.evidence) or "none")
         self._env_group.add(self._status)
         self._rows.append(self._status)
         for rec in recs:
             name, what = FRIENDLY.get(rec.capability.value, (rec.capability.value, ""))
-            row = Adw.ActionRow(title=name, subtitle=what)
+            row = _row(title=name, subtitle=what)
             badge = Gtk.Label(label=rec.plain_state)
             badge.add_css_class("caption")
             badge.add_css_class(_css_for(rec.state))

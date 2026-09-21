@@ -20,6 +20,7 @@ about how the program was installed. A unified list never erases it
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import gi
 
@@ -59,27 +60,55 @@ class DefaultApp:
     desktop_id: str
 
 
+def application_dirs() -> list[str]:
+    """Directories that hold desktop entries, in XDG precedence order (user first).
+
+    Snap and Flatpak export directories are listed explicitly: they are part of
+    XDG_DATA_DIRS only inside a graphical session, and provenance must not
+    depend on which session asked (TB-INV-072).
+    """
+    dirs: list[str] = [str(GLib.get_user_data_dir()) + "/applications"]
+    for d in GLib.get_system_data_dirs():
+        dirs.append(str(d) + "/applications")
+    home = str(GLib.get_home_dir())
+    for extra in (
+        "/var/lib/snapd/desktop/applications",
+        "/var/lib/flatpak/exports/share/applications",
+        f"{home}/.local/share/flatpak/exports/share/applications",
+    ):
+        if extra not in dirs:
+            dirs.append(extra)
+    return dirs
+
+
 def installed_apps() -> list[InstalledApp]:
     apps: list[InstalledApp] = []
-    for info in Gio.AppInfo.get_all():
-        if not info.should_show():
+    seen: set[str] = set()
+    home = str(GLib.get_home_dir())
+    for directory in application_dirs():
+        d = Path(directory)
+        if not d.is_dir():
             continue
-        filename = info.get_filename() if isinstance(info, Gio.DesktopAppInfo) else None
-        path = filename or ""
-        icon = info.get_icon()
-        icon_name = icon.to_string() if icon is not None else ""
-        apps.append(
-            InstalledApp(
-                name=info.get_display_name() or info.get_name() or "",
-                desktop_id=info.get_id() or "",
-                comment=info.get_description() or "",
-                provenance=(
-                    provenance_for(path, str(GLib.get_home_dir())) if path else Provenance.OTHER
-                ),
-                source_path=path,
-                icon=icon_name,
+        for entry in sorted(d.glob("*.desktop")):
+            if entry.name in seen:
+                continue  # an earlier (higher-precedence) directory already provided this id
+            info = Gio.DesktopAppInfo.new_from_filename(str(entry))
+            if info is None:
+                continue
+            seen.add(entry.name)
+            if not info.should_show():
+                continue
+            icon = info.get_icon()
+            apps.append(
+                InstalledApp(
+                    name=info.get_display_name() or info.get_name() or entry.stem,
+                    desktop_id=entry.name,
+                    comment=info.get_description() or "",
+                    provenance=provenance_for(str(entry), home),
+                    source_path=str(entry),
+                    icon=icon.to_string() if icon is not None else "",
+                )
             )
-        )
     apps.sort(key=lambda a: a.name.casefold())
     return apps
 
