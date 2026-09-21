@@ -19,14 +19,14 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | ROOT-01 — Root project-control document alignment |
-| **Last completed** | SCOPE-01..05 design documents from in-guest research (2026-09-20 11:55 PM CDT) |
+| **Last completed** | Live research R2/R17/R18 in the VM and stack proposal `docs/STACK-SELECTION.md` (2026-09-21 12:05 AM CDT) |
 | **Implementation** | NOT STARTED |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | Live checks for R1/R2/R17/R18 in the VM → stack recommendation (ARC-01/02) for owner decision → Foundation 01 freeze |
+| **Next bounded step** | Owner decision on DEC-020 (stack) → Foundation 01 toolchain freeze (IMP-01.01) → module skeleton |
 
 ---
 
@@ -78,6 +78,7 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [x] **ENV-02** Create the Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification. Evidence: created by owner via `New-TbDesktopVm.ps1` 2026-09-20 10:39 PM CDT (ISO VERIFIED); in-guest profile recorded 11:10 PM CDT in `docs/VALIDATION.md` entry ENV-02 (Ubuntu 24.04.5, Wayland GNOME 46, systemd 255, NM 1.46, udisks 2.10, polkit 124).
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
 - [ ] **ENV-03** Baseline `clean-install` checkpoint taken after first login and restore verified; removal procedure (`tools/env/Remove-TbDesktopVm.ps1`) kept available but the owner intends to keep the VM for other uses (2026-09-20).
+  - 2026-09-21 12:05 AM CDT: research prototypes left in the guest for the morning check: per-user search provider under `~/.local/share/{dbus-1/services,gnome-shell/search-providers,applications}` and `~/.local/bin/tb-search-provider` (reversible with the recorded uninstall script). `~/tb-research` removed. Not part of `clean-install`.
   - 2026-09-20 11:40 PM CDT: `tools/env/tb-pad.py` shared notepad/file drop added and verified in both directions (host curl, guest wget); desktop launchers created on both sides. Guest deviation from baseline: `~/.local/bin/tb-pad-open.sh`, `~/Desktop/tb-pad.desktop` (not in the `clean-install` checkpoint).
   - 2026-09-20 11:12 PM CDT: VM checkpoint type set to Standard (automatic checkpoints off); baseline checkpoint `clean-install` taken while running, after openssh-server + host key were added and all bootstrap files removed. Restore verification still open (would interrupt the owner session).
 
@@ -96,6 +97,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **SCOPE-07** Windows-to-Linux concept catalog: data schema for every Windows-labeled concept with route, backend, and equivalence class (exact / approximate / none) per TB-INV-065; drives search, help, Show Me the Linux Way, and Bridge commands.
 - [ ] **SCOPE-08** Bridge Terminal grammar and MVP command list with class A to E, flags, and typed operation per command.
 - [ ] **SCOPE-09** Accessibility acceptance criteria as a stack-selection gate (AT-SPI on Wayland across candidate frameworks, keyboard-only, screen reader, large text).
+  - 2026-09-21: gate evidence for the proposed framework recorded (F17: GTK4/libadwaita exposes names, descriptions, and switch labels on Wayland). Full criteria document still to write.
 - [ ] **SCOPE-10** Backend runtime topology: session service versus in-process core, UI-to-backend IPC, relationship to the privileged service.
 - [ ] **SCOPE-11** Local pre-commit gate convention (`tools\tb all` before every commit; optional local git hook), since there is no CI.
 - [ ] **SCOPE-12** Name and trademark check on "Trier Bridge" before any public step.
@@ -121,7 +123,9 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 # Platform and architecture freeze
 
 - [ ] **ARC-01** Select implementation language/runtime with documented alternatives and rationale.
+  - 2026-09-21: proposal written, `docs/STACK-SELECTION.md` (Python 3.12 + PyGObject), alternatives B to E recorded; live evidence F15/F16/F17. Awaiting owner decision (DEC-020).
 - [ ] **ARC-02** Select desktop/UI framework with Wayland/X11/accessibility/package implications.
+  - 2026-09-21: proposal GTK 4 + libadwaita in `docs/STACK-SELECTION.md`; AT-SPI on Wayland verified live (F17). Awaiting owner decision (DEC-020).
 - [ ] **ARC-03** Freeze module/dependency direction.
 - [ ] **ARC-04** Freeze typed operation model.
 - [ ] **ARC-05** Freeze capability-discovery contract.

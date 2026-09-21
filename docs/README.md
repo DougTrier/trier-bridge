@@ -1,6 +1,6 @@
 # Trier Bridge Documentation
 
-**Updated:** 2026-09-20 11:55 PM CDT  
+**Updated:** 2026-09-21 12:05 AM CDT  
 **Status:** Design foundation. Every runtime, test, or evidence statement in this pack is a design contract or template until observed evidence is recorded.
 
 ## Authority order
@@ -48,6 +48,7 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 | `PRIVILEGE-MODEL.md` | SCOPE-02: no privileged helper in the first release; polkit-mediated services, identity and lifecycle on D-Bus. |
 | `PACKAGING.md` | SCOPE-03: native `.deb` core, excluded formats, package contents and lifecycle behavior. |
 | `TEST-STRATEGY.md` | SCOPE-05: real-VM oracle, real test objects, layers, fault injection, run discipline. |
+| `STACK-SELECTION.md` | ARC-01/02 proposal (DEC-020): Python + PyGObject, GTK 4 + libadwaita; candidates, evidence, costs, what Foundation 01 pins. |
 
 ## Root control files
 

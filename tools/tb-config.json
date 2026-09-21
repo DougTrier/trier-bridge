@@ -1,24 +1,136 @@
 {
-  "ignore_dirs": [".git", "reports", "node_modules", "target", "build", "dist", "out", "bin", "obj", "__pycache__", ".venv", "venv", ".idea", ".vscode", ".cache"],
-  "ignore_globs": ["*.pyc", "*.log", "*.swp", "*~"],
-  "text_extensions": [".md", ".MD", ".txt", ".json", ".toml", ".yaml", ".yml", ".py", ".ps1", ".psm1", ".cmd", ".bat", ".sh", ".rs", ".ts", ".tsx", ".js", ".jsx", ".c", ".h", ".cpp", ".hpp", ".go", ".java", ".kt", ".cs", ".ini", ".cfg", ".xml", ".html", ".css", ".svg", ".desktop", ".service"],
-  "text_names": ["LICENSE", "NOTICE", ".gitignore", ".gitattributes"],
+  "ignore_dirs": [
+    ".git",
+    "reports",
+    "node_modules",
+    "target",
+    "build",
+    "dist",
+    "out",
+    "bin",
+    "obj",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".idea",
+    ".vscode",
+    ".cache"
+  ],
+  "ignore_globs": [
+    "*.pyc",
+    "*.log",
+    "*.swp",
+    "*~"
+  ],
+  "text_extensions": [
+    ".md",
+    ".MD",
+    ".txt",
+    ".json",
+    ".toml",
+    ".yaml",
+    ".yml",
+    ".py",
+    ".ps1",
+    ".psm1",
+    ".cmd",
+    ".bat",
+    ".sh",
+    ".rs",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".c",
+    ".h",
+    ".cpp",
+    ".hpp",
+    ".go",
+    ".java",
+    ".kt",
+    ".cs",
+    ".ini",
+    ".cfg",
+    ".xml",
+    ".html",
+    ".css",
+    ".svg",
+    ".desktop",
+    ".service"
+  ],
+  "text_names": [
+    "LICENSE",
+    "NOTICE",
+    ".gitignore",
+    ".gitattributes"
+  ],
   "brief_limit": 25,
   "ledger_file": "Engine Spec Tasklist 01.MD",
   "invariants_file": "docs/INVARIANTS.md",
   "security_file": "docs/SECURITY.md",
   "acceptance_file": "docs/VALIDATION.md",
   "links": {
-    "mention_allow_files": ["docs/README.md", "docs/SECURITY.md", "tools/README.md"]
+    "mention_allow_files": [
+      "docs/README.md",
+      "docs/SECURITY.md",
+      "tools/README.md"
+    ]
   },
   "headers": {
-    "extensions": [".py", ".ps1", ".psm1", ".cmd", ".bat", ".sh", ".rs", ".ts", ".tsx", ".js", ".jsx", ".c", ".h", ".cpp", ".hpp", ".go", ".java", ".kt", ".cs"],
-    "exclude_globs": ["**/vendor/**", "**/third_party/**", "**/generated/**", "**/*.lock"],
+    "extensions": [
+      ".py",
+      ".ps1",
+      ".psm1",
+      ".cmd",
+      ".bat",
+      ".sh",
+      ".rs",
+      ".ts",
+      ".tsx",
+      ".js",
+      ".jsx",
+      ".c",
+      ".h",
+      ".cpp",
+      ".hpp",
+      ".go",
+      ".java",
+      ".kt",
+      ".cs"
+    ],
+    "exclude_globs": [
+      "**/vendor/**",
+      "**/third_party/**",
+      "**/generated/**",
+      "**/*.lock"
+    ],
     "max_lines": 20
   },
   "terms": {
-    "code_globs": ["**/*.py", "**/*.ps1", "**/*.psm1", "**/*.cmd", "**/*.bat", "**/*.sh", "**/*.rs", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.c", "**/*.h", "**/*.cpp", "**/*.hpp", "**/*.go", "**/*.java", "**/*.kt", "**/*.cs"],
-    "exclude_globs": ["tools/tb-config.json"],
+    "code_globs": [
+      "**/*.py",
+      "**/*.ps1",
+      "**/*.psm1",
+      "**/*.cmd",
+      "**/*.bat",
+      "**/*.sh",
+      "**/*.rs",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.c",
+      "**/*.h",
+      "**/*.cpp",
+      "**/*.hpp",
+      "**/*.go",
+      "**/*.java",
+      "**/*.kt",
+      "**/*.cs"
+    ],
+    "exclude_globs": [
+      "tools/tb-config.json"
+    ],
     "rules": [
       {
         "id": "TB-TERM-001",
@@ -54,8 +166,12 @@
         "pattern": "\\b(?:we use|will use|is written in|is built (?:in|with)|implemented in)\\s+(?:Rust|Tauri|React|Python|Electron|Qt|GTK|Go|C\\+\\+|C#|\\.NET|Node(?:\\.js)?|TypeScript|Java|Kotlin)\\b",
         "flags": "i",
         "severity": "warn",
-        "message": "Implementation stack is an open decision (DECISIONS.md); do not assert one",
-        "exclude": ["tools/**"]
+        "message": "Implementation stack is DEC-020 (proposed); assert it only in STACK-SELECTION.md/DECISIONS.md until accepted",
+        "exclude": [
+          "docs/DECISIONS.md",
+          "docs/STACK-SELECTION.md",
+          "tools/**"
+        ]
       },
       {
         "id": "TB-TERM-006",
@@ -88,7 +204,9 @@
         "flags": "i",
         "severity": "warn",
         "message": "Possible secret literal (TB-SEC-015, TB-INV-123)",
-        "exclude": ["tools/env/autoinstall/**"]
+        "exclude": [
+          "tools/env/autoinstall/**"
+        ]
       },
       {
         "id": "TB-TERM-010",
@@ -112,7 +230,10 @@
         "pattern": "\\]\\((?:INVARIANTS|SECURITY|LICENSING|DECISIONS|ENGINEERING|CODE-QUALITY|PLATFORMS|VALIDATION|PRODUCT-CONCEPT|PRODUCT-NORTH-STAR)\\.md",
         "severity": "warn",
         "message": "Governing documents live under docs/; link to docs/<name>.md",
-        "include": ["*.md", "*.MD"]
+        "include": [
+          "*.md",
+          "*.MD"
+        ]
       }
     ]
   }
