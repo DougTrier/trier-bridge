@@ -29,7 +29,14 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from ..desktop.launch import LaunchResult, Launcher  # noqa: E402
-from ..system.network import NetworkOverview, read_network  # noqa: E402
+from ..operations.network import (  # noqa: E402
+    IPv4Settings,
+    NetworkPlan,
+    execute_network,
+    ipv4_settings,
+    plan_network,
+)
+from ..system.network import NetworkDevice, NetworkOverview, read_network  # noqa: E402
 
 log = logging.getLogger("trier_bridge.ui.network")
 
@@ -50,8 +57,9 @@ class NetworkPage(Gtk.Box):  # type: ignore[misc]
         self._overview = Adw.PreferencesGroup(
             title="Network",
             description=(
-                "Windows: Network Connections, ipconfig. Read from NetworkManager; "
-                "each fact is shown separately. Changes are made in Settings."
+                "Windows: Network Connections, ipconfig. Read from NetworkManager; each "
+                "fact is shown separately. Disconnect, connect, or set an IPv4 address "
+                "per adapter; Linux asks for permission for each change."
             ),
         )
         self._page.add(self._overview)
@@ -90,6 +98,121 @@ class NetworkPage(Gtk.Box):  # type: ignore[misc]
         scroller.set_vexpand(True)
         self.append(scroller)
         self._started = False
+
+    def _actions_for(self, d: NetworkDevice) -> Gtk.Box:
+        box = Gtk.Box(spacing=6)
+        verb = "disconnect" if d.connection_uuid else "connect"
+        b = Gtk.Button(label="Disconnect" if d.connection_uuid else "Connect")
+        b.set_valign(Gtk.Align.CENTER)
+        b.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            [f"{verb.capitalize()} {d.interface}. Asks first; Linux asks permission."],
+        )
+        b.connect("clicked", lambda *_, dev=d, v=verb: self._ask(dev, v, None, ()))
+        box.append(b)
+        if d.connection_uuid:
+            ip = Gtk.Button(label="IPv4…")
+            ip.set_valign(Gtk.Align.CENTER)
+            ip.update_property(
+                [Gtk.AccessibleProperty.DESCRIPTION],
+                [f"Set a fixed IPv4 address or automatic for {d.interface}. Asks first."],
+            )
+            ip.connect("clicked", lambda *_, dev=d: self._ipv4_dialog(dev))
+            box.append(ip)
+        return box
+
+    def _ipv4_dialog(self, d: NetworkDevice) -> None:
+        dialog = Adw.Dialog(title=f"IPv4 for {d.interface}", content_width=460)
+        toolbar = Adw.ToolbarView()
+        toolbar.add_top_bar(Adw.HeaderBar())
+        page = Adw.PreferencesPage()
+        group = Adw.PreferencesGroup(
+            title="Address",
+            description="Windows: adapter Properties, Internet Protocol Version 4. "
+            "Automatic means DHCP.",
+        )
+        auto = Adw.SwitchRow(use_markup=False)
+        auto.set_title("Obtain an IP address automatically")
+        auto.set_active(True)
+        group.add(auto)
+        addr = Adw.EntryRow(title="IP address / prefix (e.g. 192.168.1.10/24 or mask)")
+        addr.set_text(d.ipv4[0] if d.ipv4 else "")
+        gw = Adw.EntryRow(title="Default gateway")
+        gw.set_text(d.gateway4)
+        dns = Adw.EntryRow(title="DNS servers (comma separated, optional)")
+        dns.set_text(", ".join(d.dns))
+        for row in (addr, gw, dns):
+            group.add(row)
+        page.add(group)
+        toolbar.set_content(page)
+        actions = Gtk.Box(
+            spacing=12, margin_top=8, margin_bottom=12, margin_start=12, margin_end=12
+        )
+        actions.set_halign(Gtk.Align.END)
+        cancel = Gtk.Button(label="Cancel")
+        cancel.connect("clicked", lambda *_: dialog.close())
+        apply = Gtk.Button(label="Apply")
+        apply.add_css_class("suggested-action")
+
+        def on_apply(*_: object) -> None:
+            dialog.close()
+            if auto.get_active():
+                self._ask(d, "auto", None, ())
+                return
+            try:
+                text = addr.get_text().strip()
+                address, _, mask = text.partition("/")
+                settings = ipv4_settings(address, mask, gw.get_text(), dns.get_text())
+            except ValueError as exc:
+                self._notify(f"{exc} Nothing was changed.")
+                return
+            self._ask(d, "static", settings, ())
+
+        apply.connect("clicked", on_apply)
+        actions.append(cancel)
+        actions.append(apply)
+        toolbar.add_bottom_bar(actions)
+        dialog.set_child(toolbar)
+        dialog.present(self.get_root())
+
+    def _ask(
+        self, d: NetworkDevice, verb: str, settings: IPv4Settings | None, dns: tuple[str, ...]
+    ) -> None:
+        plan = plan_network(d, verb, settings, dns)
+        if not isinstance(plan, NetworkPlan):
+            self._notify(plan.plain)
+            return
+        dialog = Adw.AlertDialog(heading=f"{plan.heading}: {d.interface}?", body=plan.preview)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("go", plan.heading)
+        dialog.set_response_appearance(
+            "go",
+            (
+                Adw.ResponseAppearance.DESTRUCTIVE
+                if verb == "disconnect"
+                else Adw.ResponseAppearance.SUGGESTED
+            ),
+        )
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._on_confirm, plan)
+        dialog.present(self.get_root())
+
+    def _on_confirm(self, _d: Adw.AlertDialog, response: str, plan: NetworkPlan) -> None:
+        if response != "go":
+            self._notify(f"Cancelled. {plan.label} was left as it is.")
+            return
+        app = self.get_root().get_application()
+        journal = getattr(app, "journal", None)
+
+        def work() -> None:
+            result = execute_network(plan, journal)
+            GLib.idle_add(
+                self._notify, f"{result.plain} {result.three_answers()['Did anything change?']}"
+            )
+            GLib.idle_add(self.refresh)
+
+        threading.Thread(target=work, name="tb-network-change", daemon=True).start()
 
     def _open(self, panel: str) -> None:
         res: LaunchResult = self._launcher.open_settings_panel(panel)
@@ -142,6 +265,7 @@ class NetworkPage(Gtk.Box):  # type: ignore[misc]
             if d.is_loopback:
                 continue
             g = Adw.PreferencesGroup(title=f"{d.interface} ({d.kind})")
+            g.set_header_suffix(self._actions_for(d))
             facts = [
                 ("Link", d.link_state),
                 ("Connection profile", d.connection_name or "None active"),

@@ -559,6 +559,104 @@ def cmd_assoc(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return CommandOutput(Exit.OK, tuple(lines), "xdg-mime query default", True)
 
 
+def netsh_request(args: tuple[str, ...]) -> tuple[str, str, dict[str, str]] | str:
+    """Parse the netsh forms this build accepts into (interface, verb, fields), or a plain
+    reason. Windows syntax: netsh interface set interface <name> enable|disable;
+    netsh interface ip set address <name> static <ip> <mask> [gateway] | dhcp;
+    netsh interface ip set dns <name> static <ip> | dhcp. name=\"x\" is accepted."""
+    a = [x for x in args]
+    if (
+        len(a) >= 5
+        and a[0].lower() == "interface"
+        and a[1].lower() == "set"
+        and a[2].lower() == "interface"
+    ):
+        name = a[3].split("=", 1)[-1]
+        state = a[4].lower()
+        if state in ("enable", "enabled"):
+            return name, "connect", {}
+        if state in ("disable", "disabled"):
+            return name, "disconnect", {}
+        return f"netsh: '{a[4]}' is not enable or disable."
+    if len(a) >= 5 and [x.lower() for x in a[:3]] == ["interface", "ip", "set"]:
+        what = a[3].lower()
+        name = a[4].split("=", 1)[-1]
+        rest = a[5:]
+        if what in ("address", "addr"):
+            if rest and rest[0].lower() == "dhcp":
+                return name, "auto", {}
+            if len(rest) >= 3 and rest[0].lower() == "static":
+                return (
+                    name,
+                    "static",
+                    {
+                        "address": rest[1],
+                        "mask": rest[2],
+                        "gateway": rest[3] if len(rest) > 3 else "",
+                    },
+                )
+            return "netsh: use 'static <ip> <mask> [gateway]' or 'dhcp' after the interface name."
+        if what in ("dns", "dnsservers"):
+            if rest and rest[0].lower() == "dhcp":
+                return name, "dns-auto", {}
+            if len(rest) >= 2 and rest[0].lower() == "static":
+                return name, "dns", {"dns": ",".join(rest[1:])}
+            return "netsh: use 'static <ip> [ip...]' or 'dhcp' after the interface name."
+        return f"netsh: 'ip set {a[3]}' is not available here (address or dns)."
+    return (
+        "netsh here accepts: interface set interface <name> enable|disable; "
+        "interface ip set address <name> static <ip> <mask> [gateway] | dhcp; "
+        "interface ip set dns <name> static <ip> | dhcp."
+    )
+
+
+def cmd_netsh(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..operations.network import NetworkPlan, ipv4_settings, plan_connect, plan_network
+    from ..system.network import read_network
+
+    req = netsh_request(cmd.args)
+    if isinstance(req, str):
+        return CommandOutput(Exit.PARSE_ERROR, (req,), "nmcli", False)
+    name, verb, fields = req
+    nw = read_network()
+    device = next((d for d in nw.devices if d.interface.lower() == name.lower()), None)
+    if device is None and verb == "connect":
+        plan = plan_connect(name)
+        if not isinstance(plan, NetworkPlan):
+            return CommandOutput(Exit.FAILED, (plan.plain,), "nmcli", False)
+        return CommandOutput(
+            Exit.NEEDS_CONFIRMATION,
+            (plan.preview, "Confirm in the dialog to continue; nothing has happened yet."),
+            f"nmcli connection up {name}",
+            False,
+            plan,
+        )
+    if device is None:
+        known = ", ".join(d.interface for d in nw.devices if not d.is_loopback) or "none"
+        return CommandOutput(
+            Exit.FAILED, (f"No adapter named '{name}'. Adapters here: {known}.",), "nmcli", False
+        )
+    try:
+        settings = (
+            ipv4_settings(fields["address"], fields["mask"], fields.get("gateway", ""))
+            if verb == "static"
+            else None
+        )
+        dns = tuple(ipv4_settings("0.0.0.0", "0", "", fields["dns"]).dns) if verb == "dns" else ()
+    except ValueError as exc:
+        return CommandOutput(Exit.PARSE_ERROR, (str(exc),), "nmcli", False)
+    plan = plan_network(device, verb, settings, dns)
+    if not isinstance(plan, NetworkPlan):
+        return CommandOutput(Exit.UNSUPPORTED, (plan.plain,), "nmcli", False)
+    return CommandOutput(
+        Exit.NEEDS_CONFIRMATION,
+        (plan.preview, "Confirm in the dialog to continue; nothing has happened yet."),
+        f"nmcli device/connection modify {device.interface}",
+        False,
+        plan,
+    )
+
+
 def pwsh_path() -> str:
     """An installed PowerShell 7, never a bundled one (DEC-008)."""
     found = shutil.which("pwsh")
@@ -634,6 +732,7 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "shutdown": cmd_shutdown,
     "powershell": cmd_powershell,
     "assoc": cmd_assoc,
+    "netsh": cmd_netsh,
     "copy": cmd_copy,
     "move": cmd_move,
     "ren": cmd_ren,

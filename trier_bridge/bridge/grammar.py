@@ -309,6 +309,17 @@ COMMANDS: tuple[CommandSpec, ...] = (
         summary="Show which program opens each common kind of file.",
     ),
     CommandSpec(
+        "netsh",
+        (),
+        PrivilegeClass.C_ADMIN_MUTATION,
+        (),
+        9,
+        min_args=3,
+        linux="NetworkManager (nmcli)",
+        summary="interface set interface <name> enable|disable; interface ip set "
+        "address|dns <name> static ...|dhcp; asks first.",
+    ),
+    CommandSpec(
         "powershell",
         ("pwsh",),
         PrivilegeClass.A_READ_ONLY,
