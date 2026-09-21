@@ -274,9 +274,7 @@ def _verify(plan: FilePlan) -> bool:
     return not plan.source.exists()
 
 
-def execute_file(plan: FilePlan, journal: OperationJournal | None = None) -> OperationResult:
-    op = plan.operation.with_authorization(AuthorizationState.NOT_REQUIRED)
-    rec = None
+def _journal_details(plan: FilePlan) -> dict[str, str]:
     details = {"source": str(plan.source), "dest": str(plan.dest or "")}
     if plan.identity is not None:
         details.update(
@@ -286,10 +284,65 @@ def execute_file(plan: FilePlan, journal: OperationJournal | None = None) -> Ope
                 "ctime_ns": str(plan.identity.ctime_ns),
             }
         )
+    return details
+
+
+def _stale_reason(plan: FilePlan) -> tuple[str, str] | None:
+    """Why the plan must cancel right before acting, or None (TB-INV-050)."""
+    if plan.identity is not None and not is_still_same(plan.identity):
+        return (
+            f"{plan.label} changed or disappeared before anything happened. Nothing was changed.",
+            "Look again in Files and try once more.",
+        )
+    if plan.dest is not None and (plan.dest.exists() or plan.dest.is_symlink()):
+        return (
+            f"{plan.dest.name} appeared in the meantime. Nothing here overwrites; "
+            "nothing was changed.",
+            "",
+        )
+    return None
+
+
+def _gio_call(plan: FilePlan) -> None:
+    """The one GIO call per verb; raises GLib.Error."""
+    src = Gio.File.new_for_path(str(plan.source))
+    dest = Gio.File.new_for_path(str(plan.dest)) if plan.dest is not None else None
+    if plan.verb == "copy":
+        src.copy(dest, Gio.FileCopyFlags.NONE, None, None, None)
+    elif plan.verb in ("move", "rename"):
+        src.move(dest, Gio.FileCopyFlags.NONE, None, None, None)
+    elif plan.verb == "trash":
+        src.trash(None)
+    elif plan.verb == "mkdir":
+        src.make_directory(None)
+    else:
+        src.delete(None)  # rmdir: GIO refuses a non-empty directory
+
+
+def _success_text(plan: FilePlan) -> str:
+    where = ""
+    if plan.verb in ("copy", "move"):
+        where = f" to {plan.dest}"
+    elif plan.verb == "rename" and plan.dest is not None:
+        where = f" to {plan.dest.name}"
+    note = " Files can restore it from the Trash." if plan.verb == "trash" else ""
+    return f"{plan.label} {VERBS[plan.verb][1]}{where}.{note}"
+
+
+def execute_file(plan: FilePlan, journal: OperationJournal | None = None) -> OperationResult:
+    """Revalidate → one GIO call → observe the result (TB-INV-006)."""
+    op = plan.operation.with_authorization(AuthorizationState.NOT_REQUIRED)
+    rec = None
     if journal is not None:
-        rec = journal.open(op.operation_id, op.kind, "file", plan.label, details, plan.preview)
+        rec = journal.open(
+            op.operation_id, op.kind, "file", plan.label, _journal_details(plan), plan.preview
+        )
         journal.advance(rec, OperationState.PREVIEWED)
         journal.advance(rec, OperationState.AUTHORIZED)
+
+    def advance(state: OperationState) -> None:
+        if journal is not None and rec is not None:
+            journal.advance(rec, state)
 
     def finish(
         state: OperationState, plain: str, technical: str = "", next_step: str = ""
@@ -298,36 +351,12 @@ def execute_file(plan: FilePlan, journal: OperationJournal | None = None) -> Ope
             journal.advance(rec, state, plain, technical)
         return OperationResult(op.operation_id, state, plain, technical, next_step)
 
-    if plan.identity is not None and not is_still_same(plan.identity):
-        return finish(
-            OperationState.CANCELLED,
-            f"{plan.label} changed or disappeared before anything happened. Nothing was changed.",
-            next_step="Look again in Files and try once more.",
-        )
-    if plan.dest is not None and (plan.dest.exists() or plan.dest.is_symlink()):
-        return finish(
-            OperationState.CANCELLED,
-            f"{plan.dest.name} appeared in the meantime. Nothing here overwrites; "
-            "nothing was changed.",
-        )
-    if journal is not None and rec is not None:
-        journal.advance(rec, OperationState.EXECUTING)
-    src = Gio.File.new_for_path(str(plan.source))
+    stale = _stale_reason(plan)
+    if stale is not None:
+        return finish(OperationState.CANCELLED, stale[0], next_step=stale[1])
+    advance(OperationState.EXECUTING)
     try:
-        if plan.verb == "copy":
-            src.copy(
-                Gio.File.new_for_path(str(plan.dest)), Gio.FileCopyFlags.NONE, None, None, None
-            )
-        elif plan.verb in ("move", "rename"):
-            src.move(
-                Gio.File.new_for_path(str(plan.dest)), Gio.FileCopyFlags.NONE, None, None, None
-            )
-        elif plan.verb == "trash":
-            src.trash(None)
-        elif plan.verb == "mkdir":
-            src.make_directory(None)
-        else:
-            src.delete(None)  # rmdir: GIO refuses a non-empty directory
+        _gio_call(plan)
     except GLib.Error as exc:
         state, why = _classify(exc)
         return finish(
@@ -335,17 +364,12 @@ def execute_file(plan: FilePlan, journal: OperationJournal | None = None) -> Ope
             f"{plan.label} could not be {VERBS[plan.verb][1]}. {why} Nothing was changed.",
             technical=f"{exc.domain} {exc.code}: {exc.message}",
         )
-    if journal is not None and rec is not None:
-        journal.advance(rec, OperationState.COMMITTED)
-        journal.advance(rec, OperationState.VERIFYING)
+    advance(OperationState.COMMITTED)
+    advance(OperationState.VERIFYING)
     if _verify(plan):
-        where = f" to {plan.dest}" if plan.verb in ("copy", "move") else ""
-        if plan.verb == "rename":
-            where = f" to {plan.dest.name}" if plan.dest is not None else ""
-        note = " Files can restore it from the Trash." if plan.verb == "trash" else ""
         return finish(
             OperationState.VERIFIED,
-            f"{plan.label} {VERBS[plan.verb][1]}{where}.{note}",
+            _success_text(plan),
             technical=f"{VERBS[plan.verb][2]} via GIO, outcome observed",
         )
     return finish(

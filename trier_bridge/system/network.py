@@ -153,6 +153,73 @@ def _ns_list(data: Any) -> tuple[str, ...]:
     return tuple(x for x in out if x)
 
 
+def _device_mac(bus: Bus, dpath: str) -> str:
+    for sub in ("Wired", "Wireless"):
+        v, err = bus.property(NM, dpath, f"{NM}.Device.{sub}", "HwAddress")
+        if not err and v:
+            return str(v)
+    return ""
+
+
+def _active_connection(bus: Bus, d: dict[str, Any]) -> tuple[str, str, ConnectionIdentity | None]:
+    """(name, uuid, identity) of the active profile, or empties."""
+    ac_path = d.get("ActiveConnection", "/")
+    if not ac_path or ac_path == "/":
+        return "", "", None
+    ac = bus.properties(NM, ac_path, f"{NM}.Connection.Active")
+    name = str(ac.get("Id", ""))
+    uuid = str(ac.get("Uuid", ""))
+    identity = (
+        ConnectionIdentity(uuid=uuid, interface=str(d.get("Interface", ""))) if uuid else None
+    )
+    return name, uuid, identity
+
+
+def _ip_config(
+    bus: Bus, d: dict[str, Any]
+) -> tuple[tuple[str, ...], tuple[str, ...], str, tuple[str, ...]]:
+    """(ipv4 addresses, ipv6 addresses without link-local, gateway, DNS servers)."""
+    ipv4: tuple[str, ...] = ()
+    ipv6: tuple[str, ...] = ()
+    gw = ""
+    dns: tuple[str, ...] = ()
+    ip4_path = d.get("Ip4Config", "/")
+    if ip4_path and ip4_path != "/":
+        ip4 = bus.properties(NM, ip4_path, f"{NM}.IP4Config")
+        ipv4 = _addr_list(ip4.get("AddressData"))
+        gw = str(ip4.get("Gateway", "") or "")
+        dns = _ns_list(ip4.get("NameserverData"))
+    ip6_path = d.get("Ip6Config", "/")
+    if ip6_path and ip6_path != "/":
+        ip6 = bus.properties(NM, ip6_path, f"{NM}.IP6Config")
+        ipv6 = tuple(a for a in _addr_list(ip6.get("AddressData")) if not a.startswith("fe80"))
+    return ipv4, ipv6, gw, dns
+
+
+def _device(bus: Bus, dpath: str) -> NetworkDevice | None:
+    d = bus.properties(NM, dpath, f"{NM}.Device")
+    if not d:
+        return None
+    conn_name, conn_uuid, identity = _active_connection(bus, d)
+    ipv4, ipv6, gw, dns = _ip_config(bus, d)
+    return NetworkDevice(
+        interface=str(d.get("Interface", "")),
+        kind=DEVICE_TYPES.get(int(d.get("DeviceType", 0)), "Unknown"),
+        link_state=DEVICE_STATES.get(int(d.get("State", 0)), "Unknown"),
+        managed=bool(d["Managed"]) if "Managed" in d else None,
+        driver=str(d.get("Driver", "")),
+        mac=_device_mac(bus, dpath),
+        connection_name=conn_name,
+        connection_uuid=conn_uuid,
+        identity=identity,
+        ipv4=ipv4,
+        ipv6=ipv6,
+        gateway4=gw,
+        dns=dns,
+        object_path=str(dpath),
+    )
+
+
 def read_network(bus: Bus | None = None) -> NetworkOverview:
     bus = bus or Bus.system()
     if bus.conn is None:
@@ -162,59 +229,7 @@ def read_network(bus: Bus | None = None) -> NetworkOverview:
     top = bus.properties(NM, NM_PATH, NM)
     if not top:
         return NetworkOverview(False, "NetworkManager did not answer.")
-    devices: list[NetworkDevice] = []
-    for dpath in top.get("Devices", []):
-        d = bus.properties(NM, dpath, f"{NM}.Device")
-        if not d:
-            continue
-        kind = DEVICE_TYPES.get(int(d.get("DeviceType", 0)), "Unknown")
-        mac = ""
-        for sub in ("Wired", "Wireless"):
-            v, err = bus.property(NM, dpath, f"{NM}.Device.{sub}", "HwAddress")
-            if not err and v:
-                mac = str(v)
-                break
-        conn_name = conn_uuid = ""
-        identity = None
-        ac_path = d.get("ActiveConnection", "/")
-        if ac_path and ac_path != "/":
-            ac = bus.properties(NM, ac_path, f"{NM}.Connection.Active")
-            conn_name = str(ac.get("Id", ""))
-            conn_uuid = str(ac.get("Uuid", ""))
-            if conn_uuid:
-                identity = ConnectionIdentity(uuid=conn_uuid, interface=str(d.get("Interface", "")))
-        ipv4: tuple[str, ...] = ()
-        ipv6: tuple[str, ...] = ()
-        gw = ""
-        dns: tuple[str, ...] = ()
-        ip4_path = d.get("Ip4Config", "/")
-        if ip4_path and ip4_path != "/":
-            ip4 = bus.properties(NM, ip4_path, f"{NM}.IP4Config")
-            ipv4 = _addr_list(ip4.get("AddressData"))
-            gw = str(ip4.get("Gateway", "") or "")
-            dns = _ns_list(ip4.get("NameserverData"))
-        ip6_path = d.get("Ip6Config", "/")
-        if ip6_path and ip6_path != "/":
-            ip6 = bus.properties(NM, ip6_path, f"{NM}.IP6Config")
-            ipv6 = tuple(a for a in _addr_list(ip6.get("AddressData")) if not a.startswith("fe80"))
-        devices.append(
-            NetworkDevice(
-                interface=str(d.get("Interface", "")),
-                kind=kind,
-                link_state=DEVICE_STATES.get(int(d.get("State", 0)), "Unknown"),
-                managed=bool(d["Managed"]) if "Managed" in d else None,
-                driver=str(d.get("Driver", "")),
-                mac=mac,
-                connection_name=conn_name,
-                connection_uuid=conn_uuid,
-                identity=identity,
-                ipv4=ipv4,
-                ipv6=ipv6,
-                gateway4=gw,
-                dns=dns,
-                object_path=str(dpath),
-            )
-        )
+    devices = [dev for dev in (_device(bus, p) for p in top.get("Devices", [])) if dev]
     return NetworkOverview(
         True,
         "Read from NetworkManager.",

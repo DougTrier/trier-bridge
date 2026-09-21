@@ -203,72 +203,84 @@ class ProcessSampler:
         except OSError:
             return [], totals
         for entry in entries:
-            pid = int(entry)
-            pdir = self.proc / entry
-            try:
-                stat = parse_stat_fields(
-                    (pdir / "stat").read_text(encoding="utf-8", errors="replace")
-                )
-            except OSError:
+            row = self._read_process(self.proc / entry, int(entry), page, my_uid, totals)
+            if row is None:
                 continue  # exited between listdir and read; not an error
-            if stat is None:
-                continue
-            readable = True
-            uid: int | None = None
-            try:
-                uid = parse_status_uid(
-                    (pdir / "status").read_text(encoding="utf-8", errors="replace")
-                )
-            except OSError:
-                readable = False
-            if uid is None:
-                try:
-                    uid = pdir.stat().st_uid
-                except OSError:
-                    uid = -1
-            cmdline = ""
-            try:
-                raw = (pdir / "cmdline").read_bytes()
-                cmdline = raw.replace(b"\x00", b" ").decode("utf-8", "replace").strip()
-            except OSError:
-                readable = False
-            comm = str(stat["comm"])
-            ppid = int(stat["ppid"])
-            ticks = int(stat["utime"]) + int(stat["stime"])
-            start = int(stat["starttime"])
-            key = (pid, start)
-            new_ticks[key] = ticks
-            cpu_pct: float | None = None
-            if (
-                self._prev_total is not None
-                and totals.cpu_ticks_total is not None
-                and key in self._prev_ticks
-            ):
-                dt = totals.cpu_ticks_total - self._prev_total
-                if dt > 0:
-                    cpu_pct = 100.0 * (ticks - self._prev_ticks[key]) / dt * self.cpu_count
-            rss_pages = int(stat["rss_pages"])
-            rows.append(
-                ProcessSample(
-                    identity=ProcessIdentity(pid=pid, start_ticks=start, uid=uid, comm=comm),
-                    name=comm,
-                    state=str(stat["state"]),
-                    ppid=ppid,
-                    uid=uid,
-                    user=self._user_name(uid) if uid >= 0 else "Unknown",
-                    cmdline=cmdline,
-                    rss_bytes=rss_pages * page if readable else None,
-                    cpu_ticks=ticks,
-                    threads=int(stat["num_threads"]) if readable else None,
-                    kind=classify(pid, ppid, uid, my_uid, cmdline, comm),
-                    readable=readable,
-                    cpu_percent=cpu_pct,
-                )
-            )
+            new_ticks[(row.identity.pid, row.identity.start_ticks)] = row.cpu_ticks
+            rows.append(row)
         self._prev_ticks = new_ticks
         self._prev_total = totals.cpu_ticks_total
         self._prev_time = now
         return rows, totals
+
+    def _read_process(
+        self, pdir: Path, pid: int, page: int, my_uid: int, totals: SystemTotals
+    ) -> ProcessSample | None:
+        """One process from /proc; None when it vanished. Unreadable fields are Unknown."""
+        try:
+            stat = parse_stat_fields((pdir / "stat").read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            return None
+        if stat is None:
+            return None
+        uid, uid_readable = _read_uid(pdir)
+        cmdline, cmd_readable = _read_cmdline(pdir)
+        readable = uid_readable and cmd_readable
+        comm = str(stat["comm"])
+        ppid = int(stat["ppid"])
+        ticks = int(stat["utime"]) + int(stat["stime"])
+        start = int(stat["starttime"])
+        return ProcessSample(
+            identity=ProcessIdentity(pid=pid, start_ticks=start, uid=uid, comm=comm),
+            name=comm,
+            state=str(stat["state"]),
+            ppid=ppid,
+            uid=uid,
+            user=self._user_name(uid) if uid >= 0 else "Unknown",
+            cmdline=cmdline,
+            rss_bytes=int(stat["rss_pages"]) * page if readable else None,
+            cpu_ticks=ticks,
+            threads=int(stat["num_threads"]) if readable else None,
+            kind=classify(pid, ppid, uid, my_uid, cmdline, comm),
+            readable=readable,
+            cpu_percent=self._cpu_percent((pid, start), ticks, totals),
+        )
+
+    def _cpu_percent(self, key: tuple[int, int], ticks: int, totals: SystemTotals) -> float | None:
+        """Share of total CPU since the previous sample; None until two samples exist."""
+        if (
+            self._prev_total is None
+            or totals.cpu_ticks_total is None
+            or key not in self._prev_ticks
+        ):
+            return None
+        dt = totals.cpu_ticks_total - self._prev_total
+        if dt <= 0:
+            return None
+        return 100.0 * (ticks - self._prev_ticks[key]) / dt * self.cpu_count
+
+
+def _read_uid(pdir: Path) -> tuple[int, bool]:
+    """(uid, readable): /proc/<pid>/status first, the directory owner as fallback."""
+    try:
+        uid = parse_status_uid((pdir / "status").read_text(encoding="utf-8", errors="replace"))
+        readable = True
+    except OSError:
+        uid, readable = None, False
+    if uid is None:
+        try:
+            uid = pdir.stat().st_uid
+        except OSError:
+            uid = -1
+    return uid, readable
+
+
+def _read_cmdline(pdir: Path) -> tuple[str, bool]:
+    try:
+        raw = (pdir / "cmdline").read_bytes()
+    except OSError:
+        return "", False
+    return raw.replace(b"\x00", b" ").decode("utf-8", "replace").strip(), True
 
 
 def has_ended(identity: ProcessIdentity, proc: Path = Path("/proc")) -> bool:
