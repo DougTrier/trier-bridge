@@ -66,6 +66,12 @@ def test_storage_matches_proc_mounts_and_never_uses_device_node_alone() -> None:
                     or m == "/"
                     or v.device_node.startswith("/dev/mapper")
                 )
-    # snap loop devices are hidden by hint, counted, and not mislabeled as drives
+    # snap squashfs loop devices are hidden and counted, never shown as drives
     assert st.hidden_count >= 1
-    assert all(d.kind != "Loop" for d in [v for dr in st.drives for v in dr.volumes])
+    assert all(v.kind != "Loop" for dr in st.drives for v in dr.volumes)
+    assert all(not (v.kind == "Loop" and v.fs_type == "squashfs") for v in st.loose_volumes)
+    # a mounted EFI system partition is shown, not hidden (TB-INV-070)
+    if Path("/boot/efi").is_dir() and any(
+        "/boot/efi" in ln for ln in Path("/proc/mounts").read_text().splitlines()
+    ):
+        assert any("/boot/efi" in v.mount_points for d in st.drives for v in d.volumes)

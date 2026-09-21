@@ -164,7 +164,10 @@ def read_storage(bus: Bus | None = None) -> StorageOverview:
             hint_system=bool(b.get("HintSystem", False)),
             hint_ignore=hint_ignore,
         )
-        if hint_ignore:
+        # Hide only what is not a user-meaningful volume: read-only squashfs loop devices
+        # (app packages) and unmounted hint-ignored blocks. A mounted ESP stays visible as a
+        # system partition because Disk Management must not hide real storage (TB-INV-070).
+        if (kind == "Loop" and vol.fs_type == "squashfs") or (hint_ignore and not mounts):
             hidden += 1
             continue
         if drive_path in by_drive:
