@@ -407,6 +407,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the "not installed" branch was not exercised (pwsh is installed in the VM); the PowerShell button in the Terminal page was verified by the same command path, not clicked; cmdlet coverage is the listed set only (Get-Process, Stop-Process -Id/-Force, Get-Service, Get-NetIPConfiguration, Get-NetIPAddress, Get-NetTCPConnection, Get-ComputerInfo, Get-ChildItem, Set-Location, Get-Location, Get-Content, Clear-Host, Write-Output, Get-Help, plus teaching entries for Get-EventLog and Get-WmiObject); PowerShell pipelines and variables are refused as shell syntax by design.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED (launch) on Ubuntu 24.04.5
 
+### IMP-03.03 — Everyday file operations: copy, move, rename, Trash, folders (typed, confirmed)
+
+- **Timestamp:** 2026-09-21 07:40 AM CDT
+- **Candidate revision:** 910961d
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); unit tests on real files under the repository checkout (ext4, same filesystem as the home Trash); UI driven through AT-SPI in the console session
+- **Files/modules:** `trier_bridge/operations/files.py`, `trier_bridge/bridge/grammar.py` (copy, move, ren, del, md, rd; Linux paths starting with / are arguments for these), `trier_bridge/bridge/commands.py`, `trier_bridge/bridge/cmdlets.py` (Copy-Item, Move-Item, Rename-Item, Remove-Item), `trier_bridge/ui/terminal.py` (confirmation dialog for file plans), `tests/unit/test_file_operations.py`
+- **Invariant impact:** TB-INV-006 (success is the observed result: destination exists, source gone, folder present), TB-INV-050/121 (identity is device, inode, and inode change time, revalidated right before acting; ext4 reuses an inode number immediately after delete-and-recreate, found by the test and covered by ctime), TB-INV-083 (a plan performs nothing until confirmed), TB-INV-164 (no recursive delete, no permanent delete: del means the Trash; rd removes only an empty folder), TB-INV-078 (plain results with the three answers), TB-INV-119 (paths are data; Windows separators accepted, no shell)
+- **Expected result:** copy/move/rename verified on real files and never overwrite; del moves to the Trash where Files can restore it; md/rd create and remove folders (rd refuses non-empty); an identity change between plan and execution cancels; Bridge commands and cmdlet names only plan until the dialog confirms.
+- **Observed result:** unit: 5 tests passed in the VM (copy verified and refused on an existing name; move into a folder; rename with a Windows separator; del landed in `trash:///` with `trash::orig-path` equal to the original; mkdir/rmdir; non-empty rmdir refused; folder copy refused with the Files hint; recreated file with the same path cancelled; `Remove-Item -Recurse` refused; `copy a.txt /tmp` treated /tmp as a path). Live UI: typed `copy report.txt copy-of-report.txt` in the Bridge Terminal, the dialog read "Copy report.txt to /home/tb/tb-files-demo/copy-of-report.txt?" with Cancel and Copy; Copy produced the file (20 bytes, same as the source); `del copy-of-report.txt` showed "Move to Trash?"; confirming removed it from the folder and `gio trash --list` showed it with its original path. 112 unit tests passed in the VM.
+- **Tests/checks:** `python3 tools/dev.py all` (host: file tests skip without gi; VM: run); AT-SPI aids `a11y_type.py` (set the command entry text) and `a11y_do.py` (Run, Copy, Move to Trash) kept outside the repo.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** folders are not copied (Files does that; refused with a hint); the terminal's output view text was not read back over AT-SPI in this run (the dialog and the filesystem were the evidence); the Trash listing in the VM still holds the test file; the Files page itself offers no file operations (it routes to Files), so these operations are reachable from the Bridge Terminal and PowerShell names only.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
