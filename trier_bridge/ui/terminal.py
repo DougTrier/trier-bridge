@@ -35,6 +35,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from ..bridge.commands import CommandOutput, Exit, Session, is_sensitive, run_line  # noqa: E402
+from ..operations.files import FilePlan, execute_file  # noqa: E402
 from ..operations.process import TerminatePlan, execute_terminate  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
 
@@ -184,6 +185,8 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         self._append("\n")
         if isinstance(out.pending_operation, TerminatePlan):
             self._confirm(out.pending_operation)
+        elif isinstance(out.pending_operation, FilePlan):
+            self._confirm_file(out.pending_operation)
         return False
 
     def _confirm(self, plan: TerminatePlan) -> None:
@@ -197,6 +200,33 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         dialog.set_close_response("cancel")
         dialog.connect("response", self._on_confirm, plan)
         dialog.present(self.get_root())
+
+    def _confirm_file(self, plan: FilePlan) -> None:
+        dialog = Adw.AlertDialog(heading=f"{plan.heading}?", body=plan.preview)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("go", plan.heading)
+        if plan.destructive:
+            dialog.set_response_appearance("go", Adw.ResponseAppearance.DESTRUCTIVE)
+        else:
+            dialog.set_response_appearance("go", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._on_confirm_file, plan)
+        dialog.present(self.get_root())
+
+    def _on_confirm_file(self, _d: Adw.AlertDialog, response: str, plan: FilePlan) -> None:
+        if response != "go":
+            self._append(f"Cancelled. {plan.label} was left as it is.\n\n")
+            return
+
+        def work() -> None:
+            result = execute_file(plan, self._journal)
+            GLib.idle_add(
+                self._append,
+                f"{result.plain} {result.three_answers()['Did anything change?']}\n\n",
+            )
+
+        threading.Thread(target=work, name="tb-file", daemon=True).start()
 
     def _on_confirm(self, _d: Adw.AlertDialog, response: str, plan: TerminatePlan) -> None:
         if response != "end":

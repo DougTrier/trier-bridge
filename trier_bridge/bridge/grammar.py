@@ -77,6 +77,8 @@ class BridgeCommand:
     note: str = ""  # "Get-Process → tasklist" when a PowerShell name was accepted
 
 
+FILE_COMMANDS: tuple[str, ...] = ("copy", "move", "ren", "del", "md", "rd")
+
 COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec(
         "help",
@@ -238,6 +240,66 @@ COMMANDS: tuple[CommandSpec, ...] = (
         summary="No equivalent on Linux.",
     ),
     CommandSpec(
+        "copy",
+        (),
+        PrivilegeClass.B_USER_MUTATION,
+        (),
+        2,
+        min_args=2,
+        linux="cp (GIO)",
+        summary="Copy a file; asks first; never overwrites.",
+    ),
+    CommandSpec(
+        "move",
+        (),
+        PrivilegeClass.B_USER_MUTATION,
+        (),
+        2,
+        min_args=2,
+        linux="mv (GIO)",
+        summary="Move a file or folder; asks first; never overwrites.",
+    ),
+    CommandSpec(
+        "ren",
+        ("rename",),
+        PrivilegeClass.B_USER_MUTATION,
+        (),
+        2,
+        min_args=2,
+        linux="mv (GIO)",
+        summary="Rename a file or folder; asks first.",
+    ),
+    CommandSpec(
+        "del",
+        ("erase",),
+        PrivilegeClass.B_USER_MUTATION,
+        (),
+        1,
+        min_args=1,
+        linux="gio trash",
+        summary="Move a file or folder to the Trash (restorable); asks first.",
+    ),
+    CommandSpec(
+        "md",
+        ("mkdir",),
+        PrivilegeClass.B_USER_MUTATION,
+        (),
+        1,
+        min_args=1,
+        linux="mkdir (GIO)",
+        summary="Create a folder; asks first.",
+    ),
+    CommandSpec(
+        "rd",
+        ("rmdir",),
+        PrivilegeClass.B_USER_MUTATION,
+        (),
+        1,
+        min_args=1,
+        linux="rmdir (GIO)",
+        summary="Remove an empty folder; asks first.",
+    ),
+    CommandSpec(
         "powershell",
         ("pwsh",),
         PrivilegeClass.A_READ_ONLY,
@@ -349,7 +411,11 @@ def parse(line: str) -> BridgeCommand | ParseFailure:
     switches: list[str] = []
     args: list[str] = []
     for tok in toks[1:]:
-        if tok.startswith("/") and len(tok) > 1 and spec.name not in ("echo", "type", "dir", "cd"):
+        if (
+            tok.startswith("/")
+            and len(tok) > 1
+            and spec.name not in ("echo", "type", "dir", "cd") + FILE_COMMANDS
+        ):
             sw = tok[1:].lower()
             if sw not in spec.switches:
                 return ParseFailure(

@@ -35,7 +35,7 @@ from typing import Callable
 
 from ..capability.facts import distro_from_os_release, parse_os_release
 from ..core.identity import ProcessIdentity
-from ..core.state import PrivilegeClass
+from ..core.state import PrivilegeClass, OperationState
 from .cmdlets import cmdlet_for, cmdlet_lines
 from .grammar import COMMANDS, BridgeCommand, CommandSpec, ParseFailure, parse
 
@@ -454,6 +454,50 @@ def cmd_taskkill(cmd: BridgeCommand, session: Session) -> CommandOutput:
     )
 
 
+def _file_command(verb: str, cmd: BridgeCommand, session: Session) -> CommandOutput:
+    """Plan a file operation; the UI confirms before anything happens (class B)."""
+    from ..operations.files import FilePlan, VERBS, plan_file
+
+    dest = cmd.args[1] if len(cmd.args) > 1 else None
+    plan = plan_file(verb, cmd.args[0], dest, session.cwd)
+    linux = VERBS[verb][2]
+    if not isinstance(plan, FilePlan):
+        exit = Exit.UNSUPPORTED if plan.state is OperationState.UNSUPPORTED else Exit.FAILED
+        lines = (plan.plain,) + ((plan.safest_next_step,) if plan.safest_next_step else ())
+        return CommandOutput(exit, lines, linux, False)
+    return CommandOutput(
+        Exit.NEEDS_CONFIRMATION,
+        (plan.preview, "Confirm in the dialog to continue; nothing has happened yet."),
+        linux,
+        False,
+        plan,
+    )
+
+
+def cmd_copy(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _file_command("copy", cmd, session)
+
+
+def cmd_move(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _file_command("move", cmd, session)
+
+
+def cmd_ren(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _file_command("rename", cmd, session)
+
+
+def cmd_del(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _file_command("trash", cmd, session)
+
+
+def cmd_md(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _file_command("mkdir", cmd, session)
+
+
+def cmd_rd(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _file_command("rmdir", cmd, session)
+
+
 def pwsh_path() -> str:
     """An installed PowerShell 7, never a bundled one (DEC-008)."""
     found = shutil.which("pwsh")
@@ -528,6 +572,12 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "taskkill": cmd_taskkill,
     "shutdown": cmd_shutdown,
     "powershell": cmd_powershell,
+    "copy": cmd_copy,
+    "move": cmd_move,
+    "ren": cmd_ren,
+    "del": cmd_del,
+    "md": cmd_md,
+    "rd": cmd_rd,
 }
 
 

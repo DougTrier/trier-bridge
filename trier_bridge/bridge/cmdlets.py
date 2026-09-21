@@ -71,6 +71,28 @@ CMDLETS: tuple[Cmdlet, ...] = (
     Cmdlet("Write-Output", ("write", "write-host"), ("echo",), positional=-1),
     Cmdlet("Get-Help", ("man",), ("help",), {"-name": ("", True)}),
     Cmdlet(
+        "Copy-Item",
+        ("cpi",),
+        ("copy",),
+        {"-path": ("", True), "-destination": ("", True)},
+        positional=2,
+    ),
+    Cmdlet(
+        "Move-Item",
+        ("mi",),
+        ("move",),
+        {"-path": ("", True), "-destination": ("", True)},
+        positional=2,
+    ),
+    Cmdlet(
+        "Rename-Item",
+        ("rni",),
+        ("ren",),
+        {"-path": ("", True), "-newname": ("", True)},
+        positional=2,
+    ),
+    Cmdlet("Remove-Item", ("ri", "rm"), ("del",), {"-path": ("", True)}),
+    Cmdlet(
         "Get-EventLog",
         ("get-winevent",),
         (),
