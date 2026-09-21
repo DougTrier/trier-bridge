@@ -5,6 +5,8 @@
 **Governing:** `SECURITY.md` sections 4.5, 8, 22; TB-SEC-002, 005, 006, 013, 020, 021, 022; TB-INV-106 to 113, 121, 129, 188  
 **Evidence base:** polkit action defaults and system-bus services observed on `tb-ubuntu-desktop-2404`, 2026-09-20 (`RESEARCH.md` section 4)
 
+> Observed on systemd 255 / polkit 124 (entry IMP-06.07): a prompt the user dismisses comes back from systemd as the same access-denied error as a refusal, so service control reports both as "Linux did not grant permission for this change" and changes nothing. The CANCELLED state is used where a backend reports dismissal distinctly.
+
 ## 1. Design decision: no privileged helper in the first release
 
 Every mutation in the first-release scope already has a Linux system service that owns the operation and asks polkit for authorization. Trier Bridge calls those services as the signed-in user; polkit and the desktop's own authentication agent handle the prompt; the service performs the change under its own authority. Trier Bridge never runs as root and ships no component that does.

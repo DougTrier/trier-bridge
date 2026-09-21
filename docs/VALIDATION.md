@@ -379,6 +379,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the Files context-menu item was verified as loaded, not clicked (needs a person or a Nautilus AT-SPI driver, TB-IA acceptance); the shortcut was not pressed on a keyboard; GNOME Shell reads new search providers at login, so Activities search itself was exercised over D-Bus, not typed into the overview; the pre-existing per-user search-provider files from the F16 research were overwritten by the integration and are now recorded by it; the AppIndicator host is absent while the screen is locked, so a locked session shows no icon until unlocked.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-06.07 — Authorization paths driven end to end: granted, dismissed, backend re-exec
+
+- **Timestamp:** 2026-09-21 04:30 AM CDT
+- **Candidate revision:** c31be9d
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), over SSH (logind session of type tty); polkit 124; systemd 255. Prompts answered by a real polkit authentication agent registered for the test's own session (`tests/integration/polkit_agent.py`): it either dismisses the prompt or runs the system's setuid `polkit-agent-helper-1` with the test account's password taken from `TRIER_BRIDGE_TEST_PASSWORD` (never stored in the repository), exactly as graphical agents do.
+- **Files/modules:** `trier_bridge/operations/service.py`, `trier_bridge/system/services.py`, `tests/integration/polkit_agent.py`, `tests/integration/test_authorization_vm.py`
+- **Invariant impact:** TB-INV-109/110 (the product never holds privilege; polkit decides per action, `manage-units` was the one action asked), TB-INV-126/127 (denied or dismissed: plain result, unit untouched, no fallback), TB-INV-006 (granted: success is the observed ActiveState, VERIFIED), TB-INV-053/142 (identity revalidated after the user manager re-executed), TB-INV-059/060 (journal left no unresolved record after the granted operation)
+- **Expected result:** dismissed prompt leaves cups.service in its prior state and says so; granted prompt stops a transient system unit and verifies it; a `systemctl --user daemon-reexec` between reading a user unit and stopping it does not break the operation.
+- **Observed result:** all three tests passed. Dismissed: polkit asked the agent exactly once for `org.freedesktop.systemd1.manage-units`, the agent returned `Cancelled`, systemd answered with an access-denied error, the product reported DENIED with "Linux did not grant permission for this change. cups.service was not changed." and ActiveState was unchanged; polkitd logged "FAILED to authenticate". Granted: the helper printed `SUCCESS`, polkit authorized, the stop was VERIFIED (ActiveState inactive), the product's euid stayed 1000, and the journal had no unresolved record. Re-exec: the stop after `daemon-reexec` was VERIFIED.
+- **Tests/checks:** `TRIER_BRIDGE_TEST_PASSWORD=<account password> pytest tests/integration/test_authorization_vm.py -m integration`; `journalctl` polkitd lines; a one-off probe printing the dismissed result.
+- **Artifacts/logs:** session transcript; polkitd journal lines quoted above.
+- **Failures/limitations:** systemd 255 reports a dismissed polkit prompt as `AccessDenied`, so the product cannot tell "cancelled" from "denied" for service control and says "did not grant permission" for both; the wording is accurate in both cases and nothing changes either way, but the CANCELLED state is reachable only where the backend distinguishes (documented in `docs/PRIVILEGE-MODEL.md`). Authorization expiry (`auth_admin_keep`) is polkit's own cache and was not exercised. The grant test skips when the password variable is absent, so an unattended run without it proves only the dismissed and re-exec paths.
+- **Evidence state:** INTEGRATION_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

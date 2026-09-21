@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | CODE-QUALITY-REPORT refresh done; next Foundation 08 qualification (IMP-08.02 upgrade path, IMP-08.07 fault set) and the remaining Foundation 03/06/07 items |
+| **Active task** | IMP-07.06/07 — PowerShell entry through real `pwsh` and compatibility cmdlets through typed operations |
 | **Last completed** | SCOPE-14: setup screen, Integrations page, tray icon T, search provider, Files extension, shortcut; all verified live from the installed .deb (2026-09-21 03:55 AM CDT) |
 | **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-08.02 install/upgrade/purge on the installed package → IMP-06.07 denial/cancel/expiry/backend-restart set → IMP-07.06 pwsh mode → IMP-03.03/05 file and app mutations |
+| **Next bounded step** | IMP-07.06 pwsh entry → IMP-07.07 cmdlet aliases in Bridge Mode → IMP-03.03/05 file and app mutations → IMP-06.08 regression set |
 
 ---
 
@@ -215,7 +215,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
 - [x] **IMP-06.05** Implement selected service control. Evidence: `docs/VALIDATION.md` entry IMP-06.05.
 - [ ] **IMP-06.06** Implement selected network/package mutations only if separately qualified.
-- [ ] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior.
+- [x] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior. Evidence: `docs/VALIDATION.md` entries IMP-06.04/06.05 (stale target, denial without an agent) and IMP-06.07 (granted and dismissed prompts through a real polkit agent, user-manager re-exec). Limitation recorded: systemd 255 reports a dismissed prompt as access denied; expiry is polkit's cache and not exercised.
   - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
 - [ ] **IMP-06.08** Run security/failure regression set.
 
