@@ -22,6 +22,7 @@ teaching (TB-INV-080).
 """
 from __future__ import annotations
 
+import re
 import shutil
 
 import os
@@ -164,17 +165,197 @@ def cmd_whoami(cmd: BridgeCommand, session: Session) -> CommandOutput:
 
 
 def cmd_echo(cmd: BridgeCommand, session: Session) -> CommandOutput:
-    return CommandOutput(Exit.OK, (" ".join(cmd.args),), "echo", True)
+    return CommandOutput(Exit.OK, (expand_vars(" ".join(cmd.args)),), "echo", True)
+
+
+def _text_lines(target: Path) -> list[str] | CommandOutput:
+    try:
+        raw = target.read_bytes()[: MAX_FILE_BYTES + 1]
+    except PermissionError:
+        return CommandOutput(Exit.DENIED, (f"Access is denied: {target}",), "grep", False)
+    except OSError as exc:
+        return CommandOutput(Exit.FAILED, (f"{target}: {exc.strerror}",), "grep", False)
+    if b"\x00" in raw[:4096]:
+        return []
+    return raw[:MAX_FILE_BYTES].decode("utf-8", "replace").splitlines()
+
+
+def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOutput:
+    """The shared body of findstr and find: bounded, read-only, binary files skipped."""
+    pattern = cmd.args[0]
+    fold = "i" in cmd.switches
+    needle = pattern.casefold() if fold else pattern
+    targets: list[Path] = []
+    for spec_text in files:
+        p = _path_arg(session, spec_text)
+        if isinstance(p, CommandOutput):
+            return p
+        if any(ch in spec_text for ch in "*?"):
+            targets.extend(sorted(x for x in p.parent.glob(p.name) if x.is_file()))
+        elif p.is_file():
+            targets.append(p)
+        else:
+            return CommandOutput(Exit.FAILED, (f"File not found - {spec_text}",), "grep", False)
+    if not targets:
+        return CommandOutput(Exit.FAILED, ("File not found",), "grep", False)
+    lines: list[str] = []
+    for t in targets:
+        text = _text_lines(t)
+        if isinstance(text, CommandOutput):
+            return text
+        hits = 0
+        for no, line in enumerate(text, 1):
+            hay = line.casefold() if fold else line
+            matched = needle in hay
+            if "v" in cmd.switches:
+                matched = not matched
+            if not matched:
+                continue
+            hits += 1
+            if "c" in cmd.switches:
+                continue
+            prefix = f"{t.name}:" if len(targets) > 1 else ""
+            number = f"{no}:" if "n" in cmd.switches else ""
+            lines.append(f"{prefix}{number}{line}")
+        if "c" in cmd.switches:
+            lines.append(f"{t.name}: {hits}")
+    if not lines:
+        return CommandOutput(Exit.FAILED, (f"No lines contain '{pattern}'.",), "grep", True)
+    return _bounded(
+        lines, "grep" + (" -i" if fold else "") + (" -n" if "n" in cmd.switches else "")
+    )
+
+
+def cmd_findstr(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _search(cmd, session, list(cmd.args[1:]))
+
+
+def cmd_find(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return _search(cmd, session, [cmd.args[1]])
+
+
+def cmd_where(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    name = cmd.args[0]
+    found = shutil.which(name) or shutil.which(name.removesuffix(".exe"))
+    if found:
+        return CommandOutput(Exit.OK, (found,), f"which {name}", True)
+    local = (
+        sorted(p for p in session.cwd.glob(name) if p.exists())
+        if any(c in name for c in "*?.")
+        else []
+    )
+    if local:
+        return _bounded([str(p) for p in local], "ls")
+    return CommandOutput(
+        Exit.FAILED,
+        (f"INFO: Could not find files for the given pattern(s): {name}",),
+        f"which {name}",
+        True,
+    )
+
+
+def cmd_set(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    values = {name: fn() for name, fn in WINDOWS_VARS.items()}
+    for key, value in os.environ.items():
+        if key not in values and not is_sensitive(key):
+            values[key] = value
+    prefix = cmd.args[0].upper() if cmd.args else ""
+    lines = [f"{k}={v}" for k, v in sorted(values.items()) if k.upper().startswith(prefix)]
+    if not lines:
+        return CommandOutput(
+            Exit.FAILED, (f"Environment variable {cmd.args[0]} not defined",), "env", True
+        )
+    return _bounded(lines, "env")
+
+
+def cmd_path(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return CommandOutput(Exit.OK, (f"PATH={os.environ.get('PATH', '')}",), "echo $PATH", True)
+
+
+def cmd_tree(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    root = _path_arg(session, cmd.args[0]) if cmd.args else session.cwd
+    if isinstance(root, CommandOutput):
+        return root
+    if not root.is_dir():
+        return CommandOutput(Exit.FAILED, (f"Invalid path - {root}",), "tree", False)
+    show_files = "f" in cmd.switches
+    lines = [f"Folder PATH listing for {to_windows_path(root)} ({root})", f"{root.name or root}"]
+    count = 0
+
+    def walk(folder: Path, indent: str, depth: int) -> None:
+        nonlocal count
+        if depth > 6 or count > MAX_OUTPUT_LINES:
+            return
+        try:
+            entries = sorted(folder.iterdir(), key=lambda p: (not p.is_dir(), p.name.casefold()))
+        except PermissionError:
+            lines.append(f"{indent}(access denied)")
+            return
+        for e in entries:
+            if e.name.startswith(".") and "a" not in cmd.switches:
+                continue
+            if e.is_dir() and not e.is_symlink():
+                lines.append(f"{indent}+---{e.name}")
+                count += 1
+                walk(e, indent + "|   ", depth + 1)
+            elif show_files:
+                lines.append(f"{indent}    {e.name}")
+                count += 1
+
+    walk(root, "", 0)
+    return _bounded(lines, "tree" + (" -a" if "a" in cmd.switches else ""))
+
+
+def cmd_exit(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    return CommandOutput(
+        Exit.OK,
+        (
+            "There is no session to close here: pick another section on the left, or close "
+            "the window.",
+        ),
+        "-",
+        True,
+    )
 
 
 def cmd_cls(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return CommandOutput(Exit.OK, ("\x0c",), "clear", True)
 
 
+WINDOWS_VARS: dict[str, Callable[[], str]] = {
+    "USERPROFILE": lambda: str(Path.home()),
+    "HOMEPATH": lambda: str(Path.home()),
+    "HOME": lambda: str(Path.home()),
+    "USERNAME": lambda: os.environ.get("USER", "") or os.environ.get("LOGNAME", ""),
+    "COMPUTERNAME": lambda: socket.gethostname(),
+    "TEMP": lambda: os.environ.get("TMPDIR", "/tmp"),
+    "TMP": lambda: os.environ.get("TMPDIR", "/tmp"),
+    "APPDATA": lambda: os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")),
+    "LOCALAPPDATA": lambda: os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share")),
+    "SYSTEMROOT": lambda: "/",
+    "WINDIR": lambda: "/",
+    "PROGRAMFILES": lambda: "/usr",
+    "SYSTEMDRIVE": lambda: "C:",
+    "PATH": lambda: os.environ.get("PATH", ""),
+}
+
+
+def expand_vars(text: str) -> str:
+    """%USERPROFILE% and friends become their Linux values; unknown names stay as typed."""
+
+    def one(m: re.Match[str]) -> str:
+        name = m.group(1).upper()
+        if name in WINDOWS_VARS:
+            return WINDOWS_VARS[name]()
+        return os.environ.get(name, os.environ.get(m.group(1), m.group(0)))
+
+    return re.sub(r"%([A-Za-z_][A-Za-z0-9_]*)%", one, text)
+
+
 def _path_arg(session: Session, text: str) -> Path | CommandOutput:
-    """A typed path (Windows or Linux spelling) as an absolute Linux path, or the refusal."""
+    """A typed path (Windows or Linux spelling, %VAR% expanded) as an absolute Linux path."""
     try:
-        return to_linux_path(text, session.cwd).resolve()
+        return to_linux_path(expand_vars(text), session.cwd).resolve()
     except ValueError as exc:
         return CommandOutput(Exit.FAILED, (str(exc),), "mount", False)
 
@@ -1110,6 +1291,13 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "ping": cmd_ping,
     "tracert": cmd_tracert,
     "nslookup": cmd_nslookup,
+    "findstr": cmd_findstr,
+    "find": cmd_find,
+    "where": cmd_where,
+    "set": cmd_set,
+    "path": cmd_path,
+    "tree": cmd_tree,
+    "exit": cmd_exit,
     "explorer": cmd_explorer,
     "start": cmd_start,
     "net": cmd_net,

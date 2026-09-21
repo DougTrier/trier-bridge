@@ -77,7 +77,20 @@ class BridgeCommand:
     note: str = ""  # "Get-Process → tasklist" when a PowerShell name was accepted
 
 
-FILE_COMMANDS: tuple[str, ...] = ("copy", "move", "ren", "del", "md", "rd", "explorer", "start")
+FILE_COMMANDS: tuple[str, ...] = (
+    "copy",
+    "move",
+    "ren",
+    "del",
+    "md",
+    "rd",
+    "explorer",
+    "start",
+    "where",
+    "tree",
+    "findstr",
+    "find",
+)
 
 COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec(
@@ -440,6 +453,111 @@ COMMANDS: tuple[CommandSpec, ...] = (
         summary="No equivalent on Linux.",
     ),
     CommandSpec(
+        "findstr",
+        (),
+        PrivilegeClass.A_READ_ONLY,
+        (
+            "i",
+            "n",
+            "c",
+        ),
+        4,
+        min_args=2,
+        linux="grep",
+        summary="findstr [/I] [/N] text file [file...]: lines containing text.",
+    ),
+    CommandSpec(
+        "find",
+        (),
+        PrivilegeClass.A_READ_ONLY,
+        (
+            "i",
+            "n",
+            "c",
+            "v",
+        ),
+        2,
+        min_args=2,
+        linux="grep",
+        summary="find [/I] [/N] text file: lines containing text (Windows find).",
+    ),
+    CommandSpec(
+        "where",
+        (),
+        PrivilegeClass.A_READ_ONLY,
+        (),
+        1,
+        min_args=1,
+        linux="which",
+        summary="Show where a program lives on this computer.",
+    ),
+    CommandSpec(
+        "set",
+        (),
+        PrivilegeClass.A_READ_ONLY,
+        (),
+        1,
+        min_args=0,
+        linux="env",
+        summary="Show environment variables (familiar Windows names included).",
+    ),
+    CommandSpec(
+        "path",
+        (),
+        PrivilegeClass.A_READ_ONLY,
+        (),
+        0,
+        min_args=0,
+        linux="echo $PATH",
+        summary="Show the program search path.",
+    ),
+    CommandSpec(
+        "tree",
+        (),
+        PrivilegeClass.A_READ_ONLY,
+        (
+            "f",
+            "a",
+        ),
+        1,
+        min_args=0,
+        linux="tree",
+        summary="Show folders (and files with /F) below a folder, bounded.",
+    ),
+    CommandSpec(
+        "attrib",
+        (),
+        PrivilegeClass.E_NO_EQUIVALENT,
+        (),
+        9,
+        min_args=0,
+        linux="chmod, chattr; Files Properties, Permissions",
+        summary="No equivalent here.",
+    ),
+    CommandSpec(
+        "icacls",
+        (
+            "cacls",
+            "takeown",
+        ),
+        PrivilegeClass.E_NO_EQUIVALENT,
+        (),
+        9,
+        min_args=0,
+        linux="chmod, chown, setfacl; Files Properties, Permissions",
+        summary="No equivalent here.",
+    ),
+    CommandSpec(
+        "exit",
+        ("logoff",),
+        PrivilegeClass.A_READ_ONLY,
+        (),
+        0,
+        min_args=0,
+        linux="-",
+        summary="Nothing to close: pick another section or close the window.",
+    ),
+    CommandSpec(
         "powershell",
         ("pwsh",),
         PrivilegeClass.A_READ_ONLY,
@@ -554,7 +672,10 @@ def parse(line: str) -> BridgeCommand | ParseFailure:
         if (
             tok.startswith("/")
             and len(tok) > 1
-            and spec.name not in ("echo", "type", "dir", "cd") + FILE_COMMANDS
+            and (
+                spec.name not in ("echo", "type", "dir", "cd") + FILE_COMMANDS
+                or tok[1:].lower() in spec.switches  # a known switch wins over a path
+            )
         ):
             sw = tok[1:].lower()
             if sw not in spec.switches:
