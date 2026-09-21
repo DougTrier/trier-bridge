@@ -498,6 +498,14 @@ def cmd_rd(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return _file_command("rmdir", cmd, session)
 
 
+def cmd_assoc(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..apps.inventory import default_apps
+
+    lines = [f"{d.label:<18} {d.app_name or '(nothing is set)'}" for d in default_apps()]
+    lines.append("Change these under Apps, Default apps, in Trier Bridge or in Settings.")
+    return CommandOutput(Exit.OK, tuple(lines), "xdg-mime query default", True)
+
+
 def pwsh_path() -> str:
     """An installed PowerShell 7, never a bundled one (DEC-008)."""
     found = shutil.which("pwsh")
@@ -572,6 +580,7 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "taskkill": cmd_taskkill,
     "shutdown": cmd_shutdown,
     "powershell": cmd_powershell,
+    "assoc": cmd_assoc,
     "copy": cmd_copy,
     "move": cmd_move,
     "ren": cmd_ren,

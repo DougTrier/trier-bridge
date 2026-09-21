@@ -34,6 +34,14 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..apps.inventory import DefaultApp, InstalledApp, default_apps, installed_apps  # noqa: E402
 from ..catalog.model import Catalog, Concept, Equivalence, RouteKind  # noqa: E402
 from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
+from ..operations.defaults import (  # noqa: E402
+    Candidate,
+    DefaultAppPlan,
+    candidates,
+    current_default,
+    execute_default,
+    plan_default,
+)
 
 log = logging.getLogger("trier_bridge.ui.pages")
 
@@ -256,7 +264,11 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         page.add(self._list_group)
         self._defaults_group = Adw.PreferencesGroup(
             title="Default apps",
-            description="Which program opens which kind of file. Changing these is a later step.",
+            description=(
+                "Which program opens which kind of file. Pick another listed program and "
+                "press Set; this is your own setting and choosing the previous program "
+                "again undoes it."
+            ),
         )
         page.add(self._defaults_group)
         self.append(_scrolled(page))
@@ -293,8 +305,71 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         self._render()
         for d in defaults:
             row = _row(title=d.label, subtitle=d.app_name or "Nothing is set")
+            self._add_default_chooser(row, d)
             self._defaults_group.add(row)
             self._default_rows.append(row)
+        return False
+
+    def _add_default_chooser(self, row: Adw.ActionRow, d: DefaultApp) -> None:
+        options = candidates(d.mime_type)
+        if not options:
+            return
+        names = Gtk.StringList.new([c.name for c in options])
+        drop = Gtk.DropDown(model=names)
+        drop.set_valign(Gtk.Align.CENTER)
+        drop.update_property([Gtk.AccessibleProperty.LABEL], [f"Program for {d.label}"])
+        current = next((i for i, c in enumerate(options) if c.desktop_id == d.desktop_id), 0)
+        drop.set_selected(current)
+        row.add_suffix(drop)
+        row.add_suffix(
+            _open_button(
+                "Set",
+                f"Make the chosen program open {d.label}; asks first.",
+                partial(self._set_default, row, d, options, drop),
+            )
+        )
+
+    def _set_default(
+        self, row: Adw.ActionRow, d: DefaultApp, options: list[Candidate], drop: Gtk.DropDown
+    ) -> None:
+        chosen = options[int(drop.get_selected())]
+        plan = plan_default(d.mime_type, d.label, chosen.desktop_id)
+        if not isinstance(plan, DefaultAppPlan):
+            self._notify(plan.plain)
+            return
+        dialog = Adw.AlertDialog(heading=f"Open {d.label} with {chosen.name}?", body=plan.preview)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("set", "Set as default")
+        dialog.set_response_appearance("set", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", partial(self._on_set_default, row, d, plan))
+        dialog.present(self.get_root())
+
+    def _on_set_default(
+        self,
+        row: Adw.ActionRow,
+        d: DefaultApp,
+        plan: DefaultAppPlan,
+        _dialog: Adw.AlertDialog,
+        response: str,
+    ) -> None:
+        if response != "set":
+            self._notify(f"Cancelled. {d.label} still open with {d.app_name or 'nothing'}.")
+            return
+        app = self.get_root().get_application()
+        journal = getattr(app, "journal", None)
+
+        def work() -> None:
+            result = execute_default(plan, journal)
+            now = current_default(d.mime_type)
+            GLib.idle_add(self._default_done, row, result.plain, now.name if now else "")
+
+        threading.Thread(target=work, name="tb-default-app", daemon=True).start()
+
+    def _default_done(self, row: Adw.ActionRow, plain: str, app_name: str) -> bool:
+        row.set_subtitle(app_name or "Nothing is set")
+        self._notify(plain)
         return False
 
     def _render(self) -> None:

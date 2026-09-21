@@ -300,6 +300,15 @@ COMMANDS: tuple[CommandSpec, ...] = (
         summary="Remove an empty folder; asks first.",
     ),
     CommandSpec(
+        "assoc",
+        ("ftype",),
+        PrivilegeClass.A_READ_ONLY,
+        (),
+        0,
+        linux="mimeapps.list via GIO (xdg-mime)",
+        summary="Show which program opens each common kind of file.",
+    ),
+    CommandSpec(
         "powershell",
         ("pwsh",),
         PrivilegeClass.A_READ_ONLY,
