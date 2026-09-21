@@ -194,3 +194,13 @@ A release note must never say simply "supports Linux" unless the project intenti
 Prefer:
 
 > Service inspection and bounded service control verified on Ubuntu 26.04 / GNOME / systemd under native package build.
+
+## 10. First-release matrix (frozen, ARC-09/10/11)
+
+| Dimension | First release | Evidence | Not claimed |
+|---|---|---|---|
+| Distro family | Ubuntu 24.04 LTS (DEC-016) | ENV-02 profile; every VALIDATION entry | any other distro or Ubuntu release; derivatives sharing the 24.04 archive are expected to work but are unqualified until run |
+| Desktop / session | GNOME 46 on Wayland (the Ubuntu session with its default extensions) | all desktop entries; the tray needs the AppIndicator extension, active only while the session is unlocked | X11 sessions, other desktops, GNOME without the Ubuntu extensions |
+| Package format | native `.deb`, `3.0 (native)` source, no update mechanism (DEC-022) | entries IMP-01, IMP-08.02 | Snap, Flatpak, AppImage |
+| Architecture | amd64 (the package is `all`; the code is pure Python) | build and install in the VM | arm64 is untested |
+| Hardware | virtual machine without GPU acceleration | entry IMP-08.08 | performance on real hardware is unmeasured |

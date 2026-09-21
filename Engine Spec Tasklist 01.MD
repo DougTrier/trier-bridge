@@ -94,15 +94,15 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **SCOPE-03** Packaging constraints and candidates. Evidence: `docs/PACKAGING.md` 2026-09-20: native `.deb` core, snap classic deferred, Flatpak and AppImage excluded, ownership table, install/upgrade/remove behavior, updates deferred to ARC-12. Formal control-file freeze stays ARC-11.
 - [x] **SCOPE-04** Research plan with exit criteria. Evidence: `docs/RESEARCH.md` sections 2 and 4, 2026-09-20: 18 tracks with exit criteria; first in-guest probe produced findings F1 to F14 (R15 and R16 closed; R1, R2, R11, R17, R18 gate ARC-01/02 and stay open until their live checks run).
 - [x] **SCOPE-05** Test strategy. Evidence: `docs/TEST-STRATEGY.md` 2026-09-20: real VM as the only oracle, real test objects instead of fixtures, layers, fault injection, run discipline from the `clean-install` checkpoint. Owner assumption recorded: no synthetic fixtures (awaiting explicit confirmation).
-- [ ] **SCOPE-06** Typed operation model: schema (ID, stable target identity, preview, authorization state, result taxonomy) and the rule that turns each result into "did anything change / what stopped it / safest next step".
-- [ ] **SCOPE-07** Windows-to-Linux concept catalog: data schema for every Windows-labeled concept with route, backend, and equivalence class (exact / approximate / none) per TB-INV-065; drives search, help, Show Me the Linux Way, and Bridge commands.
-- [ ] **SCOPE-08** Bridge Terminal grammar and MVP command list with class A to E, flags, and typed operation per command.
-- [ ] **SCOPE-09** Accessibility acceptance criteria as a stack-selection gate (AT-SPI on Wayland across candidate frameworks, keyboard-only, screen reader, large text).
+- [x] **SCOPE-06** (Evidence: `trier_bridge/core/operations.py` and `core/state.py`; `OperationResult.three_answers()`; `docs/STATE-AND-PERSISTENCE.md`; entries IMP-05, IMP-06.04.) Typed operation model: schema (ID, stable target identity, preview, authorization state, result taxonomy) and the rule that turns each result into "did anything change / what stopped it / safest next step".
+- [x] **SCOPE-07** (Evidence: `data/catalog/concepts.json` schema 1 with route, equivalence, note, terms; `trier_bridge/catalog/model.py`; entries IMP-03, SCOPE-14 search provider.) Windows-to-Linux concept catalog: data schema for every Windows-labeled concept with route, backend, and equivalence class (exact / approximate / none) per TB-INV-065; drives search, help, Show Me the Linux Way, and Bridge commands.
+- [x] **SCOPE-08** Bridge Terminal grammar and MVP command list with class A to E, flags, and typed operation per command. Evidence: `trier_bridge/bridge/grammar.py` (COMMANDS table with class, switches, arity, Linux equivalent), `bridge/cmdlets.py`; entries IMP-07, IMP-07.06/07, IMP-03.03.
+- [x] **SCOPE-09** Accessibility acceptance criteria as a stack-selection gate (AT-SPI on Wayland across candidate frameworks, keyboard-only, screen reader, large text). Evidence: `docs/ACCESSIBILITY.md` (TB-A11Y-01..09; 01–05 verified by AT-SPI, 06–08 need a person and stay NOT RUN).
   - 2026-09-21: gate evidence for the proposed framework recorded (F17: GTK4/libadwaita exposes names, descriptions, and switch labels on Wayland). Full criteria document still to write.
-- [ ] **SCOPE-10** Backend runtime topology: session service versus in-process core, UI-to-backend IPC, relationship to the privileged service.
-- [ ] **SCOPE-11** Local pre-commit gate convention (`tools\tb all` before every commit; optional local git hook), since there is no CI.
+- [x] **SCOPE-10** Backend runtime topology: session service versus in-process core, UI-to-backend IPC, relationship to the privileged service. Evidence: `docs/ENGINEERING.md` section 14 (in-process core, no privileged service, two optional small processes, single instance).
+- [x] **SCOPE-11** Local pre-commit gate convention (`tools\tb all` before every commit; optional local git hook), since there is no CI. Evidence: `CONTRIBUTING.md` section "Local gate before every commit"; `tools/git-hooks/pre-commit`.
 - [ ] **SCOPE-12** Name and trademark check on "Trier Bridge" before any public step.
-- [ ] **SCOPE-13** Observability specification: log location, levels, redaction, audit placement (SECURITY.md section 26 fields).
+- [x] **SCOPE-13** Observability specification: log location, levels, redaction, audit placement (SECURITY.md section 26 fields). Evidence: `docs/ENGINEERING.md` section 15; `trier_bridge/logging_setup.py`; `state/journal.py`; entries IMP-01, IMP-05.
 - [x] **SCOPE-14** Integration catalog and setup flow: the list of every shippable integration, its named group (feature subset), its desktop extension point, its activation/reversal mechanism, and the first-run setup screen plus tray-icon options flow that presents them (DEC-019). Includes the Ubuntu GNOME tray/AppIndicator research item. Evidence: `docs/VALIDATION.md` entry SCOPE-14; catalog in `trier_bridge/integrations/catalog.py` and `docs/DELIVERY-MODEL.md` section 3 (shipped set marked). Roadmap items (desktop places, Super+E, notifications, pwsh entry) stay in the delivery model as unshipped.
 
 ---
@@ -125,18 +125,18 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 - [x] **ARC-01** Select implementation language/runtime with documented alternatives and rationale. Evidence: `docs/STACK-SELECTION.md`; DEC-020 accepted under owner delegation 2026-09-21.
 - [x] **ARC-02** Select desktop/UI framework with Wayland/X11/accessibility/package implications. Evidence: GTK 4 + libadwaita, AT-SPI on Wayland verified (F17); DEC-020.
-- [ ] **ARC-03** Freeze module/dependency direction.
-- [ ] **ARC-04** Freeze typed operation model.
-- [ ] **ARC-05** Freeze capability-discovery contract.
-- [ ] **ARC-06** Freeze platform-adapter interfaces.
-- [ ] **ARC-07** Freeze persistence engine and schema ownership.
-- [ ] **ARC-08** Freeze privilege helper / authorization model.
-- [ ] **ARC-09** Select first-release distro families.
-- [ ] **ARC-10** Select first-release desktop/session matrix.
-- [ ] **ARC-11** Select package formats.
+- [x] **ARC-03** Freeze module/dependency direction. Evidence: `docs/ENGINEERING.md` sections 5 and 14; `CODE-QUALITY-REPORT.md` architecture row (acyclic, verified by reading every import).
+- [x] **ARC-04** Freeze typed operation model. Evidence: SCOPE-06; four identity kinds and four plan kinds share one plan → confirm → execute → verify shape (`trier_bridge/operations/`).
+- [x] **ARC-05** Freeze capability-discovery contract. Evidence: `trier_bridge/capability/{model,facts,discovery}.py`; `docs/PLATFORMS.md` section 6; entry IMP-02.
+- [x] **ARC-06** Freeze platform-adapter interfaces. Evidence: `trier_bridge/system/bus.py` and the `system/*` adapters (procfs, sysfs, journald, systemd, NetworkManager, udisks2, UPower); `docs/PLATFORMS.md` section 7; entries IMP-04, IMP-06.05.
+- [x] **ARC-07** Freeze persistence engine and schema ownership. Evidence: JSON files under XDG dirs with atomic replace and schema versions (`config.py`, `state/*`, `integrations/ledger.py`); `docs/STATE-AND-PERSISTENCE.md`; entry IMP-05.
+- [x] **ARC-08** Freeze privilege helper / authorization model. Evidence: no helper; `docs/PRIVILEGE-MODEL.md` section 8; entries IMP-06.05, IMP-06.07.
+- [x] **ARC-09** Select first-release distro families. Evidence: Ubuntu 24.04 LTS only (DEC-016); `docs/PLATFORMS.md` section 10.
+- [x] **ARC-10** Select first-release desktop/session matrix. Evidence: GNOME 46 on Wayland, Ubuntu session; `docs/PLATFORMS.md` section 10 (X11 and other desktops not claimed).
+- [x] **ARC-11** Select package formats. Evidence: native `.deb` only; `docs/PACKAGING.md`; `debian/`; entries IMP-01, IMP-08.02.
 - [x] **ARC-12** Freeze update mechanism or explicitly defer updates. Evidence: deferred, DEC-022 (2026-09-21), `docs/PACKAGING.md` section 5.
-- [ ] **ARC-13** Map every selected MVP feature to applicable `TB-INV-###`.
-- [ ] **ARC-14** Freeze planned test/failure matrix.
+- [x] **ARC-13** Map every selected MVP feature to applicable `TB-INV-###`. Evidence: `docs/FEATURE-INVARIANT-MAP.md`, generated from the Invariant impact line of every evidence entry.
+- [x] **ARC-14** Freeze planned test/failure matrix. Evidence: `docs/TEST-STRATEGY.md` section 7 (SECURITY section 37 and Tests A–D mapped, gaps named); `docs/SECURITY.md` section 37.
 
 ---
 

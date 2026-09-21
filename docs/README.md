@@ -60,6 +60,8 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 | `Engine Spec Tasklist 01.MD` | The single operational task/completion ledger. |
 | `CONTRIBUTING.md` | Human contribution policy and review levels. |
 | `CODE-QUALITY-REPORT.md` | Current CQS report (NOT MEASURED). |
+| `ACCESSIBILITY.md` | Accessibility criteria TB-A11Y-01..09 and their evidence state. |
+| `FEATURE-INVARIANT-MAP.md` | Generated map from every evidence entry to the invariants it cites. |
 | `LICENSE`, `NOTICE`, `SOURCE-HEADER.txt` | Apache-2.0 text, attribution, canonical source header. |
 | `tools/` | Read-only engineering tools (`tb context`, `tb all`, `tb section`, ...). See `tools/README.md`. |
 

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Trier Bridge local gate (SCOPE-11): there is no CI, so the checks run before every commit.
+# Enable once per clone:   git config core.hooksPath tools/git-hooks
+# Runs black/flake8/mypy strict/pytest/headers on the host; the VM run is still required
+# before a ledger item closes (docs/TEST-STRATEGY.md section 4).
+set -e
+cd "$(git rev-parse --show-toplevel)"
+if [ -x ".venv/Scripts/python.exe" ]; then PY=".venv/Scripts/python.exe"
+elif [ -x ".venv/bin/python" ]; then PY=".venv/bin/python"
+else PY="python3"; fi
+"$PY" tools/dev.py all

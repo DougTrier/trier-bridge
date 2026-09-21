@@ -471,6 +471,16 @@ Trier Bridge deliberately uses specifications, invariants, failure testing, and 
 
 ---
 
+## Local gate before every commit (SCOPE-11)
+
+There is no CI. The gate is local and mandatory: `python tools/dev.py all` (black, flake8, mypy strict, unit tests, license headers) must be clean before a commit, and the VM run (`docs/TEST-STRATEGY.md` section 4) before a ledger item closes. To make Git run the host part automatically:
+
+```bash
+git config core.hooksPath tools/git-hooks
+```
+
+The hook is `tools/git-hooks/pre-commit`; it runs the same command and blocks the commit on any finding.
+
 ## Pull request evidence
 
 A useful PR should answer, concisely:

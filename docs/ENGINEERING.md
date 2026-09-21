@@ -253,4 +253,31 @@ Not good first issues: privileged helper, command execution, filesystem deletion
 
 ## 13. Current state
 
-Architecture is design-only. Toolchain, runtime, language, packaging, and module graph are not yet frozen.
+Frozen and implemented (2026-09-21): Python 3.12 + PyGObject, GTK 4 + libadwaita (DEC-020); native `.deb` (PACKAGING.md); module graph as in section 5 and section 14; typed operation model in `trier_bridge/core/`; adapters in `trier_bridge/system/`; persistence in `trier_bridge/config.py` and `trier_bridge/state/`. Evidence per foundation in `VALIDATION.md`; the quality baseline in `CODE-QUALITY-REPORT.md`.
+
+## 14. Runtime topology (frozen, SCOPE-10)
+
+- **One in-process core.** The typed operation core runs inside the Bridge window process. There is no session service and no IPC of our own between UI and core; the only IPC is D-Bus to the system's own services (systemd, NetworkManager, udisks2, polkit, GNOME Settings, the file manager).
+- **No privileged component.** See `PRIVILEGE-MODEL.md` section 8.
+- **Two optional small processes**, each started only if the user turned its integration on: `trier-bridge-tray` (StatusNotifierItem + dbusmenu over the session bus, autostarted per user) and `trier-bridge-search-provider` (GNOME SearchProvider2, D-Bus-activated, exits after 60 s idle). They never share memory with the window; they talk to it only by launching it or by Gio remote actions.
+- **Single instance.** The window is a `Gio.Application`; a second launch forwards `open-section`, `open-concept`, or `open-terminal-at` to the running instance and exits.
+- **Shared files, not shared state.** The integration ledger is the one file written by two processes (window and tray); every reader re-reads it before acting (`integrations/ledger.py`).
+
+### 14.1 Concurrency and lifecycle contract (CQ-03)
+
+- All GTK work happens on the main loop. Anything that reads the system or performs an operation runs on a short-lived worker thread and hands its result back with `GLib.idle_add`; the worker never touches a widget.
+- Workers hold no shared mutable state; they receive their inputs as arguments (a plan, a sampler) and return values. Pages keep a `_busy` flag so at most one worker per page runs at a time.
+- Periodic work exists only while its page is visible (Task Manager sampler, 2 s) and stops when the page is hidden.
+- Every operation records its lifecycle in the journal (`state/journal.py`) so a crash mid-operation is reconciled at the next start (TB-INV-059/060).
+- Test code that must answer D-Bus calls while the product blocks (the polkit test agent) uses its own thread, its own `GLib.MainContext`, and its own bus connection.
+
+## 15. Observability (frozen, SCOPE-13)
+
+| Aspect | Rule |
+|---|---|
+| Location | `~/.local/state/trier-bridge/logs/trier-bridge.log` (XDG state dir), rotated at 1 MB with a bounded number of backups (`logging_setup.py`) |
+| Levels | INFO for lifecycle and operation outcomes, WARNING for reported failures, ERROR for unexpected exceptions at boundaries; `--verbose` mirrors the log to stderr |
+| Redaction | a filter runs on every record before it is written; anything that looks like a password, token, key, or secret is masked; the Bridge Terminal history excludes such lines (TB-INV-098) |
+| Audit placement | the operation journal (`~/.local/state/trier-bridge/journal/`) is the audit record: one file per operation with the SECURITY.md section 26 fields (operation id, kind, target identity, states with timestamps, result, technical detail); it is per user and never leaves the machine |
+| What is never logged | file contents, command lines beyond the typed Bridge command, credentials, other users' data |
+| Retention | logs by size; journal pruned of resolved records after the configured age (`journal.prune`) |
