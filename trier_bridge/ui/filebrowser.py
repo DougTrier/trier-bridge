@@ -632,7 +632,23 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
         item("Cut", partial(self._start_cut, e))
         item("Copy", partial(self._start_copy, e))
         item("Move to Trash", partial(self._start_trash, e))
+        item("Properties", partial(self._show_properties, e))
         return popover
+
+    def _show_properties(self, e: FileEntry) -> None:
+        lines = [f"Type: {KIND_LABEL.get(e.kind, e.kind)}", f"Location: {e.path.parent}"]
+        if e.size_bytes is not None:
+            lines.append(f"Size: {_fmt_size(e.size_bytes)} ({e.size_bytes:,} bytes)")
+        date = _fmt_date(e.modified)
+        if date:
+            lines.append(f"Modified: {date}")
+        if e.hidden:
+            lines.append("Hidden: yes (name starts with a dot)")
+        dialog = Adw.AlertDialog(heading=e.name, body="\n".join(lines))
+        dialog.add_response("close", "Close")
+        dialog.set_default_response("close")
+        dialog.set_close_response("close")
+        dialog.present(self.get_root())
 
     def _start_cut(self, e: FileEntry) -> None:
         self._clipboard = (e.path, "move")
