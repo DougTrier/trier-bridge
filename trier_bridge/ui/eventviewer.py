@@ -48,6 +48,7 @@ class EventViewerPage(Gtk.Box):  # type: ignore[misc]
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._reader = JournalReader()
         self._entries: list[Entry] = []
+        self._boot_entries: list[Entry] = []
         self._rows: list[Gtk.Widget] = []
         self._loading = False
         access = journal_access()
@@ -99,11 +100,12 @@ class EventViewerPage(Gtk.Box):  # type: ignore[misc]
     def _worker(self) -> None:
         try:
             entries = self._reader.newest()
+            boot = self._reader.newest(boot_only=True)
         except Exception as exc:
             log.exception("journal read failed")
             GLib.idle_add(self._fail, str(exc))
             return
-        GLib.idle_add(self._loaded, entries)
+        GLib.idle_add(self._loaded, entries, boot)
 
     def _fail(self, text: str) -> bool:
         self._summary.set_text(
@@ -113,8 +115,9 @@ class EventViewerPage(Gtk.Box):  # type: ignore[misc]
         self._refresh.set_sensitive(True)
         return False
 
-    def _loaded(self, entries: list[Entry]) -> bool:
+    def _loaded(self, entries: list[Entry], boot: list[Entry]) -> bool:
         self._entries = entries
+        self._boot_entries = boot
         self._loading = False
         self._refresh.set_sensitive(True)
         self._render()
@@ -126,16 +129,21 @@ class EventViewerPage(Gtk.Box):  # type: ignore[misc]
         self._rows = []
         view = list(View)[self._view.get_selected()]
         q = self._entry.get_text().strip().casefold()
+        pool = self._boot_entries if view is View.BOOT else self._entries
         shown = [
             e
-            for e in self._entries
+            for e in pool
             if e.matches(view) and (not q or q in e.message.casefold() or q in e.source.casefold())
         ]
-        if not self._entries:
+        if not pool:
             self._summary.set_text("No entries were read." if not self._loading else "Reading…")
+        elif view is View.BOOT:
+            self._summary.set_text(
+                f"{len(shown)} of the newest {len(pool)} kernel and audit entries from this boot"
+            )
         else:
             self._summary.set_text(
-                f"{len(shown)} of the newest {len(self._entries)} entries in “{view.value}”"
+                f"{len(shown)} of the newest {len(pool)} entries in “{view.value}”"
             )
         for e in shown[:MAX_ROWS]:
             when = dt.datetime.fromtimestamp(e.realtime_usec / 1_000_000).strftime(

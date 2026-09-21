@@ -198,11 +198,26 @@ def _search_targets(session: Session, files: list[str]) -> list[Path] | CommandO
     return targets
 
 
-def _match_lines(text: list[str], needle: str, fold: bool, invert: bool) -> list[tuple[int, str]]:
+def _matcher(pattern: str, fold: bool, regex: bool) -> Callable[[str], bool] | CommandOutput:
+    """Literal by default (and with /L); /R uses a regular expression, checked first."""
+    if not regex:
+        needle = pattern.casefold() if fold else pattern
+        return lambda line: needle in (line.casefold() if fold else line)
+    if len(pattern) > 200:
+        return CommandOutput(Exit.PARSE_ERROR, ("The pattern is too long (200).",), "grep", False)
+    try:
+        rx = re.compile(pattern, re.IGNORECASE if fold else 0)
+    except re.error as exc:
+        return CommandOutput(Exit.PARSE_ERROR, (f"Not a valid pattern: {exc}",), "grep -E", False)
+    return lambda line: rx.search(line) is not None
+
+
+def _match_lines(
+    text: list[str], match: Callable[[str], bool], invert: bool
+) -> list[tuple[int, str]]:
     out = []
     for no, line in enumerate(text, 1):
-        hay = line.casefold() if fold else line
-        matched = needle in hay
+        matched = match(line[:4000])
         if invert:
             matched = not matched
         if matched:
@@ -214,7 +229,9 @@ def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOu
     """The shared body of findstr and find: bounded, read-only, binary files skipped."""
     pattern = cmd.args[0]
     fold = "i" in cmd.switches
-    needle = pattern.casefold() if fold else pattern
+    match = _matcher(pattern, fold, "r" in cmd.switches and "l" not in cmd.switches)
+    if isinstance(match, CommandOutput):
+        return match
     targets = _search_targets(session, files)
     if isinstance(targets, CommandOutput):
         return targets
@@ -223,7 +240,7 @@ def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOu
         text = _text_lines(t)
         if isinstance(text, CommandOutput):
             return text
-        hits = _match_lines(text, needle, fold, "v" in cmd.switches)
+        hits = _match_lines(text, match, "v" in cmd.switches)
         if "c" in cmd.switches:
             lines.append(f"{t.name}: {len(hits)}")
             continue
@@ -234,6 +251,7 @@ def _search(cmd: BridgeCommand, session: Session, files: list[str]) -> CommandOu
     if not lines:
         return CommandOutput(Exit.FAILED, (f"No lines contain '{pattern}'.",), "grep", True)
     flags = (" -i" if fold else "") + (" -n" if "n" in cmd.switches else "")
+    flags += " -E" if "r" in cmd.switches else " -F"
     return _bounded(lines, "grep" + flags)
 
 
@@ -790,6 +808,48 @@ FAMILIAR_PROGRAMS = {
     "cmd": "",
 }
 
+# Windows tool names that are pages of Trier Bridge: typed alone or after start.
+FAMILIAR_SECTIONS: dict[str, tuple[str, str]] = {
+    "taskmgr": ("taskmanager", "Task Manager"),
+    "devmgmt.msc": ("devices", "Device Manager"),
+    "diskmgmt.msc": ("disks", "Disk Management"),
+    "eventvwr": ("events", "Event Viewer"),
+    "eventvwr.msc": ("events", "Event Viewer"),
+    "services.msc": ("services", "Services"),
+    "msconfig": ("startup", "Startup Apps"),
+    "ncpa.cpl": ("network", "Network Connections"),
+    "appwiz.cpl": ("apps", "Installed Apps"),
+    "msinfo32": ("sysinfo", "System Information"),
+    "compmgmt.msc": ("home", "Home"),
+}
+
+
+def _open_tool(name: str) -> CommandOutput:
+    """Open one of our own pages; the running application receives the request."""
+    from gi.repository import Gio, GLib
+
+    key, label = FAMILIAR_SECTIONS[name]
+    app = Gio.Application.get_default()
+    if app is None:
+        return CommandOutput(
+            Exit.FAILED,
+            (f"{label} is a page of Trier Bridge; open it from the Trier Bridge window.",),
+            f"trier-bridge --section {key}",
+            False,
+        )
+
+    def go() -> bool:
+        app.activate_action("open-section", GLib.Variant("s", key))
+        return False
+
+    GLib.idle_add(go)
+    return CommandOutput(Exit.OK, (f"Opened {label}.",), f"trier-bridge --section {key}", True)
+
+
+def cmd_tool(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    name = cmd.raw.split()[0].lower().removesuffix(".exe")
+    return _open_tool(name if name in FAMILIAR_SECTIONS else "taskmgr")
+
 
 def cmd_explorer(cmd: BridgeCommand, session: Session) -> CommandOutput:
     from ..desktop.launch import Launcher
@@ -818,6 +878,8 @@ def cmd_start(cmd: BridgeCommand, session: Session) -> CommandOutput:
 
     what = cmd.args[0]
     low = what.lower().removesuffix(".exe")
+    if low in FAMILIAR_SECTIONS:
+        return _open_tool(low)
     launcher = Launcher()
     if low in FAMILIAR_PROGRAMS:
         desktop_id = FAMILIAR_PROGRAMS[low]
@@ -1215,14 +1277,21 @@ def power_action(action: str) -> tuple[bool, str]:
     )
 
 
-def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
-    if "a" in cmd.switches:
+def _shutdown_abort() -> CommandOutput:
+    if cancel_scheduled_power():
         return CommandOutput(
-            Exit.UNSUPPORTED,
-            ("Nothing here schedules a shutdown, so there is nothing to abort.",),
-            "shutdown -c",
-            False,
+            Exit.OK, ("The scheduled shutdown has been cancelled.",), "shutdown -c", True
         )
+    return CommandOutput(
+        Exit.FAILED,
+        ("No shutdown is scheduled, so there is nothing to abort.",),
+        "shutdown -c",
+        False,
+    )
+
+
+def _shutdown_form(cmd: BridgeCommand) -> tuple[str, int] | CommandOutput:
+    """The action and delay a shutdown line asks for, or the refusal."""
     if "s" in cmd.switches and "r" in cmd.switches:
         return CommandOutput(
             Exit.PARSE_ERROR, ("Choose /s (shut down) or /r (restart).",), "-", False
@@ -1234,7 +1303,6 @@ def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
             "-",
             False,
         )
-    action = "poweroff" if "s" in cmd.switches else "reboot"
     delay = 0
     if "t" in cmd.switches:
         if not cmd.args or not cmd.args[0].isdigit() or int(cmd.args[0]) > 3600:
@@ -1242,6 +1310,27 @@ def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
                 Exit.PARSE_ERROR, ("/t needs a number of seconds (0-3600).",), "-", False
             )
         delay = int(cmd.args[0])
+    return ("poweroff" if "s" in cmd.switches else "reboot"), delay
+
+
+def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    if "a" in cmd.switches:
+        return _shutdown_abort()
+    pending = scheduled_power()
+    if pending is not None:
+        return CommandOutput(
+            Exit.FAILED,
+            (
+                f"A shutdown is already scheduled ({pending.remaining} seconds to go). "
+                "shutdown /a cancels it.",
+            ),
+            "shutdown -c",
+            False,
+        )
+    form = _shutdown_form(cmd)
+    if isinstance(form, CommandOutput):
+        return form
+    action, delay = form
     ability = power_ability(action)
     verb_text = "shut down" if action == "poweroff" else "restart"
     if ability == "no":
@@ -1254,10 +1343,13 @@ def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
     what = "Shut down" if action == "poweroff" else "Restart"
     asks = " Linux will ask for permission." if ability == "challenge" else ""
     when = f" after {delay} seconds" if delay else " now"
+    cancel = (
+        " Until then, shutdown /a cancels it; closing Trier Bridge cancels it too." if delay else ""
+    )
     plan = ActionPlan(
         f"{what} the computer",
         f"{what} this computer{when}? Unsaved work in other programs may be lost; other users "
-        f"signed in here are affected too.{asks}",
+        f"signed in here are affected too.{asks}{cancel}",
         lambda: _delayed_power(action, delay),
         "systemctl poweroff" if action == "poweroff" else "systemctl reboot",
     )
@@ -1270,12 +1362,84 @@ def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
     )
 
 
+@dataclass(frozen=True)
+class ScheduledPower:
+    """A power action waiting on the main loop; cancelled by shutdown /a or by quitting."""
+
+    action: str
+    due: float  # time.monotonic()
+    source: int  # GLib source id
+
+    @property
+    def remaining(self) -> int:
+        import time
+
+        return max(0, int(round(self.due - time.monotonic())))
+
+
+_SCHEDULED: ScheduledPower | None = None
+_POWER_RESULT_HOOK: Callable[[str], None] | None = None
+
+
+def set_power_result_hook(hook: Callable[[str], None] | None) -> None:
+    """Where the outcome of a delayed power action is shown (the terminal page)."""
+    global _POWER_RESULT_HOOK
+    _POWER_RESULT_HOOK = hook
+
+
+def scheduled_power() -> ScheduledPower | None:
+    return _SCHEDULED
+
+
+def cancel_scheduled_power() -> bool:
+    """Remove the pending timer. True when something was scheduled."""
+    global _SCHEDULED
+    if _SCHEDULED is None:
+        return False
+    from gi.repository import GLib
+
+    GLib.source_remove(_SCHEDULED.source)
+    _SCHEDULED = None
+    return True
+
+
+def _report_power(action: str) -> None:
+    ok, text = power_action(action)
+    hook = _POWER_RESULT_HOOK
+    if hook is not None:
+        hook(text if ok else f"{text} Nothing was changed.")
+    else:
+        import logging
+
+        logging.getLogger(__name__).info("delayed power action %s: %s", action, text)
+
+
 def _delayed_power(action: str, delay: int) -> tuple[bool, str]:
+    """Now: one logind call. Later: a main-loop timer that makes the call when due, so
+    shutdown /a can remove it and quitting the program drops it (nothing survives us)."""
+    global _SCHEDULED
+    if not delay:
+        return power_action(action)
+    if _SCHEDULED is not None:
+        return False, "A shutdown is already scheduled; shutdown /a cancels it."
+    import threading
     import time
 
-    if delay:
-        time.sleep(delay)
-    return power_action(action)
+    from gi.repository import GLib
+
+    def fire() -> bool:
+        global _SCHEDULED
+        _SCHEDULED = None
+        threading.Thread(target=_report_power, args=(action,), name="tb-power", daemon=True).start()
+        return False
+
+    source = GLib.timeout_add_seconds(delay, fire)
+    _SCHEDULED = ScheduledPower(action, time.monotonic() + delay, source)
+    verb = "shut down" if action == "poweroff" else "restart"
+    return True, (
+        f"The computer will {verb} in {delay} seconds. shutdown /a cancels it; closing "
+        "Trier Bridge cancels it too."
+    )
 
 
 HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
@@ -1296,6 +1460,7 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "netstat": cmd_netstat,
     "taskkill": cmd_taskkill,
     "shutdown": cmd_shutdown,
+    "taskmgr": cmd_tool,
     "powershell": cmd_powershell,
     "assoc": cmd_assoc,
     "netsh": cmd_netsh,

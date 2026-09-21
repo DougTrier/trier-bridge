@@ -37,7 +37,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..bridge.commands import CommandOutput, Exit, Session, is_sensitive, run_line  # noqa: E402
 from ..operations.files import FilePlan, execute_file  # noqa: E402
 from ..operations.process import TerminatePlan, execute_terminate  # noqa: E402
-from ..bridge.commands import ActionPlan  # noqa: E402
+from ..bridge.commands import ActionPlan, set_power_result_hook  # noqa: E402
 from ..operations.network import NetworkPlan, execute_network  # noqa: E402
 from ..operations.service import VERB_TEXT, ServicePlan, execute_service  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
@@ -58,6 +58,7 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         self._journal = journal
         self._notify = notify
         self._session = Session(cwd if cwd is not None and cwd.is_dir() else None)
+        set_power_result_hook(lambda text: GLib.idle_add(self._append, f"{text}\n\n"))
         self._history: list[str] = []
         self._hist_pos = 0
         self._busy = False

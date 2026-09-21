@@ -187,6 +187,15 @@ def journal_access() -> JournalAccess:
     )
 
 
+def current_boot_id() -> str:
+    """The kernel boot id in the journal spelling (no dashes); empty when unreadable."""
+    try:
+        with open("/proc/sys/kernel/random/boot_id", encoding="ascii") as fh:
+            return fh.read().strip().replace("-", "")
+    except OSError:
+        return ""
+
+
 class JournalReader:
     """Bounded, cancellable read of the newest entries through sd-journal."""
 
@@ -200,6 +209,7 @@ class JournalReader:
             L.sd_journal_close.argtypes = [ctypes.c_void_p]
             L.sd_journal_seek_tail.argtypes = [ctypes.c_void_p]
             L.sd_journal_previous.argtypes = [ctypes.c_void_p]
+            L.sd_journal_add_match.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_size_t]
             L.sd_journal_get_data.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_char_p,
@@ -229,8 +239,10 @@ class JournalReader:
         key, _, value = raw.partition(b"=")
         return value.decode("utf-8", "replace")
 
-    def newest(self, limit: int = DEFAULT_LIMIT) -> list[Entry]:
-        """Newest ``limit`` entries, newest first. Empty list when the journal is unavailable."""
+    def newest(self, limit: int = DEFAULT_LIMIT, boot_only: bool = False) -> list[Entry]:
+        """Newest ``limit`` entries, newest first. Empty list when the journal is unavailable.
+        ``boot_only`` narrows the read to this boot's kernel and audit records, so the Boot
+        view shows the current start-up even when it is older than the newest entries."""
         if self._lib is None:
             return []
         L = self._lib
@@ -239,34 +251,48 @@ class JournalReader:
             return []
         out: list[Entry] = []
         try:
-            if L.sd_journal_seek_tail(j) < 0:
+            if not self._scope(j, boot_only) or L.sd_journal_seek_tail(j) < 0:
                 return []
             while len(out) < limit and not self.cancel.is_set():
                 if L.sd_journal_previous(j) <= 0:
                     break
-                fields: dict[str, str] = {}
-                for name in FIELDS:
-                    v = self._field(j, name)
-                    if v is not None:
-                        fields[name] = sanitize(v)
-                usec = ctypes.c_uint64()
-                L.sd_journal_get_realtime_usec(j, ctypes.byref(usec))
-                source = (
-                    fields.get("_SYSTEMD_USER_UNIT")
-                    or fields.get("_SYSTEMD_UNIT")
-                    or fields.get("SYSLOG_IDENTIFIER")
-                    or fields.get("_COMM")
-                    or ("kernel" if fields.get("_TRANSPORT") == "kernel" else "Unknown")
-                )
-                out.append(
-                    Entry(
-                        realtime_usec=int(usec.value),
-                        level=level_for_priority(fields.get("PRIORITY")),
-                        message=fields.get("MESSAGE", "")[:2000],
-                        source=source,
-                        fields=fields,
-                    )
-                )
+                out.append(self._read_entry(j))
         finally:
             L.sd_journal_close(j)
         return out
+
+    def _scope(self, j: ctypes.c_void_p, boot_only: bool) -> bool:
+        """Add the Boot view matches (this boot, kernel or audit). False when unscopable."""
+        if not boot_only:
+            return True
+        boot = current_boot_id()
+        if not boot or self._lib is None:
+            return False
+        for m in (f"_BOOT_ID={boot}", "_TRANSPORT=kernel", "_TRANSPORT=audit"):
+            if self._lib.sd_journal_add_match(j, m.encode(), len(m)) < 0:
+                return False
+        return True
+
+    def _read_entry(self, j: ctypes.c_void_p) -> Entry:
+        fields: dict[str, str] = {}
+        for name in FIELDS:
+            v = self._field(j, name)
+            if v is not None:
+                fields[name] = sanitize(v)
+        usec = ctypes.c_uint64()
+        if self._lib is not None:
+            self._lib.sd_journal_get_realtime_usec(j, ctypes.byref(usec))
+        source = (
+            fields.get("_SYSTEMD_USER_UNIT")
+            or fields.get("_SYSTEMD_UNIT")
+            or fields.get("SYSLOG_IDENTIFIER")
+            or fields.get("_COMM")
+            or ("kernel" if fields.get("_TRANSPORT") == "kernel" else "Unknown")
+        )
+        return Entry(
+            realtime_usec=int(usec.value),
+            level=level_for_priority(fields.get("PRIORITY")),
+            message=fields.get("MESSAGE", "")[:2000],
+            source=source,
+            fields=fields,
+        )

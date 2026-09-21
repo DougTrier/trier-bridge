@@ -23,6 +23,19 @@ def test_specs_and_classes() -> None:
     assert parse("taskkill /IM sleep /F").switches == ("im", "f")  # type: ignore[union-attr]
 
 
+def test_windows_tool_names_open_our_pages(tmp_path: Path) -> None:
+    for line in ("taskmgr", "devmgmt.msc", "services.msc", "eventvwr", "MSCONFIG"):
+        assert parse(line).spec.name == "taskmgr", line  # type: ignore[union-attr]
+    assert isinstance(parse("taskmgr /x"), ParseFailure)
+    s = Session(tmp_path)
+    # no application object exists under pytest, so the command says where the page lives
+    out = run_line("devmgmt.msc", s)
+    assert out.exit is Exit.FAILED and out.lines[0].startswith("Device Manager is a page")
+    assert out.linux == "trier-bridge --section devices"
+    out = run_line("start eventvwr", s)
+    assert out.exit is Exit.FAILED and "Event Viewer" in out.lines[0]
+
+
 def test_date_time_and_net_teaching(tmp_path: Path) -> None:
     s = Session(tmp_path)
     d = run_line("date", s)

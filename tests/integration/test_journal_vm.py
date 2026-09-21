@@ -10,7 +10,7 @@ import subprocess
 
 import pytest
 
-from trier_bridge.system.journal import JournalReader, journal_access
+from trier_bridge.system.journal import JournalReader, current_boot_id, journal_access
 
 pytestmark = pytest.mark.integration
 
@@ -43,6 +43,29 @@ def test_newest_entries_agree_with_journalctl() -> None:
     for e in ours:
         assert "\x1b" not in e.message and "\n" not in e.message
         assert e.source and e.level
+
+
+def test_boot_scoped_read_matches_journalctl_kernel() -> None:
+    """TB-T145: the Boot view reads this boot's kernel and audit records even when they are
+    older than the newest entries."""
+    reader = JournalReader()
+    boot = current_boot_id()
+    assert len(boot) == 32
+    ours = reader.newest(limit=200, boot_only=True)
+    assert ours, "no kernel or audit entries for this boot"
+    for e in ours:
+        assert e.fields.get("_BOOT_ID") == boot
+        assert e.transport in ("kernel", "audit"), e.fields
+    theirs = subprocess.run(
+        ["journalctl", "-k", "-b", "-o", "json", "-n", "50", "--no-pager", "-q"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    their_msgs = {str(json.loads(ln).get("MESSAGE", "")) for ln in theirs if ln.strip()}
+    kernel_ours = [e.message for e in ours if e.transport == "kernel"]
+    overlap = sum(1 for m in kernel_ours[:50] if m in their_msgs)
+    assert overlap >= 25, f"only {overlap} of the newest kernel messages matched journalctl -k -b"
 
 
 def test_cancellation_stops_early() -> None:

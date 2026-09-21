@@ -36,6 +36,12 @@ def test_findstr_and_find_search_real_files(tmp_path: Path) -> None:
     out = run_line("find /V gamma docs\\a.txt", s)
     assert out.lines == ("Alpha line", "beta LINE")
     assert run_line("findstr zzz docs\\a.txt", s).exit is Exit.FAILED
+    out = run_line("findstr /R /I al.ha docs\\a.txt", s)  # /R: a pattern
+    assert out.exit is Exit.OK and out.lines == ("Alpha line",) and out.linux.endswith("-E")
+    assert run_line("findstr /R al.ha docs\\a.txt", s).exit is Exit.FAILED  # case matters
+    assert run_line("findstr /L al.ha docs\\a.txt", s).exit is Exit.FAILED  # /L: literal dot
+    bad = run_line("findstr /R ( docs\\a.txt", s)
+    assert bad.exit is Exit.PARSE_ERROR and bad.lines[0].startswith("Not a valid pattern")
     assert run_line("findstr x docs\\missing.txt", s).exit is Exit.FAILED
     assert isinstance(parse("findstr beta"), ParseFailure)  # needs a file
 
