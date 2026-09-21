@@ -64,8 +64,9 @@ FRIENDLY = {
 
 def _row(title: str = "", subtitle: str = "") -> Adw.ActionRow:
     """ActionRow with markup off: titles come from data and the system, not from us."""
-    row = Adw.ActionRow(title=title, subtitle=subtitle)
-    row.set_use_markup(False)
+    row = Adw.ActionRow(use_markup=False)
+    row.set_title(title)
+    row.set_subtitle(subtitle)
     return row
 
 

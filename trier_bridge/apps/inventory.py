@@ -92,7 +92,10 @@ def installed_apps() -> list[InstalledApp]:
         for entry in sorted(d.glob("*.desktop")):
             if entry.name in seen:
                 continue  # an earlier (higher-precedence) directory already provided this id
-            info = Gio.DesktopAppInfo.new_from_filename(str(entry))
+            try:
+                info = Gio.DesktopAppInfo.new_from_filename(str(entry))
+            except TypeError:  # PyGObject raises when the entry cannot be parsed
+                info = None
             if info is None:
                 continue
             seen.add(entry.name)
