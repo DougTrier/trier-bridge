@@ -96,21 +96,13 @@ def _free_space(mount: str) -> int | None:
         return None
 
 
-def read_storage(bus: Bus | None = None) -> StorageOverview:
-    bus = bus or Bus.system()
-    if bus.conn is None:
-        return StorageOverview(False, f"The system bus is not reachable: {bus.error}")
-    if UD not in bus.names() and UD not in bus.activatable():
-        return StorageOverview(False, "udisks2 is not present on this computer.")
-    objs = bus.managed_objects(UD, UD_ROOT)
-    if not objs:
-        return StorageOverview(False, "udisks2 did not answer.")
-    drives: dict[str, Drive] = {}
+def _drives(objs: dict[str, Any]) -> dict[str, Drive]:
+    out: dict[str, Drive] = {}
     for path, ifaces in objs.items():
         d = ifaces.get(f"{UD}.Drive")
         if d is None:
             continue
-        drives[path] = Drive(
+        out[path] = Drive(
             object_path=path,
             vendor=str(d.get("Vendor", "")).strip(),
             model=str(d.get("Model", "")).strip(),
@@ -121,75 +113,97 @@ def read_storage(bus: Bus | None = None) -> StorageOverview:
             connection_bus=str(d.get("ConnectionBus", "")),
             media_removable=bool(d.get("MediaRemovable", False)),
         )
+    return out
+
+
+def _volume_kind(ifaces: dict[str, Any]) -> str:
+    if f"{UD}.Encrypted" in ifaces:
+        return "Encrypted"
+    if f"{UD}.Loop" in ifaces:
+        return "Loop"
+    if f"{UD}.Partition" in ifaces:
+        return "Partition"
+    if f"{UD}.Filesystem" in ifaces:
+        return "Filesystem"
+    return "Whole disk"
+
+
+def _volume(path: str, ifaces: dict[str, Any], drv: Drive | None) -> Volume:
+    b = ifaces[f"{UD}.Block"]
+    fs = ifaces.get(f"{UD}.Filesystem")
+    part = ifaces.get(f"{UD}.Partition")
+    mounts = tuple(_bytes_path(m) for m in (fs or {}).get("MountPoints", []))
+    return Volume(
+        identity=BlockDeviceIdentity(
+            object_path=path,
+            drive_id=str(drv.model + ":" + drv.serial) if drv else "",
+            serial=drv.serial if drv else "",
+            size=int(b.get("Size", 0) or 0),
+            fs_uuid=str(b.get("IdUUID", "") or ""),
+            device_node=_bytes_path(b.get("Device")),
+        ),
+        device_node=_bytes_path(b.get("Device")),
+        kind=_volume_kind(ifaces),
+        fs_type=str(b.get("IdType", "") or ""),
+        label=str(b.get("IdLabel", "") or ""),
+        size_bytes=int(b["Size"]) if b.get("Size") else None,
+        mount_points=mounts,
+        free_bytes=_free_space(mounts[0]) if mounts else None,
+        partition_number=int(part["Number"]) if part and "Number" in part else None,
+        hint_system=bool(b.get("HintSystem", False)),
+        hint_ignore=bool(b.get("HintIgnore", False)),
+    )
+
+
+def _hidden(vol: Volume) -> bool:
+    """Hide only what is not a user-meaningful volume: read-only squashfs loop devices (app
+    packages) and unmounted hint-ignored blocks. A mounted ESP stays visible as a system
+    partition because Disk Management must not hide real storage (TB-INV-070)."""
+    return (vol.kind == "Loop" and vol.fs_type == "squashfs") or (
+        vol.hint_ignore and not vol.mount_points
+    )
+
+
+def _with_volumes(drv: Drive, vols: list[Volume]) -> Drive:
+    ordered = sorted(vols, key=lambda v: (v.partition_number or 0, v.device_node))
+    return Drive(
+        drv.object_path,
+        drv.vendor,
+        drv.model,
+        drv.serial,
+        drv.size_bytes,
+        drv.removable,
+        drv.ejectable,
+        drv.connection_bus,
+        drv.media_removable,
+        tuple(ordered),
+    )
+
+
+def read_storage(bus: Bus | None = None) -> StorageOverview:
+    bus = bus or Bus.system()
+    if bus.conn is None:
+        return StorageOverview(False, f"The system bus is not reachable: {bus.error}")
+    if UD not in bus.names() and UD not in bus.activatable():
+        return StorageOverview(False, "udisks2 is not present on this computer.")
+    objs = bus.managed_objects(UD, UD_ROOT)
+    if not objs:
+        return StorageOverview(False, "udisks2 did not answer.")
+    drives = _drives(objs)
     by_drive: dict[str, list[Volume]] = {p: [] for p in drives}
     loose: list[Volume] = []
     hidden = 0
     for path, ifaces in objs.items():
-        b = ifaces.get(f"{UD}.Block")
-        if b is None:
+        if f"{UD}.Block" not in ifaces:
             continue
-        hint_ignore = bool(b.get("HintIgnore", False))
-        fs = ifaces.get(f"{UD}.Filesystem")
-        part = ifaces.get(f"{UD}.Partition")
-        mounts = tuple(_bytes_path(m) for m in (fs or {}).get("MountPoints", []))
-        if f"{UD}.Encrypted" in ifaces:
-            kind = "Encrypted"
-        elif f"{UD}.Loop" in ifaces:
-            kind = "Loop"
-        elif part is not None:
-            kind = "Partition"
-        elif fs is not None:
-            kind = "Filesystem"
-        else:
-            kind = "Whole disk"
-        drive_path = str(b.get("Drive", "/"))
-        drv = drives.get(drive_path)
-        vol = Volume(
-            identity=BlockDeviceIdentity(
-                object_path=path,
-                drive_id=str(drv.model + ":" + drv.serial) if drv else "",
-                serial=drv.serial if drv else "",
-                size=int(b.get("Size", 0) or 0),
-                fs_uuid=str(b.get("IdUUID", "") or ""),
-                device_node=_bytes_path(b.get("Device")),
-            ),
-            device_node=_bytes_path(b.get("Device")),
-            kind=kind,
-            fs_type=str(b.get("IdType", "") or ""),
-            label=str(b.get("IdLabel", "") or ""),
-            size_bytes=int(b["Size"]) if b.get("Size") else None,
-            mount_points=mounts,
-            free_bytes=_free_space(mounts[0]) if mounts else None,
-            partition_number=int(part["Number"]) if part and "Number" in part else None,
-            hint_system=bool(b.get("HintSystem", False)),
-            hint_ignore=hint_ignore,
-        )
-        # Hide only what is not a user-meaningful volume: read-only squashfs loop devices
-        # (app packages) and unmounted hint-ignored blocks. A mounted ESP stays visible as a
-        # system partition because Disk Management must not hide real storage (TB-INV-070).
-        if (kind == "Loop" and vol.fs_type == "squashfs") or (hint_ignore and not mounts):
+        drive_path = str(ifaces[f"{UD}.Block"].get("Drive", "/"))
+        vol = _volume(path, ifaces, drives.get(drive_path))
+        if _hidden(vol):
             hidden += 1
-            continue
-        if drive_path in by_drive:
+        elif drive_path in by_drive:
             by_drive[drive_path].append(vol)
         else:
             loose.append(vol)
-    out = []
-    for p, drv in drives.items():
-        vols = sorted(by_drive[p], key=lambda v: (v.partition_number or 0, v.device_node))
-        out.append(
-            Drive(
-                drv.object_path,
-                drv.vendor,
-                drv.model,
-                drv.serial,
-                drv.size_bytes,
-                drv.removable,
-                drv.ejectable,
-                drv.connection_bus,
-                drv.media_removable,
-                tuple(vols),
-            )
-        )
+    out = [_with_volumes(drv, by_drive[p]) for p, drv in drives.items()]
     out.sort(key=lambda d: (d.removable, d.display_name))
     return StorageOverview(True, "Read from udisks2.", tuple(out), tuple(loose), hidden)

@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 import gi
 
@@ -148,11 +148,10 @@ def _classify_error(err: str) -> tuple[OperationState, str]:
     return OperationState.FAILED, "The service manager refused the request."
 
 
-def execute_service(
-    plan: ServicePlan, journal: OperationJournal | None = None, bus: Bus | None = None
-) -> OperationResult:
-    scope = plan.service.scope
-    bus = bus or bus_for(scope)
+def _open_record(
+    plan: ServicePlan, journal: OperationJournal | None
+) -> tuple[Any, Callable[..., OperationResult]]:
+    """Open the journal record and return it with a finisher that closes it."""
     op = plan.operation
     name = plan.service.identity.name
     rec = None
@@ -166,7 +165,7 @@ def execute_service(
                 "name": name,
                 "object_path": plan.service.identity.object_path,
                 "fragment": plan.service.identity.fragment_path,
-                "scope": scope.value,
+                "scope": plan.service.scope.value,
             },
             plan.preview,
         )
@@ -186,69 +185,73 @@ def execute_service(
             op.operation_id, state, plain, technical, next_step, succeeded, failed
         )
 
-    # Revalidate the exact unit right before acting (TB-INV-053, TB-INV-121).
-    fresh, err = read_unit(scope, name, bus)
+    return rec, finish
+
+
+def _revalidate(plan: ServicePlan, bus: Bus) -> tuple[ServiceInfo | None, OperationState, str, str]:
+    """Fresh facts for the exact unit, or the cancel reason (TB-INV-053, TB-INV-121)."""
+    name = plan.service.identity.name
+    fresh, err = read_unit(plan.service.scope, name, bus)
     if fresh is None:
-        return finish(
+        return (
+            None,
             OperationState.CANCELLED,
             f"{name} could not be found any more. Nothing was changed.",
             err,
         )
     if not fresh.identity.same_target(plan.service.identity):
-        return finish(
+        return (
+            None,
             OperationState.CANCELLED,
             f"{name} was replaced or reloaded since it was shown. Nothing was changed.",
             f"fragment {plan.service.identity.fragment_path!r} -> {fresh.identity.fragment_path!r}",
-            "Refresh Services and try again.",
         )
-    if journal is not None and rec is not None:
-        journal.advance(
-            rec, OperationState.AUTHORIZED if not plan.needs_admin else OperationState.PREVIEWED
-        )
-    verb = plan.verb
+    return fresh, OperationState.VERIFIED, "", ""
+
+
+def _method_for(verb: str, name: str) -> tuple[str, GLib.Variant]:
     if verb in ("start", "stop", "restart"):
         method = {"start": "StartUnit", "stop": "StopUnit", "restart": "RestartUnit"}[verb]
-        args = GLib.Variant("(ss)", (name, "replace"))
-    elif verb == "enable":
-        method, args = "EnableUnitFiles", GLib.Variant("(asbb)", ([name], False, False))
-    else:
-        method, args = "DisableUnitFiles", GLib.Variant("(asb)", ([name], False))
-    if journal is not None and rec is not None:
-        journal.advance(rec, OperationState.EXECUTING)
-    res, err = _manager_call(bus, method, args)
-    if err:
-        state, plain = _classify_error(err)
+        return method, GLib.Variant("(ss)", (name, "replace"))
+    if verb == "enable":
+        return "EnableUnitFiles", GLib.Variant("(asbb)", ([name], False, False))
+    return "DisableUnitFiles", GLib.Variant("(asb)", ([name], False))
+
+
+def _verify_unit_file(
+    plan: ServicePlan, bus: Bus, method: str, finish: Callable[..., OperationResult]
+) -> OperationResult:
+    """enable/disable: success is the re-read UnitFileState (TB-INV-006)."""
+    name = plan.service.identity.name
+    _manager_call(bus, "Reload", None)
+    after, err = read_unit(plan.service.scope, name, bus)
+    want = "enabled" if plan.verb == "enable" else "disabled"
+    if after is not None and after.unit_file_state == want:
         return finish(
-            state,
-            f"{plain} {name} was not changed.",
-            err,
-            "Nothing to do." if state is OperationState.CANCELLED else "",
+            OperationState.VERIFIED,
+            f"{name} is now set to {after.plain_startup.lower()} start.",
+            f"{method} ok; UnitFileState={after.unit_file_state}",
         )
-    if journal is not None and rec is not None:
-        journal.advance(rec, OperationState.COMMITTED)
-        journal.advance(rec, OperationState.VERIFYING)
-    if verb in ("enable", "disable"):
-        _manager_call(bus, "Reload", None)
-        after, err = read_unit(scope, name, bus)
-        want = "enabled" if verb == "enable" else "disabled"
-        if after is not None and after.unit_file_state == want:
-            return finish(
-                OperationState.VERIFIED,
-                f"{name} is now set to {after.plain_startup.lower()} start.",
-                f"{method} ok; UnitFileState={after.unit_file_state}",
-            )
-        return finish(
-            OperationState.OUTCOME_UNKNOWN,
-            f"The change was sent but {name} still reports "
-            f"'{(after.unit_file_state if after else 'unknown')}'.",
-            err or f"UnitFileState={(after.unit_file_state if after else '?')}",
-            "Refresh Services in a moment.",
-        )
+    state = after.unit_file_state if after else "unknown"
+    return finish(
+        OperationState.OUTCOME_UNKNOWN,
+        f"The change was sent but {name} still reports '{state}'.",
+        err or f"UnitFileState={state}",
+        "Refresh Services in a moment.",
+    )
+
+
+def _verify_active(
+    plan: ServicePlan, bus: Bus, method: str, finish: Callable[..., OperationResult]
+) -> OperationResult:
+    """start/stop/restart: poll ActiveState until it matches, fails, or times out."""
+    name = plan.service.identity.name
+    verb = plan.verb
     want = {"start": "active", "stop": "inactive", "restart": "active"}[verb]
     deadline = time.monotonic() + VERIFY_TIMEOUT_S
     last = ""
     while time.monotonic() < deadline:
-        after, err = read_unit(scope, name, bus)
+        after, err = read_unit(plan.service.scope, name, bus)
         last = after.active_state if after else err
         if after is not None and after.active_state == want:
             return finish(
@@ -279,3 +282,39 @@ def execute_service(
         f"{method} ok; verify timeout",
         "Refresh Services in a moment.",
     )
+
+
+def execute_service(
+    plan: ServicePlan, journal: OperationJournal | None = None, bus: Bus | None = None
+) -> OperationResult:
+    """Revalidate → one systemd call under polkit → verify the observed state."""
+    bus = bus or bus_for(plan.service.scope)
+    name = plan.service.identity.name
+    rec, finish = _open_record(plan, journal)
+
+    def advance(state: OperationState) -> None:
+        if journal is not None and rec is not None:
+            journal.advance(rec, state)
+
+    fresh, state, plain, technical = _revalidate(plan, bus)
+    if fresh is None:
+        return finish(
+            state, plain, technical, "Refresh Services and try again." if technical else ""
+        )
+    advance(OperationState.AUTHORIZED if not plan.needs_admin else OperationState.PREVIEWED)
+    method, args = _method_for(plan.verb, name)
+    advance(OperationState.EXECUTING)
+    _res, err = _manager_call(bus, method, args)
+    if err:
+        state, plain = _classify_error(err)
+        return finish(
+            state,
+            f"{plain} {name} was not changed.",
+            err,
+            "Nothing to do." if state is OperationState.CANCELLED else "",
+        )
+    advance(OperationState.COMMITTED)
+    advance(OperationState.VERIFYING)
+    if plan.verb in ("enable", "disable"):
+        return _verify_unit_file(plan, bus, method, finish)
+    return _verify_active(plan, bus, method, finish)
