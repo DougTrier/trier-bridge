@@ -30,6 +30,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from ..desktop.launch import Launcher  # noqa: E402
+from ..system.driveletters import DriveLetter, letters  # noqa: E402
 from ..system.storage import StorageOverview, Volume, read_storage  # noqa: E402
 
 log = logging.getLogger("trier_bridge.ui.disks")
@@ -85,6 +86,7 @@ class DisksPage(Gtk.Box):  # type: ignore[misc]
         self._top.add(disks_row)
         self._page.add(self._top)
         self._groups: list[Adw.PreferencesGroup] = []
+        self._letters: list[DriveLetter] = []
         scroller = Gtk.ScrolledWindow(child=self._page, hscrollbar_policy=Gtk.PolicyType.NEVER)
         scroller.set_vexpand(True)
         self.append(scroller)
@@ -118,6 +120,11 @@ class DisksPage(Gtk.Box):  # type: ignore[misc]
 
     def _volume_row(self, v: Volume) -> Adw.ActionRow:
         name = v.label or v.device_node
+        letter = next(
+            (d for d in self._letters if v.is_mounted and d.mount_point in v.mount_points), None
+        )
+        if letter is not None:
+            name = f"{letter.display}  {name}"
         parts = [v.kind, v.fs_type or "no filesystem", _fmt(v.size_bytes)]
         if v.is_mounted:
             parts.append("mounted at " + ", ".join(v.mount_points))
@@ -145,6 +152,27 @@ class DisksPage(Gtk.Box):  # type: ignore[misc]
         )
         self._status.set_title(f"{len(st.drives)} drives, {n_vol} volumes")
         self._status.set_subtitle(f"Read from udisks2{hidden}")
+        self._letters = letters()
+        g = Adw.PreferencesGroup(
+            title="Drive letters",
+            description=(
+                "A familiar label for each mounted volume. Linux itself uses folders, not "
+                "letters; the real folder is the truth and is shown everywhere."
+            ),
+        )
+        for dl in self._letters:
+            what = (
+                "the Linux system drive (everything lives under /)"
+                if dl.mount_point == "/"
+                else dl.mount_point
+            )
+            r = _row(
+                f"{dl.display}  {dl.label}",
+                f"{what} · {dl.fs_type}{' · removable' if dl.removable else ''}",
+            )
+            g.add(r)
+        self._page.add(g)
+        self._groups.append(g)
         for d in st.drives:
             kind = "Removable" if d.removable else "Fixed"
             title = f"{d.display_name} ({kind}, {_fmt(d.size_bytes)})"

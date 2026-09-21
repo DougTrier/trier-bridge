@@ -34,6 +34,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..apps.inventory import DefaultApp, InstalledApp, default_apps, installed_apps  # noqa: E402
 from ..catalog.model import Catalog, Concept, Equivalence, RouteKind  # noqa: E402
 from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
+from ..system.driveletters import letters  # noqa: E402
 from ..operations.defaults import (  # noqa: E402
     Candidate,
     DefaultAppPlan,
@@ -229,6 +230,23 @@ class FilesPage(Gtk.Box):  # type: ignore[misc]
                 )
             group.add(row)
         page.add(group)
+        drives = Adw.PreferencesGroup(
+            title="Drives",
+            description="C: is the Linux system drive; other mounted volumes get the next letters. "
+            "The real folder is shown and is what Files opens.",
+        )
+        for d in letters():
+            what = "/" if d.mount_point == "/" else d.mount_point
+            row = _row(title=f"{d.display}  {d.label}", subtitle=what)
+            row.add_suffix(
+                _open_button(
+                    "Open",
+                    f"Open {d.display} ({what}) in Files. Nothing is changed.",
+                    partial(self._open, launcher, notify, f"file://{what}", d.display),
+                )
+            )
+            drives.add(row)
+        page.add(drives)
         tips = Adw.PreferencesGroup(title="What works the same")
         for t, s in (
             ("Copy, cut, paste", "Ctrl+C, Ctrl+X, Ctrl+V in Files, just like Explorer."),

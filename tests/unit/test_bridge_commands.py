@@ -45,7 +45,7 @@ def test_dir_type_cd_on_a_real_tree(tmp_path: Path) -> None:
         run_line("cd Documents", s).exit is Exit.OK and s.cwd == (tmp_path / "Documents").resolve()
     )
     assert run_line("cd nope", s).exit is Exit.FAILED
-    assert run_line("cd", s).lines == (str(s.cwd),)
+    assert run_line("cd", s).lines[0].startswith(str(s.cwd))  # plus the familiar spelling
     assert run_line("echo hi there", s).lines == ("hi there",)
 
 

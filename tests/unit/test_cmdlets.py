@@ -50,7 +50,7 @@ def test_cmdlet_runs_the_bridge_command_with_a_note(tmp_path: Path) -> None:
     out = run_line("Get-Location", session)
     assert out.exit is Exit.OK
     assert out.lines[0] == "PowerShell Get-Location → cd"
-    assert out.lines[1] == str(tmp_path)
+    assert out.lines[1].startswith(str(tmp_path))  # plus the familiar spelling
     out = run_line("Set-Location -Path ..", session)
     assert out.exit is Exit.OK and session.cwd == tmp_path.parent
     helped = run_line("help Get-Service", session)

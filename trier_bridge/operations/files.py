@@ -23,7 +23,6 @@ acting (TB-INV-050).
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -35,6 +34,7 @@ from gi.repository import Gio, GLib  # noqa: E402
 from ..core.operations import Operation, OperationResult  # noqa: E402
 from ..core.state import AuthorizationState, OperationState, PrivilegeClass  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
+from ..system.driveletters import to_linux_path  # noqa: E402
 
 VERBS: dict[str, tuple[str, str, str]] = {
     # verb: (button/heading, past tense, Linux equivalent)
@@ -106,12 +106,8 @@ class FilePlan:
 
 
 def resolve_path(cwd: Path, text: str) -> Path:
-    """Windows-style separators accepted; the result is an absolute Linux path."""
-    raw = text.replace("\\", "/")
-    p = Path(raw)
-    if not p.is_absolute():
-        p = cwd / p
-    return Path(os.path.normpath(str(p)))
+    """Windows-style separators and drive letters accepted; an absolute Linux path results."""
+    return to_linux_path(text, cwd)
 
 
 def _refuse(

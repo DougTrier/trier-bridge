@@ -36,6 +36,7 @@ from typing import Callable
 from ..capability.facts import distro_from_os_release, parse_os_release
 from ..core.identity import ProcessIdentity
 from ..core.state import PrivilegeClass, OperationState
+from ..system.driveletters import to_linux_path, to_windows_path
 from .cmdlets import cmdlet_for, cmdlet_lines
 from .grammar import COMMANDS, BridgeCommand, CommandSpec, ParseFailure, parse
 
@@ -170,27 +171,39 @@ def cmd_cls(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return CommandOutput(Exit.OK, ("\x0c",), "clear", True)
 
 
+def _path_arg(session: Session, text: str) -> Path | CommandOutput:
+    """A typed path (Windows or Linux spelling) as an absolute Linux path, or the refusal."""
+    try:
+        return to_linux_path(text, session.cwd).resolve()
+    except ValueError as exc:
+        return CommandOutput(Exit.FAILED, (str(exc),), "mount", False)
+
+
 def cmd_cd(cmd: BridgeCommand, session: Session) -> CommandOutput:
     if not cmd.args:
-        return CommandOutput(Exit.OK, (str(session.cwd),), "pwd", True)
-    target = (session.cwd / cmd.args[0].replace("\\", "/")).resolve()
+        return CommandOutput(
+            Exit.OK, (f"{session.cwd}  ({to_windows_path(session.cwd)})",), "pwd", True
+        )
+    target = _path_arg(session, cmd.args[0])
+    if isinstance(target, CommandOutput):
+        return target
     if not target.is_dir():
         return CommandOutput(
             Exit.FAILED, (f"The system cannot find the path specified: {cmd.args[0]}",), "cd", False
         )
     session.cwd = target
-    return CommandOutput(Exit.OK, (str(target),), "cd", True)
+    return CommandOutput(Exit.OK, (f"{target}  ({to_windows_path(target)})",), "cd", True)
 
 
 def cmd_dir(cmd: BridgeCommand, session: Session) -> CommandOutput:
-    target = (
-        session.cwd if not cmd.args else (session.cwd / cmd.args[0].replace("\\", "/")).resolve()
-    )
+    target = session.cwd if not cmd.args else _path_arg(session, cmd.args[0])
+    if isinstance(target, CommandOutput):
+        return target
     if not target.is_dir():
         return CommandOutput(
             Exit.FAILED, (f"File Not Found: {cmd.args[0] if cmd.args else target}",), "ls -l", False
         )
-    lines = [f" Directory of {target}", ""]
+    lines = [f" Directory of {target}  ({to_windows_path(target)})", ""]
     try:
         entries = sorted(target.iterdir(), key=lambda p: (not p.is_dir(), p.name.casefold()))
     except PermissionError:
@@ -216,7 +229,9 @@ def cmd_dir(cmd: BridgeCommand, session: Session) -> CommandOutput:
 
 
 def cmd_type(cmd: BridgeCommand, session: Session) -> CommandOutput:
-    target = (session.cwd / cmd.args[0].replace("\\", "/")).resolve()
+    target = _path_arg(session, cmd.args[0])
+    if isinstance(target, CommandOutput):
+        return target
     if not target.is_file():
         return CommandOutput(
             Exit.FAILED,
