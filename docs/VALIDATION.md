@@ -491,6 +491,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** one build host (the VM) and one chroot; a build on a different machine has not been compared yet. The chroot was created with `--components=main` first and needed universe added; `docs/PACKAGING.md` should say so for the next person.
 - **Evidence state:** DISTRO_VERIFIED on Ubuntu 24.04.5; reproducible across environment
 
+### IMP-03.08 — Print Screen through the desktop portal (implemented; unverifiable in this VM)
+
+- **Timestamp:** 2026-09-21 11:50 AM CDT
+- **Candidate revision:** 941e5d7
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02): `xdg-desktop-portal` 1.18 with the GNOME backend (`gnome.portal` lists `org.freedesktop.impl.portal.Screenshot`); the VM has no GPU and `xdg-desktop-portal-gnome` logs an EGL initialisation failure at start
+- **Files/modules:** `trier_bridge/desktop/screenshot.py`, `trier_bridge/catalog/model.py` (route kind `action`), `data/catalog/concepts.json` (`tb.screenshot`), `trier_bridge/ui/pages.py` (Router actions), `trier_bridge/ui/window.py`, `tests/unit/test_screenshot_route.py`
+- **Invariant impact:** TB-INV-119 (Trier Bridge captures nothing itself; the desktop's own tool does, after the user acts in it), TB-INV-004 (no claim that the tool appeared: the toast says it should, and a 60-second watchdog reports "no answer" and closes the request rather than waiting forever), TB-INV-078 (plain results for saved, cancelled, failed, no answer), TB-INV-065 (Screenshot stays an exact-equivalence concept with a real action)
+- **Expected result:** choosing Screenshot (Home search "Print Screen", "Snipping Tool", or the search provider) sends one `org.freedesktop.portal.Screenshot.Screenshot` request with `interactive=true`; GNOME's screenshot UI appears; the Response carries a file URI or a cancellation; the product reports it.
+- **Observed result:** the route, the Home "Take" button, the remote `--open tb.screenshot` path, and the request all work: the portal accepted the call and returned a request handle (`/org/freedesktop/portal/desktop/request/1_574/trierbridge…`). **In this VM the GNOME backend never answers:** the shell's screenshot UI nodes (Area Selection, Screen Selection, Window Selection, Capture) stayed hidden in the accessibility tree, no permission dialog appeared from `xdg-desktop-portal-gnome`, no Response arrived within 20 s for a direct portal call from the session either, and `Request.Close` returned without effect. This correlates with the backend's EGL failure in a GPU-less VM (the same environment in which the earlier research call timed out). Unit tests pass (100 host, 116 VM).
+- **Tests/checks:** `tools/dev.py all`; direct portal call (`vm_portal_diag.sh`, test aid) with a 20-second wait; AT-SPI state probe of the shell's screenshot UI before, during, and after; product log lines.
+- **Artifacts/logs:** session transcript; `~/tb-run14.log` in the VM.
+- **Failures/limitations:** the screenshot itself is NOT VERIFIED anywhere yet; it needs a desktop with a working compositor capture path (real hardware or a VM with GPU acceleration) and is added to the TB-IA acceptance list. Clipboard stays teaching only (Ctrl+C/V are the same; there is no built-in clipboard history on GNOME). The watchdog wording was verified by reading; its firing was exercised in the VM.
+- **Evidence state:** UNIT_VERIFIED for the route and request; the desktop behaviour is NOT VERIFIED (environment limitation)
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

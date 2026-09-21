@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | Quality remediation CQ-05..08 while the acceptance cases (IMP-08.04/05/06) wait for a person at the console |
+| **Active task** | Waiting on the owner for the console acceptance cases (IMP-08.04/05/06, screenshot on hardware); automated work list is exhausted except CQ-02/03/04/09 and IMP-06.06 (owner decision) |
 | **Last completed** | IMP-08.01: clean sbuild chroot build identical to two in-VM builds; SCOPE-06..13 and ARC-03..14 closed with evidence (2026-09-21 10:30 AM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | CQ-07 rename → CQ-05 split execute_service → CQ-06 read_storage → CQ-08 plan_file → IMP-03.08 clipboard/screenshot beyond teaching → acceptance cases with the owner |
+| **Next bounded step** | CQ-03 concurrency contract in ENGINEERING (done in section 14.1; close in report) → CQ-09 performance budget → owner: TB-IA acceptance at the console, screenshot on hardware, decision on IMP-06.06 |
 
 ---
 
@@ -177,7 +177,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-03.06** Printer/device entry points. Evidence: Printers page routes to the GNOME Settings printers panel; Bluetooth/devices via catalog (entry IMP-03). Live status is Foundation 04.
 - [x] **IMP-03.07** Wi-Fi/network entry points. Evidence: Network page routes to wifi/network panels (entry IMP-03).
 - [ ] **IMP-03.08** Screenshot/clipboard/common shortcut support.
-  - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); Ctrl+Shift+Esc shipped as an individual Shortcuts integration (entry SCOPE-14). Remaining: screenshot/clipboard behaviors beyond teaching.
+  - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); Ctrl+Shift+Esc shipped as an individual Shortcuts integration (entry SCOPE-14). Print Screen is now an action through the desktop portal (entry IMP-03.08) but the GNOME backend never answers in the GPU-less VM, so the screenshot itself stays NOT VERIFIED until run on hardware; clipboard stays teaching only. Item stays open for that verification.
 - [ ] **IMP-03.09** Everyday office-user interaction tests.
 
 ---
