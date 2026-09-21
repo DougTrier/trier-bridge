@@ -48,6 +48,7 @@ Administration and command translation are deeper layers.
 - owner decisions 2026-09-20: DEC-016 accepted (Ubuntu 24.04 LTS first, derivatives next with their own evidence); DEC-017 rejected (no WSL; Hyper-V VM only); DEC-019 accepted (one integrated build, integrations are part of the product)
 - Hyper-V desktop VM scripts and autoinstall seed written under `tools/env/`; ISO download started (2026-09-20 10:25 PM CDT); VM creation is an owner-run elevated step
 - local Git repository initialized on `main` with no remote (2026-09-20)
+- test VM `tb-ubuntu-desktop-2404` created by owner and profiled in-guest; tools verified on Linux (ENV-02, TOOL-05, 2026-09-20 11:10 PM CDT)
 - pre-implementation gap review recorded as SCOPE-01..13; non-invasive directive DEC-018 accepted; delivery model DEC-019 proposed (2026-09-20)
 
 ### Not yet done
@@ -104,7 +105,7 @@ No document existence implies runtime PASS.
 
 Before implementation:
 
-0. owner creates the disposable Hyper-V desktop VM (`tools/env/New-TbDesktopVm.ps1 -Start`); tools verified inside it (TOOL-05, ENV-02)
+0. take the `clean-install` checkpoint of the test VM (ENV-03)
 1. review root/project documents for alignment (ALN-12)
 1a. write SCOPE-01..05 design documents (delivery model, privilege helper, packaging, research plan, test strategy)
 2. decide implementation stack

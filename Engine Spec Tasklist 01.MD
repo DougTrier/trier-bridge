@@ -19,12 +19,12 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | ROOT-01 — Root project-control document alignment |
-| **Last completed** | Read-only engineering tools created and verified on Windows; `tb all` exit 0 (2026-09-20 09:55 PM CDT) |
+| **Last completed** | Test VM created and profiled; tools verified in-guest (ENV-02, TOOL-05, 2026-09-20 11:10 PM CDT) |
 | **Implementation** | NOT STARTED |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED |
-| **Platform support** | No distro/desktop combination qualified |
+| **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
 | **Next bounded step** | Owner review (ALN-12) → SCOPE-01..05 design documents → implementation-stack selection → Foundation 01 freeze |
 
@@ -72,10 +72,10 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [x] **TOOL-02** Snapshot / changes / status / context digest. Evidence: `tb context` run 2026-09-20 09:55 PM CDT.
 - [x] **TOOL-03** Ledger parser and outline/section/invariant navigation. Evidence: `tb ledger ALN-13`, `tb outline`, `tb section`, `tb inv show/find` run 2026-09-20 09:55 PM CDT.
 - [x] **TOOL-04** Link, invariant cross-reference, term-rule, and header checks under `tb all`. Evidence: exit 0 on 2026-09-20 09:55 PM CDT (233 INV, 30 SEC, 30 IA indexed; 33 links; 12 term rules).
-- [ ] **TOOL-05** Verify the tools run unmodified on Linux inside the disposable Hyper-V VM (`python3 tools/tb.py all`). Blocked on ENV-02.
+- [x] **TOOL-05** Verify the tools run unmodified on Linux inside the Hyper-V VM (`python3 tools/tb.py all`). Evidence: 2026-09-20 11:10 PM CDT in `tb-ubuntu-desktop-2404`, exit 0, counts identical to Windows; see `docs/VALIDATION.md` entry TOOL-05.
 - [ ] **TOOL-06** Stack-dependent tools: lint/static-analysis orchestration, test-result normalization, dependency inventory, CQS evidence collection. Blocked until ARC-01 and IMP-01.01.
 - [ ] **ENV-01** CANCELLED 2026-09-20: WSL instance scratched by owner (DEC-017 rejected). All Linux testing uses the Hyper-V VM under ENV-02.
-- [ ] **ENV-02** Create the disposable Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification.
+- [x] **ENV-02** Create the Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification. Evidence: created by owner via `New-TbDesktopVm.ps1` 2026-09-20 10:39 PM CDT (ISO VERIFIED); in-guest profile recorded 11:10 PM CDT in `docs/VALIDATION.md` entry ENV-02 (Ubuntu 24.04.5, Wayland GNOME 46, systemd 255, NM 1.46, udisks 2.10, polkit 124).
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
 - [ ] **ENV-03** Baseline `clean-install` checkpoint taken after first login and restore verified; removal procedure (`tools/env/Remove-TbDesktopVm.ps1`) kept available but the owner intends to keep the VM for other uses (2026-09-20).
 

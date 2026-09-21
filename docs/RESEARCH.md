@@ -35,7 +35,7 @@ The detailed research baseline, design lessons, and reference URLs from the Sept
 - PowerShell Linux behavior
 - packaging strategy
 - distro-specific system settings APIs
-- tray icon on Ubuntu GNOME (AppIndicator/StatusNotifier availability on Wayland, default extension state on Ubuntu 24.04) for the "T" options icon (DEC-019)
+- tray icon on Ubuntu GNOME for the "T" options icon (DEC-019). **Finding 2026-09-20 (ENV-02 profile):** Ubuntu 24.04.5 GNOME 46 Wayland session ships with `ubuntu-appindicators@ubuntu.com` enabled by default (gnome-shell-extension-appindicator 58), so a StatusNotifier/AppIndicator tray icon is viable on the first target without asking the user to install anything. Other desktops still need their own check.
 - first-run setup trigger after native package install (autostart-once versus first launch)
 
 ## 4. Reference policy

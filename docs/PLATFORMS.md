@@ -40,6 +40,10 @@ Next candidates, in the order the adapters carry over; each needs its own eviden
 - Zorin OS
 - AnduinOS
 
+### First observed test profile (not a support claim)
+
+`tb-ubuntu-desktop-2404`, 2026-09-20: Ubuntu 24.04.5 LTS, x86_64, Hyper-V Gen2, GDM Wayland session, GNOME Shell 46, systemd 255, NetworkManager 1.46, udisks2 2.10.1, polkit 124, apt 2.8.3 + PackageKit 1.2.8 + snap 2.76.3 (Flatpak absent), xdg-desktop-portal 1.18 (gnome backend), AppArmor on. Full record in `VALIDATION.md` entry ENV-02.
+
 ## 4. Support state
 
 Each feature/environment combination is one of:

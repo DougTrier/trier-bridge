@@ -211,4 +211,30 @@ Do not record planned behavior as observed evidence.
 
 ## Entries
 
-(none)
+### ENV-02 — Hyper-V Ubuntu Desktop test VM created and profiled
+
+- **Timestamp:** 2026-09-20 11:10 PM CDT
+- **Candidate revision:** bbd29fa (tools/env scripts)
+- **Environment/profile:** Environment profile `tb-ubuntu-desktop-2404` observed 2026-09-20 11:10 PM CDT (in-guest, over SSH): Ubuntu 24.04.5 LTS (ID ubuntu, like debian), kernel 7.0.0-31-generic x86_64, virt microsoft (Hyper-V Gen2); session: GDM, Type=wayland, Class=user, local (Remote=no); GNOME Shell 46.0; systemd 255 (pid 1); NetworkManager 1.46.0 running; udisks2 2.10.1; polkit 124 (polkitd); apt 2.8.3; PackageKit 1.2.8; snap 2.76.3; Flatpak absent; CUPS 2.4.7; xdg-desktop-portal 1.18.4 with gnome backend 46.2; AppArmor enabled; Python 3.12.3; git 2.43.0; pwsh absent; GNOME extensions enabled by default: ubuntu-appindicators, ubuntu-dock, ding, tiling-assistant (gnome-shell-extension-appindicator 58); Hyper-V: hv_balloon and vmbus kernel workers present, linux-cloud-tools daemons absent; 4 vCPU, 8.3 GiB, 62 GB root (48 GB free). Guest changes beyond autoinstall: openssh-server installed and enabled; host SSH public key authorized for user tb.
+- **Files/modules:** `tools/env/New-TbDesktopVm.ps1`, `tools/env/autoinstall/*`
+- **Invariant impact:** TB-INV-023 (session type recorded, not conflated), TB-INV-230 (disposable environment), TB-INV-231 (exact environment identity)
+- **Expected result:** VM created by script with verified ISO; unattended install completes; guest reachable.
+- **Observed result:** Create script evidence `reports/local/env-tb-ubuntu-desktop-2404.json` (ISO SHA256 VERIFIED, created 2026-09-20 10:39 PM CDT); autoinstall completed (marker `/etc/tb-environment` present); guest at 172.20.252.59 on Default Switch.
+- **Tests/checks:** in-guest profile script (read-only) over SSH.
+- **Artifacts/logs:** profile output recorded above; create-script JSON in `reports/local/` (untracked).
+- **Failures/limitations:** vmconnect basic session has no clipboard for Linux guests; bootstrap used a temporary host HTTP server on the switch address. Profile is one VM, one desktop; proves nothing about other desktops or physical hardware.
+- **Evidence state:** DISTRO_VERIFIED (environment identity only; no product behavior claimed)
+
+### TOOL-05 — Read-only tools run unmodified on Linux
+
+- **Timestamp:** 2026-09-20 11:10 PM CDT
+- **Candidate revision:** bbd29fa
+- **Environment/profile:** as ENV-02 above; Python 3.12.3.
+- **Files/modules:** `tools/tb.py`, `tools/tbtools/*`
+- **Invariant impact:** none (engineering tooling)
+- **Expected result:** `python3 tools/tb.py all` exits 0 with the same counts as on Windows; navigation commands work; timestamps are Central.
+- **Observed result:** links 0/0/0 (33 links, 87 mentions); invariants 233 INV / 30 SEC / 30 IA, 0 findings; terms 0 error 0 warn 5 info; headers 15/15; exit 0. `tb status`, `tb inv show 023`, `tb section`, `tb snapshot` worked; stamp `2026-09-20 11:10 PM CDT` (zoneinfo path).
+- **Tests/checks:** tree exported with `git archive HEAD`, extracted to `~/tb` in the guest, commands run over SSH, copy removed afterwards.
+- **Artifacts/logs:** command output captured in session transcript; counts identical to the Windows run of the same revision.
+- **Failures/limitations:** `tb.ps1` and `tb-env.ps1` not exercised in the guest (pwsh absent). No git repository in the guest copy, so `git:` reported none.
+- **Evidence state:** DISTRO_VERIFIED
