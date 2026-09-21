@@ -575,6 +575,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** ping replies appear in the terminal window, not in the Bridge Terminal (an in-process ping would need CAP_NET_RAW, which the product will not carry); tracert uses `tracepath` (no ICMP mode); `ipconfig /release` and `/renew` teach the reconnect route instead of acting.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED (ping window) on Ubuntu 24.04.5
 
+### IMP-07.09 — explorer, start, net, date, time, taskkill /IM, and the teaching entries
+
+- **Timestamp:** 2026-09-21 06:15 PM CDT
+- **Candidate revision:** 9630a12
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), console session for the launches
+- **Files/modules:** `trier_bridge/bridge/grammar.py`, `commands.py`, `trier_bridge/desktop/launch.py` (`open_uri`), `tests/unit/test_familiar_commands.py`, `tests/integration/test_familiar_vm.py`
+- **Invariant impact:** TB-INV-080 (each familiar word answers with the Linux place: Files, the default application, Settings), TB-INV-105 (sfc, chkdsk, xcopy, robocopy, gpedit explain and never run), TB-INV-094/104 (`net start|stop` is the same ServicePlan as `sc`; `taskkill /IM` is the same TerminatePlan as `/PID`, and only when exactly one of the user's programs carries the name), TB-INV-119 (paths and addresses are data; a Linux path is never read as a switch for these commands)
+- **Expected result:** `explorer <folder>` opens Files there (Windows or Linux spelling); `start <url|file|folder|notepad|calc|explorer|control>` opens the right thing and says so; `start cmd` answers that this is the Command Prompt; `start mspaint` explains; `date`/`time` show the clock and point to Settings; `net user|use|share|view` explain; `taskkill /IM name` plans for a single match, lists PIDs for several, reports not found otherwise.
+- **Observed result:** integration in the VM: `taskkill /IM sleep` planned for the test's own child (or listed PIDs when other sleeps existed) and the child kept running; `explorer <tmp folder>` reported "Opened in Files" with the folder and its `C:\...` spelling and a Nautilus window existed; a missing folder failed plainly; `start calc` started Calculator ("Started Calculator."), `start cmd` answered, `start mspaint` explained, an unknown name failed with the Apps hint. Unit: classes and parse results for every new spec, teaching entries as NO_EQUIVALENT, date/time output, net teaching and arity, taskkill by unknown name. Host and VM `tools/dev.py all` clean; VM unit 131 passed.
+- **Tests/checks:** `pytest tests/integration/test_familiar_vm.py -m integration` in the session; `tools/dev.py all`.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** `start` knows six program names; anything else must be a path or address; `net start|stop` targets system services only (like `sc`); the Files window opened by `explorer` stays open after the test.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
