@@ -92,6 +92,14 @@ class IntegrationsPage(Gtk.Box):  # type: ignore[misc]
         page.set_vexpand(True)
         intro = Adw.PreferencesGroup()
         intro.set_description(INTRO)
+        off = Gtk.Button(label="Turn everything off")
+        off.set_valign(Gtk.Align.CENTER)
+        off.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            ["Remove every integration and restore the desktop as it was before setup."],
+        )
+        off.connect("clicked", self._on_remove_all)
+        intro.set_header_suffix(off)
         page.add(intro)
         for group in catalog.GROUPS:
             items = [i for i in catalog.CATALOG if i.group == group]
@@ -132,6 +140,21 @@ class IntegrationsPage(Gtk.Box):  # type: ignore[misc]
         self._notify(res.plain)
         if not res.ok:
             self.refresh()  # the switch shows what is true, not what was asked
+
+    def _on_remove_all(self, _button: Gtk.Button) -> None:
+        """DELIVERY-MODEL section 2 step 5: restore the pre-setup state exactly."""
+        applied = self._ledger.applied_ids()
+        if not applied:
+            self._notify("Nothing is integrated. The desktop is as it was before setup.")
+            return
+        results = [turn_off(i, self._ledger) for i in applied]
+        failed = [r.plain for r in results if not r.ok]
+        self._notify(
+            " ".join(failed)
+            if failed
+            else f"{len(results)} integration(s) turned off; everything they added was removed."
+        )
+        self.refresh()
 
     def _on_group(self, items: list[Integration], _button: Gtk.Button) -> None:
         results = [
