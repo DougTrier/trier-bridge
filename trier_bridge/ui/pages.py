@@ -317,7 +317,8 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         names = Gtk.StringList.new([c.name for c in options])
         drop = Gtk.DropDown(model=names)
         drop.set_valign(Gtk.Align.CENTER)
-        drop.update_property([Gtk.AccessibleProperty.LABEL], [f"Program for {d.label}"])
+        # GTK names a drop-down after its selected item; the purpose goes in the description.
+        drop.update_property([Gtk.AccessibleProperty.DESCRIPTION], [f"Program for {d.label}"])
         current = next((i for i, c in enumerate(options) if c.desktop_id == d.desktop_id), 0)
         drop.set_selected(current)
         row.add_suffix(drop)
