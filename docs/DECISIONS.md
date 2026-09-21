@@ -29,6 +29,7 @@ This file records accepted product and architecture decisions. Open questions re
 | DEC-021 | Testing uses only real systems and real test objects in the project VM; no synthetic fixtures, mocks, or stubbed services. A fixture may exist only if the owner names it and its single scenario in `docs/TEST-STRATEGY.md`. Accepted under the same delegation, consistent with the owner's global no-mock rule. | Accepted |
 | DEC-022 | Updates are deferred for the first release: Trier Bridge updates arrive through the same package channel as installation; no self-update mechanism; a signed repository is a later, owner-gated step (`docs/PACKAGING.md` section 5). Closes ARC-12. | Accepted |
 | DEC-023 | Implementation is authorized. On 2026-09-21 the owner set the goal "continue working until the project is done or I ask you to stop." Foundation 01 may begin; every later foundation still requires its prerequisites and evidence (ledger completion rules). Publication remains owner-gated (AGENTS.md section 14). | Accepted |
+| DEC-024 | First-release scope of network and package mutations (IMP-06.06): none. Trier Bridge reads network and package facts and opens the desktop's own tools for changes (GNOME Settings panels, App Center); it does not install, remove, or reconfigure packages or connections itself. Rationale: every such change is class C with a large failure surface (SECURITY.md sections 37.6 and 37.8), the desktop already has qualified tools for it, and the non-invasive directive (DEC-018) favours routing over reimplementing. Revisit after the acceptance cases with a separate qualification plan. Proposed 2026-09-21 for the owner. | Proposed |
 
 ## Rejected decisions
 
@@ -38,13 +39,11 @@ This file records accepted product and architecture decisions. Open questions re
 
 ## Open decisions
 
-- first-release desktops
-- package formats
-- persistence engine
-- exact native integration mechanisms
-- file-manager integration depth
-- launcher/taskbar integration depth
-- first-release package-management scope
+- DEC-024 (package and network mutations: none in the first release) awaits the owner
+- name and trademark check before any public step (SCOPE-12)
+- localization: English only until decided (`docs/ACCESSIBILITY.md` TB-A11Y-09)
+
+Decided since the list was written: first-release desktop and distro (ARC-09/10, `PLATFORMS.md` section 10), package format (ARC-11), persistence engine (ARC-07), native integration mechanisms and file-manager and launcher depth (SCOPE-14, `DELIVERY-MODEL.md` section 3).
 - first-release destructive storage scope
 - exact privilege helper design
 
