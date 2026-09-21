@@ -36,11 +36,11 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 1.1 | If you've never run it before (or after `apt purge`), the setup screen should appear automatically on first launch. | Setup screen shows integration groups (Essentials, Files, Shortcuts) with "Whole group" checkboxes, five individual items, and **Not now** / **Apply** buttons. | | If you've already set it up, skip to 1.3 — you won't see this screen again. |
+| 1.1 | If you've never run it before (or after `apt purge`), the setup screen should appear automatically on first launch. | Setup screen shows integration groups (Essentials, Files, Shortcuts) with "Whole group" checkboxes, five individual items, and **Not now** / **Apply** buttons. | | If you've already set it up, skip to 1.3 — you won't see this screen again. |pass
 | 1.2 | Click **Apply** with the recommended selection. | The window opens normally. A tray icon "T" appears. | | |
-| 1.3 | Right-click (or left-click) the tray icon. | A menu appears: Open Trier Bridge, Task Manager, Command Prompt, Change integrations, Turn off. | | |
-| 1.4 | Click **Open Trier Bridge** from the tray menu while the window is closed. | The window opens (or comes to front if already open). | | |
-| 1.5 | Go to the **Integrations** page from the sidebar. Turn one switch off, then back on. | The switch state changes immediately and sticks after you leave and return to the page. | | |
+| 1.3 | Right-click (or left-click) the tray icon. | A menu appears: Open Trier Bridge, Task Manager, Command Prompt, Change integrations, Turn off. | | |pass
+| 1.4 | Click **Open Trier Bridge** from the tray menu while the window is closed. | The window opens (or comes to front if already open). | | |pass
+| 1.5 | Go to the **Integrations** page from the sidebar. Turn one switch off, then back on. | The switch state changes immediately and sticks after you leave and return to the page. | | |pass
 
 ---
 
@@ -50,10 +50,10 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 2.1 | On the Home page, type **Add or Remove Programs** into the search box. | A result appears with a **Show** button. | | |
-| 2.2 | Click **Show**. | The window switches to the **Installed Apps** page, with a search field to find an installed program. | | |
-| 2.3 | Go back to Home. Type **regedit**. | The result says **No equivalent** — honestly, not with a fake Open button. | | This is deliberate: Trier Bridge never pretends a Windows-only tool has a Linux twin. |
-| 2.4 | Type **Task Manager**, **Control Panel**, **Downloads** and a few other things you'd type on a real Windows machine. | Each either shows a real place to go, or honestly says there's no equivalent — never silently does nothing. | | |
+| 2.1 | On the Home page, type **Add or Remove Programs** into the search box. | A result appears with a **Show** button. | | |pass
+| 2.2 | Click **Show**. | The window switches to the **Installed Apps** page, with a search field to find an installed program. | | |pass
+| 2.3 | Go back to Home. Type **regedit**. | The result says **No equivalent** — honestly, not with a fake Open button. | | This is deliberate: Trier Bridge never pretends a Windows-only tool has a Linux twin. |pass
+| 2.4 | Type **Task Manager**, **Control Panel**, **Downloads** and a few other things you'd type on a real Windows machine. | Each either shows a real place to go, or honestly says there's no equivalent — never silently does nothing. | | |pass
 
 ---
 
@@ -63,12 +63,12 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 3.1 | Click **Files** in the Trier Bridge sidebar (left side, under "Everyday" — this stays *inside* the Trier Bridge window; it's not the same as the separate Files/Nautilus app rows 3.3 onward will open). | You see "Familiar places" (This Computer, Desktop, Documents, Downloads, Pictures, Music, Videos, Recycle Bin, Removable drives, Network) and, below it, a **Drives** group. If you don't see Drives, scroll down — it's a second group after Familiar places, not merged into it. | | |
-| 3.2 | Look at the Drives group. | `C:` is labeled "System drive" and opens to `/`. Any other real mounted volume gets the next letter (`D:`, etc.) with its real path shown underneath — but only for volumes actually mounted *right now*. If a USB stick or similar isn't mounted, it correctly won't have a letter yet; that's not a bug. | | The letter is a label only — the real folder path is always shown too. |
-| 3.3 | Click **Open** next to **Documents**. | A *different*, separate window opens: the real GNOME Files app, to your real `~/Documents` folder. This is not Trier Bridge anymore — Trier Bridge routes you here rather than reimplementing a file manager. | | |
-| 3.4 | In Command Prompt (see section 5), type `cd C:\Users\tb` (or whatever your account name is — check with `whoami` in a terminal first if unsure) and press Enter. **Do not type the literal words `<your username>`** — Bridge Terminal correctly refuses the `<` character as a shell-redirect symbol, exactly as designed; that's it working right, not a bug, but it will stop this exact row cold if copied verbatim. | It lands in your real home folder and shows the path both ways. | | |
-| 3.5 | In Command Prompt, `cd` to `C:\Users\tb\tb-verify-scratch` (substitute your real account name; from the setup script), then `copy test.txt test-copy.txt`. | A confirmation dialog appears naming the real source and destination paths. Confirming copies the file for real. | | Uses the file the setup script created — no need to make your own. |
-| 3.6 | Delete that copy: `del test-copy.txt`, confirm. | The file moves to the Trash (Recycle Bin), not permanently deleted. | | Check the Recycle Bin in Files — it should be there and restorable. The cleanup script reminds you it's there; it won't empty the Trash for you. |
+| 3.1 | Click **Files** in the Trier Bridge sidebar (left side, under "Everyday" — this stays *inside* the Trier Bridge window; it's not the same as the separate Files/Nautilus app rows 3.3 onward will open). | You see "Familiar places" (This Computer, Desktop, Documents, Downloads, Pictures, Music, Videos, Recycle Bin, Removable drives, Network) and, below it, a **Drives** group. If you don't see Drives, scroll down — it's a second group after Familiar places, not merged into it. | | |Pass
+| 3.2 | Look at the Drives group. | `C:` is labeled "System drive" and opens to `/`. Any other real mounted volume gets the next letter (`D:`, etc.) with its real path shown underneath — but only for volumes actually mounted *right now*. If a USB stick or similar isn't mounted, it correctly won't have a letter yet; that's not a bug. | | The letter is a label only — the real folder path is always shown too. |pass
+| 3.3 | Click **Open** next to **Documents**. | A *different*, separate window opens: the real GNOME Files app, to your real `~/Documents` folder. This is not Trier Bridge anymore — Trier Bridge routes you here rather than reimplementing a file manager. | | |Pass
+| 3.4 | In Command Prompt (see section 5), type `cd C:\Users\tb` (or whatever your account name is — check with `whoami` in a terminal first if unsure) and press Enter. **Do not type the literal words `<your username>`** — Bridge Terminal correctly refuses the `<` character as a shell-redirect symbol, exactly as designed; that's it working right, not a bug, but it will stop this exact row cold if copied verbatim. | It lands in your real home folder and shows the path both ways. | | |Pass
+| 3.5 | In Command Prompt, `cd` to `C:\Users\tb\tb-verify-scratch` (substitute your real account name; from the setup script), then `copy test.txt test-copy.txt`. | A confirmation dialog appears naming the real source and destination paths. Confirming copies the file for real. | | Uses the file the setup script created — no need to make your own. |Fail - said it was success but neither file exit or does not show up.
+| 3.6 | Delete that copy: `del test-copy.txt`, confirm. | The file moves to the Trash (Recycle Bin), not permanently deleted. | | Check the Recycle Bin in Files — it should be there and restorable. The cleanup script reminds you it's there; it won't empty the Trash for you. |Pass - This worked and I verified it was in recyclebin unless this is something you tried via ssh and it was left in there.
 
 ---
 
@@ -78,15 +78,15 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 4.1 | Open **Task Manager**. | A live, sorted list of real processes, sampled every couple of seconds. CPU/memory columns fill in after the first sample. | | |
-| 4.2 | Open a terminal and run `sleep 60`. In Task Manager, search for `sleep`. | Exactly one row, with an **End task** button (it's your own process). | | |
-| 4.3 | Click **End task**, read the confirmation dialog, then click **Cancel**. | Dialog closes, nothing happens — the `sleep` command in your terminal keeps running. | | |
-| 4.4 | Click **End task** again, this time confirm it. | The process actually ends; your terminal shows it stopped; Task Manager shows a toast confirming it. | | |
-| 4.5 | Open **Event Viewer**. Switch between the view options (All events, System, Application, Security). | Each view filters differently; counts update. | | |
-| 4.6 | Switch to the **Boot** view. | Shows kernel and audit messages from *this specific boot*, not just whatever's newest overall. | | |
-| 4.7 | Open **Device Manager**, **Disk Management**, **Startup Apps**, **Network**. | Each shows real data read from this machine — no placeholders, no "coming soon." | | |
-| 4.8 | On the **Network** page, note the adapter's facts (IP, gateway, DNS, MAC). Click **IPv4…**. | A dialog opens: "Obtain an IP address automatically" switch, address/gateway/DNS fields, Cancel/Apply. | | Click **Cancel** — don't Apply unless you actually want to change your network settings. |
-| 4.9 | Close Trier Bridge entirely while something is genuinely mid-operation if you can arrange it (or ask whoever handles the next session to seed one) — otherwise skip this row; it's already been verified once and is low-value to keep re-testing. | On the next start, a banner says an earlier action was interrupted and needs review, with a way to mark it reviewed. | | Optional — this one's expensive to reproduce safely without deliberately killing the app mid-write. |
+| 4.1 | Open **Task Manager**. | A live, sorted list of real processes, sampled every couple of seconds. CPU/memory columns fill in after the first sample. | | |Pass
+| 4.2 | Open a terminal and run `sleep 60`. In Task Manager, search for `sleep`. | Exactly one row, with an **End task** button (it's your own process). | | |Pass
+| 4.3 | Click **End task**, read the confirmation dialog, then click **Cancel**. | Dialog closes, nothing happens — the `sleep` command in your terminal keeps running. | | |pass
+| 4.4 | Click **End task** again, this time confirm it. | The process actually ends; your terminal shows it stopped; Task Manager shows a toast confirming it. | | |Pass
+| 4.5 | Open **Event Viewer**. Switch between the view options (All events, System, Application, Security). | Each view filters differently; counts update. | | |Pass
+| 4.6 | Switch to the **Boot** view. | Shows kernel and audit messages from *this specific boot*, not just whatever's newest overall. | | |Pass
+| 4.7 | Open **Device Manager**, **Disk Management**, **Startup Apps**, **Network**. | Each shows real data read from this machine — no placeholders, no "coming soon." | | |Pass - but should have ability to stop startup apps like you can in Windows.
+| 4.8 | On the **Network** page, note the adapter's facts (IP, gateway, DNS, MAC). Click **IPv4…**. | A dialog opens: "Obtain an IP address automatically" switch, address/gateway/DNS fields, Cancel/Apply. | |Pass Click **Cancel** — don't Apply unless you actually want to change your network settings. |Pass
+| 4.9 | Close Trier Bridge entirely while something is genuinely mid-operation if you can arrange it (or ask whoever handles the next session to seed one) — otherwise skip this row; it's already been verified once and is low-value to keep re-testing. | On the next start, a banner says an earlier action was interrupted and needs review, with a way to mark it reviewed. | | Optional — this one's expensive to reproduce safely without deliberately killing the app mid-write. |skipped intentionally
 
 ---
 
@@ -96,10 +96,11 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 5.1 | Open **Command Prompt**. Type `hostname` and press Enter. | Prints this machine's real hostname, plus a small note showing the Linux equivalent command. | | |
-| 5.2 | Type `ipconfig /all`. | Shows real adapter facts matching what Network page showed. | | |
-| 5.3 | Type `dir C:\Users`. | Lists real home folders. | | |
-| 5.4 | In the same `tb-verify-scratch` folder, type `findstr /I hello sample.txt`. | Lists two matching lines ("Hello there..." and "HELLO IN CAPS...") — case-insensitive, so both match. | | Uses the file the setup script created. |
+| 5.1 | Open **Command Prompt**. Type `hostname` and press Enter. | Prints this machine's real hostname, plus a small note showing the Linux equivalent command. | | |pass
+| 5.2 | Type `ipconfig /all`. | Shows real adapter facts matching what Network page showed. | | |pass
+| 5.3 | Type `dir C:\Users`. | Lists real home folders. | | |Pass
+| 5.4a | Type `cd tb-verify-scratch` and press Enter. (Not `C:\Users\tb\tb-verify-scratch` this time — Command Prompt starts in your home folder, so the short relative form works. Substitute your real account name only if `cd tb-verify-scratch` says the path isn't found.) | Lands in the scratch folder and shows the path both ways. | | This row was missing — that's the actual bug behind 5.4 below. Section 5 never tells you to `cd` into `tb-verify-scratch` on its own; row 5.4 wrongly assumed you were still there from 3.4/3.5, which doesn't hold if you did section 5 on its own or reopened the app since. |
+| 5.4 | In the same `tb-verify-scratch` folder, type `findstr /I hello sample.txt`. | Lists two matching lines ("Hello there..." and "HELLO IN CAPS...") — case-insensitive, so both match. | | Uses the file the setup script created. Now that 5.4a exists, retry this one. | Need clarification otherwise failed.. was I suppose to do this from CMD — yes, from CMD; the missing step was 5.4a above, now added.
 | 5.5 | Type `findstr /R "^H.llo" sample.txt` (a regular expression). | Matches lines starting with "Hello" — case matters this time, so "HELLO IN CAPS" should *not* match. | | |
 | 5.6 | Type `tree`. | Shows a folder tree, hidden folders excluded by default. | | |
 | 5.7 | Type `taskmgr`. | Switches the window to the Task Manager page. | | |
