@@ -37,6 +37,14 @@ def main(argv: list[str] | None = None) -> int:
     paths = resolve_paths()
     log_path = configure(paths.log_dir, also_stderr="--verbose" in args)
     log.info("trier-bridge %s starting; log at %s", __version__, log_path)
+    # Reconcile interrupted operations before anything else can act (TB-INV-059, TB-INV-060).
+    from .state.journal import OperationJournal
+
+    journal = OperationJournal(paths.journal_dir, app_version=__version__)
+    flagged = journal.reconcile_on_start()
+    if flagged:
+        log.warning("%d operation(s) were interrupted and now need review", len(flagged))
+    journal.prune()
     try:
         from .ui.app import run
     except ImportError as exc:  # PyGObject / GTK 4 / libadwaita missing on this machine
@@ -47,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    return run([a for a in args if a != "--verbose"])
+    return run([a for a in args if a != "--verbose"], paths, journal)
 
 
 if __name__ == "__main__":

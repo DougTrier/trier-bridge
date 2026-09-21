@@ -31,14 +31,20 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from .. import APP_ID, APP_NAME, __version__  # noqa: E402
+from ..config import Paths  # noqa: E402
+from ..state.journal import OperationJournal  # noqa: E402
+from ..state.preferences import Preferences  # noqa: E402
 from .window import MainWindow  # noqa: E402
 
 log = logging.getLogger("trier_bridge.ui")
 
 
 class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
-    def __init__(self) -> None:
+    def __init__(self, paths: Paths, journal: OperationJournal) -> None:
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
+        self.paths = paths
+        self.journal = journal
+        self.preferences = Preferences(paths.preferences_file)
         GLib.set_application_name(APP_NAME)
         GLib.set_prgname("trier-bridge")  # AT-SPI application name (RESEARCH F17)
         self._window: MainWindow | None = None
@@ -54,6 +60,7 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
     def do_activate(self) -> None:
         if self._window is None:
             self._window = MainWindow(application=self)
+            self._window.show_unresolved(self.journal.unresolved())
             self._install_dev_aids(self._window)
         self._window.present()
 
@@ -117,6 +124,6 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         return False
 
 
-def run(argv: list[str]) -> int:
-    app = TrierBridgeApplication()
+def run(argv: list[str], paths: Paths, journal: OperationJournal) -> int:
+    app = TrierBridgeApplication(paths, journal)
     return int(app.run(argv))

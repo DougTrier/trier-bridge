@@ -31,6 +31,7 @@ from gi.repository import Adw, Gtk  # noqa: E402
 
 from .. import APP_NAME  # noqa: E402
 from ..capability.model import CapabilityRecord, EnvironmentProfile  # noqa: E402
+from ..state.journal import JournalRecord  # noqa: E402
 from ..catalog.model import Catalog  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
@@ -176,11 +177,31 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             self._content_stack.add_named(page, section.key)
         content_toolbar = Adw.ToolbarView()
         content_toolbar.add_top_bar(self._build_content_header())
-        content_toolbar.set_content(self._content_stack)
+        self._review_banner = Adw.Banner(revealed=False)
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        content_box.append(self._review_banner)
+        content_box.append(self._content_stack)
+        self._content_stack.set_vexpand(True)
+        content_toolbar.set_content(content_box)
         self._toasts.set_child(content_toolbar)
         self._split.set_content(Adw.NavigationPage.new(self._toasts, APP_NAME))
         self.set_content(self._split)
-        self._select("home")
+        prefs = getattr(application, "preferences", None)
+        last = prefs.get("last_section") if prefs is not None else "home"
+        self._select(last if any(sec.key == last for sec in SECTIONS) else "home")
+
+    def show_unresolved(self, records: list[JournalRecord]) -> None:
+        """Interrupted operations are surfaced, never silently repeated (TB-INV-060)."""
+        if not records:
+            self._review_banner.set_revealed(False)
+            return
+        first = records[0]
+        more = f" and {len(records) - 1} more" if len(records) > 1 else ""
+        self._review_banner.set_title(
+            f"An earlier action was interrupted: {first.kind} on {first.target_label}{more}. "
+            "It is not certain whether it took effect; check the current state before repeating it."
+        )
+        self._review_banner.set_revealed(True)
 
     # ---- sidebar ------------------------------------------------------------
     def _build_sidebar(self) -> Adw.NavigationPage:
@@ -246,6 +267,9 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 self._startup.start()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
+            prefs = getattr(self.get_application(), "preferences", None)
+            if prefs is not None and prefs.get("last_section") != section.key:
+                prefs.set("last_section", section.key)  # durability reported by the result
 
     def select_section(self, key: str) -> None:
         """Public for tests and development aids: select a sidebar section by key."""
