@@ -225,10 +225,10 @@ COMMANDS: tuple[CommandSpec, ...] = (
         "shutdown",
         (),
         PrivilegeClass.C_ADMIN_MUTATION,
-        ("s", "r", "t"),
+        ("s", "r", "t", "a", "f"),
         1,
-        linux="systemctl poweroff / reboot",
-        summary="Shut down or restart (not in this build).",
+        linux="systemctl poweroff / reboot (logind)",
+        summary="shutdown /s (power off) or /r (restart) [/t seconds]; asks first.",
     ),
     CommandSpec(
         "regedit",

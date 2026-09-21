@@ -978,13 +978,112 @@ def cmd_powershell(cmd: BridgeCommand, session: Session) -> CommandOutput:
     )
 
 
-def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
-    return CommandOutput(
-        Exit.UNSUPPORTED,
-        ("Shutdown and restart are not available in this build. Use the system menu.",),
-        "systemctl poweroff",
-        False,
+def power_ability(action: str) -> str:
+    """What logind says about this user doing the action: yes, challenge, no, or na."""
+    from ..system.bus import Bus
+
+    bus = Bus.system()
+    res, err = bus.call(
+        "org.freedesktop.login1",
+        "/org/freedesktop/login1",
+        "org.freedesktop.login1.Manager",
+        "CanPowerOff" if action == "poweroff" else "CanReboot",
     )
+    return str(res[0]) if res and not err else "unknown"
+
+
+def power_action(action: str) -> tuple[bool, str]:
+    """Ask logind to power off or reboot; polkit decides. Runs only after the dialog."""
+    from gi.repository import Gio, GLib
+
+    from ..system.bus import Bus
+
+    bus = Bus.system()
+    if bus.conn is None:
+        return False, f"The system bus is not reachable: {bus.error}"
+    try:
+        bus.conn.call_sync(
+            "org.freedesktop.login1",
+            "/org/freedesktop/login1",
+            "org.freedesktop.login1.Manager",
+            "PowerOff" if action == "poweroff" else "Reboot",
+            GLib.Variant("(b)", (True,)),
+            None,
+            Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION,
+            30000,
+            None,
+        )
+    except GLib.Error as exc:
+        low = exc.message.lower()
+        if "access" in low or "authoriz" in low:
+            return False, "Linux did not grant permission to power off or restart."
+        return False, f"The system did not accept the request: {exc.message}"
+    return True, (
+        "The computer is shutting down." if action == "poweroff" else "The computer is restarting."
+    )
+
+
+def cmd_shutdown(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    if "a" in cmd.switches:
+        return CommandOutput(
+            Exit.UNSUPPORTED,
+            ("Nothing here schedules a shutdown, so there is nothing to abort.",),
+            "shutdown -c",
+            False,
+        )
+    if "s" in cmd.switches and "r" in cmd.switches:
+        return CommandOutput(
+            Exit.PARSE_ERROR, ("Choose /s (shut down) or /r (restart).",), "-", False
+        )
+    if "s" not in cmd.switches and "r" not in cmd.switches:
+        return CommandOutput(
+            Exit.PARSE_ERROR,
+            ("shutdown /s shuts down, shutdown /r restarts; /t <seconds> delays.",),
+            "-",
+            False,
+        )
+    action = "poweroff" if "s" in cmd.switches else "reboot"
+    delay = 0
+    if "t" in cmd.switches:
+        if not cmd.args or not cmd.args[0].isdigit() or int(cmd.args[0]) > 3600:
+            return CommandOutput(
+                Exit.PARSE_ERROR, ("/t needs a number of seconds (0-3600).",), "-", False
+            )
+        delay = int(cmd.args[0])
+    ability = power_ability(action)
+    verb_text = "shut down" if action == "poweroff" else "restart"
+    if ability == "no":
+        return CommandOutput(
+            Exit.DENIED,
+            (f"Linux does not allow this account to {verb_text} the computer.",),
+            "loginctl",
+            False,
+        )
+    what = "Shut down" if action == "poweroff" else "Restart"
+    asks = " Linux will ask for permission." if ability == "challenge" else ""
+    when = f" after {delay} seconds" if delay else " now"
+    plan = ActionPlan(
+        f"{what} the computer",
+        f"{what} this computer{when}? Unsaved work in other programs may be lost; other users "
+        f"signed in here are affected too.{asks}",
+        lambda: _delayed_power(action, delay),
+        "systemctl poweroff" if action == "poweroff" else "systemctl reboot",
+    )
+    return CommandOutput(
+        Exit.NEEDS_CONFIRMATION,
+        (plan.preview, "Confirm in the dialog to continue; nothing has happened yet."),
+        plan.linux,
+        False,
+        plan,
+    )
+
+
+def _delayed_power(action: str, delay: int) -> tuple[bool, str]:
+    import time
+
+    if delay:
+        time.sleep(delay)
+    return power_action(action)
 
 
 HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
