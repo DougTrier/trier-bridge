@@ -34,10 +34,10 @@ Each track has a question, an exit criterion, and the decision it feeds. A track
 | R13 Packaging | `.deb` build, lintian, install/upgrade/remove diff. | A test package built and diffed on the VM. | PACKAGING, ARC-11 |
 | R14 Distro settings APIs | Ubuntu-specific settings surfaces (netplan renderer, App Center). | Documented where Ubuntu differs from upstream GNOME. | PLATFORMS |
 | R15 Tray icon | AppIndicator availability on the target and on other desktops. | Closed for Ubuntu 24.04 (finding F5). Others pending. | SCOPE-14 |
-| (status 2026-09-21) | R2 provider verified at the D-Bus level (F16), Shell listing pending a console check; R17 and R18 closed for candidate A (F17, F15); R1 extension load still needs `python3-nautilus` (sudo in guest). | | |
 | R16 First-run trigger | How the setup screen appears after a silent package install. | Decided: first launch, no autostart (DELIVERY-MODEL section 2). | DELIVERY-MODEL |
 | R17 UI toolkit accessibility | AT-SPI on Wayland for GTK4/libadwaita versus alternatives. | Orca reads a sample window of each candidate toolkit on the VM. | SCOPE-09, ARC-02 |
 | R18 D-Bus client libraries | Maturity of D-Bus, polkit-flag, and signal support per candidate stack. | A read of systemd, NetworkManager, and udisks2 properties plus one polkit-prompting call from each candidate. | ARC-01 |
+| (status 2026-09-21) | R2 provider verified at the D-Bus level (F16), Shell listing pending a console check; R17 and R18 closed for candidate A (F17, F15); R1 extension load still needs `python3-nautilus` (sudo in guest). | | |
 
 Tracks R1, R2, R11, R17, R18 gate ARC-01/ARC-02.
 
