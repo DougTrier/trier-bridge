@@ -60,6 +60,7 @@ Documentation completion does not imply implementation, qualification, or releas
 - [ ] **ALN-13** Verify links/names/authority order across root and `docs/`.
   - 2026-09-20 9:36 PM CDT: document pack consolidated (75 → 26 files), `docs/` created, links repaired, authority order reconciled to `AGENTS.md`. See `docs/README.md` consolidation record. Awaiting owner confirmation under ALN-12.
 - [ ] **ALN-14** Freeze first documentation revision for implementation planning.
+- [ ] **ALN-15** Owner decision on the TB-INV-077 wording amendment proposed 2026-09-20 (integrations ship enabled after install and remain individually reversible; key/mouse rebinding and file-association changes stay separately opt-in). Invariant text is unchanged until approved.
 
 ---
 
@@ -71,12 +72,12 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [x] **TOOL-02** Snapshot / changes / status / context digest. Evidence: `tb context` run 2026-09-20 09:55 PM CDT.
 - [x] **TOOL-03** Ledger parser and outline/section/invariant navigation. Evidence: `tb ledger ALN-13`, `tb outline`, `tb section`, `tb inv show/find` run 2026-09-20 09:55 PM CDT.
 - [x] **TOOL-04** Link, invariant cross-reference, term-rule, and header checks under `tb all`. Evidence: exit 0 on 2026-09-20 09:55 PM CDT (233 INV, 30 SEC, 30 IA indexed; 33 links; 12 term rules).
-- [ ] **TOOL-05** Verify the tools run unmodified on Linux (disposable WSL2 Ubuntu 24.04, `python3`). Blocked on ENV-01.
+- [ ] **TOOL-05** Verify the tools run unmodified on Linux inside the disposable Hyper-V VM (`python3 tools/tb.py all`). Blocked on ENV-02.
 - [ ] **TOOL-06** Stack-dependent tools: lint/static-analysis orchestration, test-result normalization, dependency inventory, CQS evidence collection. Blocked until ARC-01 and IMP-01.01.
-- [ ] **ENV-01** Owner creates disposable WSL2 Ubuntu 24.04 instance `tb-ubuntu-2404`, separate from `Ubuntu-24.04-Recovered`; record `tb-env` host profile and the WSL environment profile.
+- [ ] **ENV-01** CANCELLED 2026-09-20: WSL instance scratched by owner (DEC-017 rejected). All Linux testing uses the Hyper-V VM under ENV-02.
 - [ ] **ENV-02** Create the disposable Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification.
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
-- [ ] **ENV-03** Removal procedure for both environments verified (`wsl --unregister tb-ubuntu-2404`; delete VM) with confirmation that nothing else on the host changed.
+- [ ] **ENV-03** Removal procedure verified (`tools/env/Remove-TbDesktopVm.ps1`) with confirmation that nothing else on the host changed.
 
 ---
 
@@ -84,7 +85,7 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 
 Gap review 2026-09-20. Each item produces a design document or a data schema under `docs/` and is complete only when that artifact exists and cites its invariants. SCOPE-01 through SCOPE-05 block ARC-01/ARC-02.
 
-- [ ] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Direction recorded as DEC-018 (accepted) and DEC-019 (proposed); document still required.
+- [ ] **SCOPE-01** Delivery model and desktop-integration boundary: what Trier Bridge is on the desktop and how it augments rather than replaces the native file manager, launcher, and settings. Governed by DEC-018 and DEC-019 (both accepted 2026-09-20: one integrated build, integrations ship enabled, each switchable, uninstall removes all); document still required.
 - [ ] **SCOPE-02** Privilege helper architecture: polkit-registered on-demand system service, D-Bus interface, schema versioning, lifecycle (exits when idle; bounded to the authorized operation per TB-INV-188), packaging, and how it stays visibly non-invasive under DEC-018.
 - [ ] **SCOPE-03** Packaging constraints and candidates: native package first; state why sandboxed formats are excluded for the core; install/uninstall behavior against TB-INV-025 to TB-INV-029.
 - [ ] **SCOPE-04** Research plan with exit criteria per open track (Wayland portals for screenshots/global shortcuts, file-manager extension APIs on GNOME/KDE/Cinnamon/XFCE, NetworkManager and udisks2 D-Bus surfaces, PackageKit versus native apt, polkit action design). Each track yields a written finding ARC-01 can cite.

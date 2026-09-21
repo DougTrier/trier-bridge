@@ -45,7 +45,7 @@ Administration and command translation are deeper layers.
 - eight implementation baseline documents
 - document pack consolidated from 75 root files to 26 (root control files plus `docs/`); links and authority order reconciled
 - read-only engineering tools created under `tools/` and verified on Windows (`tb all` exit 0, 2026-09-20 09:55 PM CDT)
-- test-environment direction recorded as proposed DEC-016/DEC-017 (Ubuntu LTS first; disposable WSL2 instance now, disposable Hyper-V desktop VM later)
+- owner decisions 2026-09-20: DEC-016 accepted (Ubuntu 24.04 LTS first, derivatives next with their own evidence); DEC-017 rejected (no WSL; Hyper-V VM only); DEC-019 accepted (one integrated build, integrations are part of the product)
 - Hyper-V desktop VM scripts and autoinstall seed written under `tools/env/`; ISO download started (2026-09-20 10:25 PM CDT); VM creation is an owner-run elevated step
 - local Git repository initialized on `main` with no remote (2026-09-20)
 - pre-implementation gap review recorded as SCOPE-01..13; non-invasive directive DEC-018 accepted; delivery model DEC-019 proposed (2026-09-20)
@@ -55,7 +55,7 @@ Administration and command translation are deeper layers.
 - implementation-language/runtime decision
 - desktop framework decision
 - package format decision
-- first-release distro matrix freeze
+- first-release derivative matrix beyond Ubuntu 24.04 LTS
 - first-release desktop/session matrix freeze
 - persistence-engine decision
 - privilege-helper implementation design freeze
@@ -103,7 +103,7 @@ No document existence implies runtime PASS.
 
 Before implementation:
 
-0. owner creates the disposable WSL2 Ubuntu instance (`tb-ubuntu-2404`) and the Hyper-V desktop VM (`tools/env/New-TbDesktopVm.ps1 -Start`); tools verified in both (TOOL-05, ENV-01, ENV-02)
+0. owner creates the disposable Hyper-V desktop VM (`tools/env/New-TbDesktopVm.ps1 -Start`); tools verified inside it (TOOL-05, ENV-02)
 1. review root/project documents for alignment (ALN-12)
 1a. write SCOPE-01..05 design documents (delivery model, privilege helper, packaging, research plan, test strategy)
 2. decide implementation stack

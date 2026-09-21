@@ -1,34 +1,19 @@
 # Trier Bridge Test Environments
 
-Disposable Linux environments for tool, unit, and qualification work. Governing rules: `docs/DECISIONS.md` DEC-016/DEC-017 (proposed) and `AGENTS.md` section 15. Nothing here touches any VM or WSL distro that does not carry the `tb-` prefix.
+Disposable Linux environment for tool, unit, and qualification work. Governing rules: `docs/DECISIONS.md` DEC-016 (Ubuntu 24.04 LTS first), DEC-017 (rejected: WSL is not used), and `AGENTS.md` section 15. Nothing here touches any VM that does not carry the `tb-` prefix.
 
-## Environment profiles
+## Environment profile
 
 | Profile | Use it for | Cannot prove |
 |---|---|---|
-| WSL2 Ubuntu 24.04 (`tb-ubuntu-2404`) | tools, unit tests, Bridge Terminal parser, capability discovery negative cases | desktop, NetworkManager, udisks, polkit, Wayland/X11 (TB-INV-023) |
-| Hyper-V Ubuntu Desktop 24.04 (`tb-ubuntu-desktop-2404`) | GNOME desktop integration, NetworkManager, udisks, polkit prompts, package flows, usability runs | physical hardware behavior (USB, printers, Bluetooth, real GPU) |
+| Hyper-V Ubuntu Desktop 24.04 (`tb-ubuntu-desktop-2404`) | tools, unit tests, Bridge Terminal parser, capability discovery, GNOME desktop integration, NetworkManager, udisks, polkit prompts, package flows, usability runs | physical hardware behavior (USB, printers, Bluetooth, real GPU); other desktops and distros until each has its own VM |
 
-Evidence from either profile is recorded with the profile named, per `docs/VALIDATION.md`.
+Evidence from this profile is recorded with the profile named, per `docs/VALIDATION.md`. WSL is deliberately not used (DEC-017 rejected): it has no desktop session, NetworkManager, udisks, or polkit agent and would prove the wrong things.
 
-## WSL2 instance
-
-Owner-run creation (WSL 2.6.3 is installed):
+Run the tools inside the VM once it is up (paths assume the repo is shared or cloned into the guest):
 
 ```bash
-wsl --install -d Ubuntu-24.04 --name tb-ubuntu-2404 --no-launch
-```
-
-Run the tools inside it:
-
-```bash
-wsl -d tb-ubuntu-2404 -- python3 "/mnt/g/0001 Trier Bridge/tools/tb.py" all
-```
-
-Remove:
-
-```bash
-wsl --unregister tb-ubuntu-2404
+python3 tools/tb.py all
 ```
 
 ## Hyper-V desktop VM

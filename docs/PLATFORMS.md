@@ -27,9 +27,11 @@ Track as applicable:
 - session type
 - Trier Bridge package format
 
-## 3. Initial candidate families
+## 3. Target families
 
-Candidates for evaluation, not support claims:
+First-release qualification target (DEC-016): **Ubuntu 24.04 LTS**.
+
+Next candidates, in the order the adapters carry over; each needs its own evidence before any claim:
 
 - Ubuntu
 - Linux Mint

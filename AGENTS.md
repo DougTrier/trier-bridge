@@ -273,13 +273,13 @@ Readiness is not authorization.
 
 ## 15. Test environments
 
-Per `docs/DECISIONS.md` DEC-017 (proposed):
+Per `docs/DECISIONS.md` DEC-017 (rejected) and DEC-016:
 
-- Product and tool testing on Linux uses only disposable environments created for this project: a WSL2 Ubuntu instance named with a `tb-` prefix, and later a Hyper-V Ubuntu Desktop VM named with a `tb-` prefix.
+- All Linux testing uses the disposable Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` created by `tools/env/New-TbDesktopVm.ps1`. WSL is not used for project testing.
 - Never start, stop, export, import, checkpoint, modify, or read the owner's work-production Hyper-V VM, or the pre-existing `Ubuntu-24.04-Recovered` WSL distro.
-- Never change Hyper-V virtual switches, host networking, or Windows optional features. Creating or removing a project VM/distro is an owner-run step; agents prepare the exact command and wait.
-- Record WSL results as their own environment profile. WSL is not a desktop session (TB-INV-023) and proves nothing about GNOME, NetworkManager, udisks, or polkit behavior.
-- Destructive or fault-injection tests run only inside the disposable environment (TB-INV-230).
+- Never change Hyper-V virtual switches, host networking, or Windows optional features. Creating or removing the project VM is an owner-run elevated step; agents prepare the exact command and wait.
+- Destructive or fault-injection tests run only inside the disposable VM (TB-INV-230). No synthetic fixtures unless the owner explicitly approves a named fixture for a named scenario.
+- Evidence records the exact environment profile (Ubuntu 24.04 Desktop / Hyper-V Gen2 / desktop / backends observed).
 
 ---
 
