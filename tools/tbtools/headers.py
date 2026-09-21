@@ -23,7 +23,9 @@ import re
 from .common import Report, glob_match, iter_files, read_text, rel
 
 COPYRIGHT_RX = re.compile(r"Copyright \d{4} Doug Trier")
-LICENSE_RX = re.compile(r"Licensed under the Apache License, Version 2\.0|SPDX-License-Identifier:\s*Apache-2\.0")
+LICENSE_RX = re.compile(
+    r"Licensed under the Apache License, Version 2\.0|SPDX-License-Identifier:\s*Apache-2\.0"
+)
 
 
 def check_headers(cfg: dict) -> Report:
@@ -47,8 +49,17 @@ def check_headers(cfg: dict) -> Report:
         elif not has_c and not has_l:
             rep.add("warn", "header-missing", r, 1, "no copyright/license header in first lines")
         else:
-            rep.add("warn", "header-partial", r, 1,
-                    "copyright present, license missing" if has_c else "license present, copyright missing")
+            rep.add(
+                "warn",
+                "header-partial",
+                r,
+                1,
+                (
+                    "copyright present, license missing"
+                    if has_c
+                    else "license present, copyright missing"
+                ),
+            )
     rep.summary = {"checked": checked, "compliant": ok}
     if checked == 0:
         rep.summary["note"] = "no source files yet"

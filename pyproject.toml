@@ -1,0 +1,50 @@
+# Copyright 2026 Doug Trier
+# SPDX-License-Identifier: Apache-2.0
+#
+# Trier Bridge project configuration. Runtime dependencies are deliberately
+# NOT listed here: the product runs on what Ubuntu 24.04 Desktop already ships
+# (python3, python3-gi, GTK 4, libadwaita) and is packaged as a native .deb
+# whose control file declares them (docs/PACKAGING.md, docs/TOOLCHAIN.md).
+
+[project]
+name = "trier-bridge"
+version = "0.1.0.dev0"
+description = "Windows-to-Linux experience compatibility layer. Everything you know. Linux underneath."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Doug Trier" }]
+dependencies = []
+
+[project.scripts]
+trier-bridge = "trier_bridge.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["trier_bridge*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+packages = ["trier_bridge"]
+# PyGObject has no complete type stubs on the target; UI modules isolate gi imports.
+[[tool.mypy.overrides]]
+module = ["gi", "gi.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+# basetemp inside the tree: tests use real files, and the tree is the one place
+# every environment (host sandbox, VM) allows writes. Gitignored.
+addopts = "-q --basetemp=.pytest_tmp"
+markers = [
+    "integration: needs the real project VM (docs/TEST-STRATEGY.md); never runs on the host",
+]

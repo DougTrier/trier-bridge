@@ -56,8 +56,14 @@ def parse(cfg: dict) -> dict:
             continue
         m = TASK_RX.match(ln)
         if m and cur is not None:
-            t = {"id": m.group(2), "done": m.group(1).lower() == "x", "text": m.group(3).strip(),
-                 "line": i, "section": cur["name"], "notes": []}
+            t = {
+                "id": m.group(2),
+                "done": m.group(1).lower() == "x",
+                "text": m.group(3).strip(),
+                "line": i,
+                "section": cur["name"],
+                "notes": [],
+            }
             cur["tasks"].append(t)
             tasks.append(t)
             last_task = t
@@ -68,7 +74,12 @@ def parse(cfg: dict) -> dict:
             continue
         else:
             last_task = None
-    return {"file": cfg["ledger_file"], "dashboard": dashboard, "sections": sections, "tasks": tasks}
+    return {
+        "file": cfg["ledger_file"],
+        "dashboard": dashboard,
+        "sections": sections,
+        "tasks": tasks,
+    }
 
 
 def summarize(cfg: dict) -> dict:
@@ -81,8 +92,15 @@ def summarize(cfg: dict) -> dict:
         nxt = next((t for t in s["tasks"] if not t["done"]), None)
         short = s["name"].split(" — ")[0].split(" / ")[0]
         short = re.sub(r"^(Foundation \d+).*$", r"\1", short)
-        out.append({"name": s["name"], "short": short[:24], "done": done, "total": len(s["tasks"]),
-                    "next": f"{nxt['id']} {nxt['text']}" if nxt else "-"})
+        out.append(
+            {
+                "name": s["name"],
+                "short": short[:24],
+                "done": done,
+                "total": len(s["tasks"]),
+                "next": f"{nxt['id']} {nxt['text']}" if nxt else "-",
+            }
+        )
     return {"dashboard": p["dashboard"], "sections": out, "tasks": p["tasks"]}
 
 
@@ -91,7 +109,9 @@ def cmd_ledger(args, cfg: dict) -> int:
     want = getattr(args, "task", None)
     if want:
         want = want.upper()
-        hits = [t for t in p["tasks"] if t["id"].upper() == want or t["id"].upper().startswith(want)]
+        hits = [
+            t for t in p["tasks"] if t["id"].upper() == want or t["id"].upper().startswith(want)
+        ]
         if not hits:
             print(f"no task matching {want}")
             return 1
@@ -108,7 +128,9 @@ def cmd_ledger(args, cfg: dict) -> int:
         print(f"  {k}: {v}")
     print("  --")
     for sec in s["sections"]:
-        print(f"  {sec['done']:>2}/{sec['total']:<2} {sec['name'][:48]:<48} next: {sec['next'][:60]}")
+        print(
+            f"  {sec['done']:>2}/{sec['total']:<2} {sec['name'][:48]:<48} next: {sec['next'][:60]}"
+        )
     if getattr(args, "full", False):
         print("  --")
         for t in p["tasks"]:

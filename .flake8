@@ -1,0 +1,9 @@
+# Copyright 2026 Doug Trier
+# SPDX-License-Identifier: Apache-2.0
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503
+exclude = .git,.venv,__pycache__,build,dist,reports,debian
+per-file-ignores =
+    tests/*: E501
+    tools/env/tb-pad.py: E501

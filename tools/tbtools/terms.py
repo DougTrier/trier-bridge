@@ -67,7 +67,7 @@ def check_terms(cfg: dict) -> Report:
                     snippet = ln.strip()
                     if len(snippet) > 90:
                         s = max(0, m.start() - 30)
-                        snippet = "..." + ln[s:s + 90].strip() + "..."
+                        snippet = "..." + ln[s : s + 90].strip() + "..."
                     rep.add(rule["severity"], rule["id"], r, i, f"{rule['message']}  | {snippet}")
     rep.summary = {"rules": len(rules), "files": n_files, "lines": n_lines}
     return rep

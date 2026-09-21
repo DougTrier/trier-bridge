@@ -22,11 +22,19 @@ from __future__ import annotations
 import datetime as dt
 import json
 import shutil
-from pathlib import Path
 
 from . import ledger
-from .common import (REPORT_DIR, ROOT, Report, central_now, fmt_bytes, git_info,
-                     iter_files, rel, sha256_file)
+from .common import (
+    REPORT_DIR,
+    ROOT,
+    Report,
+    central_now,
+    fmt_bytes,
+    git_info,
+    iter_files,
+    rel,
+    sha256_file,
+)
 
 MANIFEST = REPORT_DIR / "manifest.json"
 MANIFEST_PREV = REPORT_DIR / "manifest.prev.json"
@@ -68,7 +76,8 @@ def cmd_snapshot(args, cfg: dict) -> int:
     m = build_manifest(cfg)
     with MANIFEST.open("w", encoding="utf-8") as fh:
         json.dump(m, fh, indent=1)
-    print(f"snapshot taken {m['taken']}: {m['files']} files, {fmt_bytes(m['bytes'])} -> {rel(MANIFEST)}")
+    size = fmt_bytes(m["bytes"])
+    print(f"snapshot taken {m['taken']}: {m['files']} files, {size} -> {rel(MANIFEST)}")
     return 0
 
 
@@ -80,14 +89,20 @@ def cmd_changes(args, cfg: dict) -> int:
     new = build_manifest(cfg)
     d = diff_manifest(old, new)
     rep = Report("changes")
-    rep.summary = {"since": old["taken"], "added": len(d["added"]), "removed": len(d["removed"]), "modified": len(d["modified"])}
+    rep.summary = {
+        "since": old["taken"],
+        "added": len(d["added"]),
+        "removed": len(d["removed"]),
+        "modified": len(d["modified"]),
+    }
     for k in d["added"]:
         rep.add("warn", "added", k, None, fmt_bytes(new["entries"][k]["size"]))
     for k in d["removed"]:
         rep.add("warn", "removed", k, None, "")
     for k in d["modified"]:
-        rep.add("warn", "modified", k, None,
-                f"{fmt_bytes(old['entries'][k]['size'])} -> {fmt_bytes(new['entries'][k]['size'])}")
+        before = fmt_bytes(old["entries"][k]["size"])
+        after = fmt_bytes(new["entries"][k]["size"])
+        rep.add("warn", "modified", k, None, f"{before} -> {after}")
     rep.print(full=True)
     if not rep.findings:
         print("  no changes since snapshot")
@@ -101,7 +116,7 @@ def cmd_status(args, cfg: dict) -> int:
     print(f"root: {ROOT}")
     files = list(iter_files(cfg))
     total = sum(p.stat().st_size for p in files)
-    top = sorted({rel(p).split('/')[0] for p in files if '/' in rel(p)})
+    top = sorted({rel(p).split("/")[0] for p in files if "/" in rel(p)})
     print(f"files: {len(files)} ({fmt_bytes(total)}); dirs: {', '.join(top) or '-'}")
 
     g = git_info()
@@ -110,7 +125,8 @@ def cmd_status(args, cfg: dict) -> int:
     elif "error" in g:
         print(f"git: {g['error']}")
     else:
-        print(f"git: {g['branch']}; {g['dirty']} changed ({g['untracked']} untracked); last: {g['last_commit']}")
+        changed = f"{g['dirty']} changed ({g['untracked']} untracked)"
+        print(f"git: {g['branch']}; {changed}; last: {g['last_commit']}")
 
     old = load_manifest()
     if old is None:
@@ -118,8 +134,8 @@ def cmd_status(args, cfg: dict) -> int:
     else:
         d = diff_manifest(old, build_manifest(cfg))
         n = len(d["added"]) + len(d["removed"]) + len(d["modified"])
-        print(f"snapshot: {old['taken']} ({old['files']} files); unreviewed changes: {n}"
-              + (" (run `tb changes`)" if n else ""))
+        hint = " (run `tb changes`)" if n else ""
+        print(f"snapshot: {old['taken']} ({old['files']} files); unreviewed changes: {n}{hint}")
 
     try:
         s = ledger.summarize(cfg)

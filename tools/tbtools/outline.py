@@ -40,7 +40,7 @@ def headings(lines: list[str]) -> list[dict]:
             out.append({"level": len(m.group(1)), "title": m.group(2), "line": i})
     for k, h in enumerate(out):
         end = len(lines) + 1
-        for nxt in out[k + 1:]:
+        for nxt in out[k + 1 :]:
             if nxt["level"] <= h["level"]:
                 end = nxt["line"]
                 break

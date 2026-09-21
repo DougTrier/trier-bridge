@@ -71,19 +71,34 @@ def check_invariants(cfg: dict) -> Report:
     max_inv = nums[-1] if nums else 0
     missing = [n for n in range(1, max_inv + 1) if n not in set(nums)]
     if missing:
-        rep.add("error", "inv-gap", inv_file, None, f"missing IDs in 001..{max_inv:03d}: {missing[:10]}")
+        rep.add(
+            "error", "inv-gap", inv_file, None, f"missing IDs in 001..{max_inv:03d}: {missing[:10]}"
+        )
     if idx["total_claim"] is not None and idx["total_claim"] != len(inv):
-        rep.add("error", "inv-total", inv_file, None,
-                f"file claims {idx['total_claim']} invariants but defines {len(inv)}")
+        rep.add(
+            "error",
+            "inv-total",
+            inv_file,
+            None,
+            f"file claims {idx['total_claim']} invariants but defines {len(inv)}",
+        )
     covered = set()
     for name, a, b in idx["families"]:
         for n in range(a, b + 1):
             if n in covered:
-                rep.add("error", "family-overlap", inv_file, None, f"{name} overlaps at TB-INV-{n:03d}")
+                rep.add(
+                    "error", "family-overlap", inv_file, None, f"{name} overlaps at TB-INV-{n:03d}"
+                )
             covered.add(n)
     if idx["families"] and covered != set(nums):
         diff = sorted(set(nums) ^ covered)
-        rep.add("error", "family-coverage", inv_file, None, f"family index does not match defined IDs: {diff[:10]}")
+        rep.add(
+            "error",
+            "family-coverage",
+            inv_file,
+            None,
+            f"family index does not match defined IDs: {diff[:10]}",
+        )
 
     refs: dict[str, set[str]] = {}
     n_refs = 0
@@ -103,23 +118,46 @@ def check_invariants(cfg: dict) -> Report:
                         continue
                     refs.setdefault(full, set()).add(r)
                     if full not in inv:
-                        rep.add("error", "ref-undefined", r, i, f"{full} is not defined in {inv_file}")
+                        rep.add(
+                            "error", "ref-undefined", r, i, f"{full} is not defined in {inv_file}"
+                        )
                 elif fam == "SEC":
                     if r == sec_file and SEC_HEAD.match(ln):
                         continue
                     if full not in sec:
-                        rep.add("error", "ref-undefined", r, i, f"{full} is not defined in {sec_file}")
+                        rep.add(
+                            "error", "ref-undefined", r, i, f"{full} is not defined in {sec_file}"
+                        )
                 elif fam == "T":
                     if int(num) < 1 or int(num) > max_inv:
-                        rep.add("warn", "ref-test-range", r, i, f"{full} has no TB-INV-{num} counterpart")
+                        rep.add(
+                            "warn",
+                            "ref-test-range",
+                            r,
+                            i,
+                            f"{full} has no TB-INV-{num} counterpart",
+                        )
                 elif fam == "IA":
                     if r == cfg["acceptance_file"] and IA_ROW.match(ln):
                         continue
                     if ia and full not in ia:
-                        rep.add("error", "ref-undefined", r, i, f"{full} is not defined in {cfg['acceptance_file']}")
+                        rep.add(
+                            "error",
+                            "ref-undefined",
+                            r,
+                            i,
+                            f"{full} is not defined in {cfg['acceptance_file']}",
+                        )
     unreferenced = [k for k in inv if k not in refs]
-    rep.summary = {"inv": len(inv), "sec": len(sec), "ia": len(ia), "families": len(idx["families"]),
-                   "refs": n_refs, "ref_files": len(ref_files), "inv_unreferenced": len(unreferenced)}
+    rep.summary = {
+        "inv": len(inv),
+        "sec": len(sec),
+        "ia": len(ia),
+        "families": len(idx["families"]),
+        "refs": n_refs,
+        "ref_files": len(ref_files),
+        "inv_unreferenced": len(unreferenced),
+    }
     return rep
 
 

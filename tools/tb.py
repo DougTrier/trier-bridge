@@ -64,21 +64,37 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--full", action="store_true", help="show every finding, including info")
     common.add_argument("--json", action="store_true", help="also write reports/local/<tool>.json")
 
-    ap = argparse.ArgumentParser(prog="tb", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        prog="tb", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("context", parents=[common], help="session start: status + changes + ledger").set_defaults(fn=cmd_context)
-    sub.add_parser("status", parents=[common], help="one-screen project digest").set_defaults(fn=snapshot.cmd_status)
-    sub.add_parser("snapshot", parents=[common], help="record the reviewed state (hash manifest)").set_defaults(fn=snapshot.cmd_snapshot)
-    sub.add_parser("changes", parents=[common], help="files added/removed/modified since snapshot").set_defaults(fn=snapshot.cmd_changes)
+    sub.add_parser(
+        "context", parents=[common], help="session start: status + changes + ledger"
+    ).set_defaults(fn=cmd_context)
+    sub.add_parser("status", parents=[common], help="one-screen project digest").set_defaults(
+        fn=snapshot.cmd_status
+    )
+    sub.add_parser(
+        "snapshot", parents=[common], help="record the reviewed state (hash manifest)"
+    ).set_defaults(fn=snapshot.cmd_snapshot)
+    sub.add_parser(
+        "changes", parents=[common], help="files added/removed/modified since snapshot"
+    ).set_defaults(fn=snapshot.cmd_changes)
 
-    lp = sub.add_parser("ledger", parents=[common], help="task ledger summary, or one task with notes")
+    lp = sub.add_parser(
+        "ledger", parents=[common], help="task ledger summary, or one task with notes"
+    )
     lp.add_argument("task", nargs="?", help="task ID or prefix, e.g. ALN-13 or IMP-02")
     lp.set_defaults(fn=ledger.cmd_ledger)
 
-    sub.add_parser("links", parents=[common], help="markdown link and path-mention check").set_defaults(fn=links.cmd_links)
+    sub.add_parser(
+        "links", parents=[common], help="markdown link and path-mention check"
+    ).set_defaults(fn=links.cmd_links)
 
-    ip = sub.add_parser("inv", parents=[common], help="invariant index checks; `inv show`, `inv find`")
+    ip = sub.add_parser(
+        "inv", parents=[common], help="invariant index checks; `inv show`, `inv find`"
+    )
     isub = ip.add_subparsers(dest="inv_cmd")
     ish = isub.add_parser("show", help="print invariant rows by ID (050, INV-050, SEC-003, IA-12)")
     ish.add_argument("ids", nargs="+")
@@ -86,8 +102,12 @@ def build_parser() -> argparse.ArgumentParser:
     ifd.add_argument("pattern")
     ip.set_defaults(fn=invariants.cmd_invariants)
 
-    sub.add_parser("terms", parents=[common], help="policy-phrase and code-smell scan").set_defaults(fn=terms.cmd_terms)
-    sub.add_parser("headers", parents=[common], help="source-header compliance").set_defaults(fn=headers.cmd_headers)
+    sub.add_parser(
+        "terms", parents=[common], help="policy-phrase and code-smell scan"
+    ).set_defaults(fn=terms.cmd_terms)
+    sub.add_parser("headers", parents=[common], help="source-header compliance").set_defaults(
+        fn=headers.cmd_headers
+    )
 
     op = sub.add_parser("outline", parents=[common], help="heading outline with line numbers")
     op.add_argument("file")
@@ -101,7 +121,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--all", action="store_true", help="print every matching section")
     sp.set_defaults(fn=outline.cmd_section)
 
-    sub.add_parser("all", parents=[common], help="run links, inv, terms, headers").set_defaults(fn=cmd_all)
+    sub.add_parser("all", parents=[common], help="run links, inv, terms, headers").set_defaults(
+        fn=cmd_all
+    )
     return ap
 
 

@@ -37,12 +37,14 @@ SEVERITY_ORDER = {"error": 0, "warn": 1, "info": 2}
 
 # --------------------------------------------------------------------------- config
 
+
 def load_config() -> dict:
     with CONFIG_PATH.open("r", encoding="utf-8") as fh:
         return json.load(fh)
 
 
 # --------------------------------------------------------------------------- time
+
 
 def _us_central_fallback(now_utc: dt.datetime) -> tuple[dt.datetime, str]:
     """Compute America/Chicago without tzdata (Windows lacks the IANA db).
@@ -79,6 +81,7 @@ def central_now() -> str:
 
 
 # --------------------------------------------------------------------------- files
+
 
 def rel(path: Path) -> str:
     return path.resolve().relative_to(ROOT).as_posix()
@@ -188,6 +191,7 @@ def resolve_project_file(name: str, cfg: dict) -> Path | None:
 
 # --------------------------------------------------------------------------- git
 
+
 def git_info() -> dict | None:
     """Read-only git facts, or None when there is no repository/git binary."""
     if not (ROOT / ".git").exists():
@@ -195,11 +199,17 @@ def git_info() -> dict | None:
     try:
         st = subprocess.run(
             ["git", "-C", str(ROOT), "status", "--porcelain", "--branch"],
-            capture_output=True, text=True, check=False, timeout=20,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=20,
         )
         lg = subprocess.run(
             ["git", "-C", str(ROOT), "log", "-1", "--format=%h %cs %s"],
-            capture_output=True, text=True, check=False, timeout=20,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=20,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return {"error": "git unavailable"}
@@ -215,6 +225,7 @@ def git_info() -> dict | None:
 
 
 # --------------------------------------------------------------------------- reports
+
 
 @dataclass
 class Finding:
@@ -253,7 +264,8 @@ class Report:
     def header(self) -> str:
         c = self.counts()
         summ = "  ".join(f"{k}={v}" for k, v in self.summary.items())
-        return f"== {self.tool}: {c['error']} error, {c['warn']} warn, {c['info']} info   {summ}".rstrip()
+        counts = f"{c['error']} error, {c['warn']} warn, {c['info']} info"
+        return f"== {self.tool}: {counts}   {summ}".rstrip()
 
     def print(self, full: bool = False, limit: int = 25) -> None:
         print(self.header())

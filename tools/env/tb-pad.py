@@ -77,7 +77,9 @@ def detect_bind(peer: str) -> str:
     """
     if sys.platform == "win32":
         try:
-            out = subprocess.run(["ipconfig"], capture_output=True, text=True, check=False, timeout=10).stdout
+            out = subprocess.run(
+                ["ipconfig"], capture_output=True, text=True, check=False, timeout=10
+            ).stdout
             section = ""
             for line in out.splitlines():
                 if line and not line[0].isspace():
@@ -155,20 +157,32 @@ class Pad(BaseHTTPRequestHandler):
             if "application/json" in (self.headers.get("Accept") or ""):
                 self._send(200, json.dumps(items).encode(), "application/json")
             else:
-                li = "".join(f'<li><a href="/files/{html.escape(n)}">{html.escape(n)}</a> '
-                             f'({(FILES / n).stat().st_size} B)</li>' for n in items) or "<li>(none)</li>"
-                body = (f"<!doctype html><html><body style='font-family:system-ui'><a href='/'>note</a>"
-                        f"<h3>files</h3><ul>{li}</ul><p>upload from a shell: <code>curl -T FILE http://{self.addr}/files/FILE</code></p></body></html>")
+                li = (
+                    "".join(
+                        f'<li><a href="/files/{html.escape(n)}">{html.escape(n)}</a> '
+                        f"({(FILES / n).stat().st_size} B)</li>"
+                        for n in items
+                    )
+                    or "<li>(none)</li>"
+                )
+                body = (
+                    f"<!doctype html><html><body style='font-family:system-ui'><a href='/'>note</a>"
+                    f"<h3>files</h3><ul>{li}</ul><p>upload from a shell: <code>curl -T FILE http://{self.addr}/files/FILE</code></p></body></html>"
+                )
                 self._send(200, body.encode("utf-8"), "text/html; charset=utf-8")
         elif path.startswith("/files/"):
-            p = self._file_path(path[len("/files/"):])
+            p = self._file_path(path[len("/files/") :])
             if p is None:
                 return
             if not p.is_file():
                 self._send(404, b"no such file\n")
                 return
-            self._send(200, p.read_bytes(), "application/octet-stream",
-                       {"Content-Disposition": f'attachment; filename="{p.name}"'})
+            self._send(
+                200,
+                p.read_bytes(),
+                "application/octet-stream",
+                {"Content-Disposition": f'attachment; filename="{p.name}"'},
+            )
         else:
             self._send(404, b"not found\n")
 
@@ -197,7 +211,7 @@ class Pad(BaseHTTPRequestHandler):
         if not path.startswith("/files/"):
             self._send(404, b"not found\n")
             return
-        p = self._file_path(path[len("/files/"):])
+        p = self._file_path(path[len("/files/") :])
         if p is None:
             return
         body = self._read_body()
@@ -210,12 +224,24 @@ class Pad(BaseHTTPRequestHandler):
 def main(argv=None) -> int:
     global STATE, NOTE, FILES
     ap = argparse.ArgumentParser(description="shared notepad + file drop for the test VM")
-    ap.add_argument("--peer", default="172.20.252.59", help="VM address used to detect the switch-side host IP")
-    ap.add_argument("--bind", default="auto", help="address to listen on (default: auto from --peer)")
+    ap.add_argument(
+        "--peer", default="172.20.252.59", help="VM address used to detect the switch-side host IP"
+    )
+    ap.add_argument(
+        "--bind", default="auto", help="address to listen on (default: auto from --peer)"
+    )
     ap.add_argument("--port", type=int, default=8000)
-    ap.add_argument("--allow-any", action="store_true", help="permit a non-private or wildcard bind address")
-    ap.add_argument("--state", default=str(STATE), help="folder for note.txt and files/ (default: reports/local/pad, gitignored)")
-    ap.add_argument("--open", action="store_true", help="open the page in the host browser after starting")
+    ap.add_argument(
+        "--allow-any", action="store_true", help="permit a non-private or wildcard bind address"
+    )
+    ap.add_argument(
+        "--state",
+        default=str(STATE),
+        help="folder for note.txt and files/ (default: reports/local/pad, gitignored)",
+    )
+    ap.add_argument(
+        "--open", action="store_true", help="open the page in the host browser after starting"
+    )
     args = ap.parse_args(argv)
 
     STATE = Path(args.state).resolve()
@@ -225,7 +251,9 @@ def main(argv=None) -> int:
     bind = detect_bind(args.peer) if args.bind == "auto" else args.bind
     ip = ipaddress.ip_address(bind) if bind != "0.0.0.0" else None
     if not args.allow_any and (ip is None or not ip.is_private or ip.is_loopback):
-        print(f"tb-pad: refusing to bind {bind}; expected the private Hyper-V switch address (use --bind or --allow-any)")
+        print(
+            f"tb-pad: refusing to bind {bind}; expected the private Hyper-V switch address (use --bind or --allow-any)"
+        )
         return 2
 
     STATE.mkdir(parents=True, exist_ok=True)
@@ -234,7 +262,9 @@ def main(argv=None) -> int:
         NOTE.write_text("", encoding="utf-8")
     Pad.addr = f"{bind}:{args.port}"
     srv = ThreadingHTTPServer((bind, args.port), Pad)
-    print(f"tb-pad on http://{Pad.addr}/  note={NOTE}  files={FILES}  (Ctrl+C or close this window to stop)")
+    print(
+        f"tb-pad on http://{Pad.addr}/  note={NOTE}  files={FILES}  (Ctrl+C or close this window to stop)"
+    )
     sys.stdout.flush()
     if args.open:
         webbrowser.open(f"http://{Pad.addr}/")

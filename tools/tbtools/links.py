@@ -47,7 +47,13 @@ def check_links(cfg: dict) -> Report:
                 if (p.parent / t).exists():
                     continue
                 if (ROOT / t).exists():
-                    rep.add("warn", "link-root-only", r, i, f"'{target}' resolves only from repo root, not from this file")
+                    rep.add(
+                        "warn",
+                        "link-root-only",
+                        r,
+                        i,
+                        f"'{target}' resolves only from repo root, not from this file",
+                    )
                 else:
                     rep.add("error", "link-broken", r, i, f"'{target}' does not exist")
             if glob_match(r, allow):
@@ -62,7 +68,9 @@ def check_links(cfg: dict) -> Report:
                     continue
                 if "/" not in t and t.lower() in basenames:
                     continue  # bare filename that exists somewhere in the tree
-                rep.add("info", "mention-unresolved", r, i, f"`{t}` not found (mention, not a link)")
+                rep.add(
+                    "info", "mention-unresolved", r, i, f"`{t}` not found (mention, not a link)"
+                )
     rep.summary = {"md_files": n_files, "links": n_links, "mentions": n_mentions}
     return rep
 

@@ -71,3 +71,19 @@ support-bundles/
 # Generated machine evidence can be ignored unless a reviewed summary is tracked
 *.generated.json
 *.local.json
+
+# Python tooling caches (stack selected 2026-09-21)
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+.eggs/
+# Debian package build outputs
+debian/.debhelper/
+debian/trier-bridge/
+debian/files
+debian/*.substvars
+debian/*.debhelper.log
+debian/debhelper-build-stamp
+debian/.pybuild/
+.pybuild/
+.pytest_tmp/
