@@ -174,7 +174,8 @@ def run(
     argv: list[str], paths: Paths, journal: OperationJournal, options: dict[str, str] | None = None
 ) -> int:
     opts = options or {}
-    if not Gtk.init_check():  # no display: say so plainly instead of a traceback in a callback
+    Gtk.init_check()
+    if Gdk.Display.get_default() is None:  # no display: say so instead of a traceback
         log.error("no display could be opened")
         print(
             "Trier Bridge needs a desktop session to show its window (no display could be "

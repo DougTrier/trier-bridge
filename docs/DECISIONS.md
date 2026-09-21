@@ -29,7 +29,7 @@ This file records accepted product and architecture decisions. Open questions re
 | DEC-021 | Testing uses only real systems and real test objects in the project VM; no synthetic fixtures, mocks, or stubbed services. A fixture may exist only if the owner names it and its single scenario in `docs/TEST-STRATEGY.md`. Accepted under the same delegation, consistent with the owner's global no-mock rule. | Accepted |
 | DEC-022 | Updates are deferred for the first release: Trier Bridge updates arrive through the same package channel as installation; no self-update mechanism; a signed repository is a later, owner-gated step (`docs/PACKAGING.md` section 5). Closes ARC-12. | Accepted |
 | DEC-023 | Implementation is authorized. On 2026-09-21 the owner set the goal "continue working until the project is done or I ask you to stop." Foundation 01 may begin; every later foundation still requires its prerequisites and evidence (ledger completion rules). Publication remains owner-gated (AGENTS.md section 14). | Accepted |
-| DEC-024 | First-release scope of network and package mutations (IMP-06.06): none. Trier Bridge reads network and package facts and opens the desktop's own tools for changes (GNOME Settings panels, App Center); it does not install, remove, or reconfigure packages or connections itself. Rationale: every such change is class C with a large failure surface (SECURITY.md sections 37.6 and 37.8), the desktop already has qualified tools for it, and the non-invasive directive (DEC-018) favours routing over reimplementing. Revisit after the acceptance cases with a separate qualification plan. Proposed 2026-09-21 for the owner. | Proposed |
+| DEC-024 | Scope of package and network changes, decided by the owner 2026-09-21. **Packages:** Trier Bridge never installs or removes software; App Center is out of scope. **Network:** in scope as a translation layer, not a hand-off: the user sees a Windows-shaped Network Connections page and the changes made there (adapter on/off, connect/disconnect, static address, DNS) are translated into NetworkManager changes, each a typed class C operation that Linux authorizes through polkit. **Drive letters:** Disk Management, Files, and the Command Prompt show C: for the Linux system drive and D:, E:, ... for other mounted volumes, always next to the real Linux path; `C:\Users\<name>` maps to `/home/<name>`. Letters are a familiar label over Linux mounts, never a claim that Linux uses letters (TB-INV-031). | Accepted |
 
 ## Rejected decisions
 
@@ -39,7 +39,6 @@ This file records accepted product and architecture decisions. Open questions re
 
 ## Open decisions
 
-- DEC-024 (package and network mutations: none in the first release) awaits the owner
 - (closed 2026-09-21) name: Trier Bridge is part of Trier OS, whose trademark the owner holds (SCOPE-12)
 - localization: English only until decided (`docs/ACCESSIBILITY.md` TB-A11Y-09)
 

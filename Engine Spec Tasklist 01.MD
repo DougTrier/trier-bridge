@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | Waiting on the owner for the console acceptance cases (IMP-08.04/05/06, screenshot on hardware); automated work list is exhausted except CQ-02/03/04/09 and IMP-06.06 (owner decision) |
+| **Active task** | IMP-04.07 drive letters, then IMP-06.06 network translation layer (DEC-024 accepted 2026-09-21) |
 | **Last completed** | Help generated from the build; Printers page reads CUPS live; DEC-024 proposed; CQS 94/100 (2026-09-21 02:20 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -196,6 +196,10 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 ---
 
+- [ ] **IMP-04.07** Drive letters as a familiar label (DEC-024): C: for the Linux system drive, D:, E:, ... for other mounted volumes, shown in Disk Management, Files, and the Command Prompt next to the real path; `C:\Users\<name>` resolves to `/home/<name>`.
+
+---
+
 # Foundation 05 — Durable state, journals, and recovery
 
 - [x] **IMP-05.01** Implement Trier Bridge-owned preference durability. Evidence: `docs/VALIDATION.md` entry IMP-05 (preferences with reported non-durable writes).
@@ -215,6 +219,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
 - [x] **IMP-06.05** Implement selected service control. Evidence: `docs/VALIDATION.md` entry IMP-06.05.
 - [ ] **IMP-06.06** Implement selected network/package mutations only if separately qualified.
+  - 2026-09-21 (DEC-024): packages are out of scope for good (no App Center, no install/remove). Network changes are in scope as a translation layer: adapter on/off, connect/disconnect a profile, static IPv4 address/gateway/DNS, back to automatic; each a typed class C operation through NetworkManager under polkit, qualified on a dummy interface in the VM, never on its uplink.
 - [x] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior. Evidence: `docs/VALIDATION.md` entries IMP-06.04/06.05 (stale target, denial without an agent) and IMP-06.07 (granted and dismissed prompts through a real polkit agent, user-manager re-exec). Limitation recorded: systemd 255 reports a dismissed prompt as access denied; expiry is polkit's cache and not exercised.
   - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
 - [x] **IMP-06.08** Run security/failure regression set. Evidence: `docs/TEST-STRATEGY.md` section 7 (mapping of SECURITY section 37 and Tests A–D to tests, gaps named) and `docs/VALIDATION.md` entry IMP-06.08 (Test B live through the terminal and polkit).
