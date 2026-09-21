@@ -93,7 +93,11 @@ def cmd_inventory(args: argparse.Namespace) -> int:
         print("  debian/control: not present yet (ARC-11)")
     pins = ROOT / "docs" / "TOOLCHAIN.md"
     if pins.is_file():
-        rows = [ln for ln in pins.read_text(encoding="utf-8").splitlines() if ln.startswith("| `")]
+        rows = [
+            ln
+            for ln in pins.read_text(encoding="utf-8").splitlines()
+            if ln.startswith("| ") and "`" in ln and not ln.startswith("| Component")
+        ]
         print(f"  docs/TOOLCHAIN.md pins: {len(rows)} rows")
     py_files = list((ROOT / "trier_bridge").rglob("*.py"))
     imports: set[str] = set()

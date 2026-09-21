@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Trier Bridge
+Comment=Everything you know. Linux underneath.
+Exec=trier-bridge
+Icon=org.triertech.TrierBridge
+Terminal=false
+Categories=System;Settings;Utility;
+Keywords=Windows;Task Manager;Control Panel;Add or Remove Programs;Device Manager;Event Viewer;Disk Management;Services;Command Prompt;
+StartupNotify=true

@@ -1,0 +1,6 @@
+trier-bridge (0.1.0~dev0) unstable; urgency=low
+
+  * Foundation 01: application shell, typed core, packaging skeleton.
+    Development build; no system feature is implemented.
+
+ -- Doug Trier <dougtrier69@gmail.com>  Mon, 21 Sep 2026 00:10:00 -0500

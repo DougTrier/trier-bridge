@@ -14,7 +14,12 @@
     "venv",
     ".idea",
     ".vscode",
-    ".cache"
+    ".cache",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".pytest_tmp",
+    ".pybuild",
+    ".debhelper"
   ],
   "ignore_globs": [
     "*.pyc",
@@ -205,6 +210,7 @@
         "severity": "warn",
         "message": "Possible secret literal (TB-SEC-015, TB-INV-123)",
         "exclude": [
+          "tests/unit/test_logging.py",
           "tools/env/autoinstall/**"
         ]
       },

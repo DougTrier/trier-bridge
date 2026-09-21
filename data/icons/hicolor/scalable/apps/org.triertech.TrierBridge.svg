@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Doug Trier. SPDX-License-Identifier: Apache-2.0. Original Trier Bridge icon. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82c4"/>
+      <stop offset="1" stop-color="#1f4f85"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="none" stroke="#163a63" stroke-width="2"/>
+  <!-- bridge deck -->
+  <rect x="24" y="80" width="80" height="8" rx="4" fill="#e9eef5"/>
+  <!-- bridge arch -->
+  <path d="M28 80 Q64 40 100 80" fill="none" stroke="#e9eef5" stroke-width="7" stroke-linecap="round"/>
+  <!-- the T -->
+  <rect x="40" y="30" width="48" height="12" rx="4" fill="#ffffff"/>
+  <rect x="58" y="30" width="12" height="52" rx="4" fill="#ffffff"/>
+</svg>

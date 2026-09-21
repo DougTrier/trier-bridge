@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+# Copyright 2026 Doug Trier
+# SPDX-License-Identifier: Apache-2.0
+export PYBUILD_NAME = trier_bridge
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild

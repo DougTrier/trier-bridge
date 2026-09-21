@@ -1,0 +1,25 @@
+Source: trier-bridge
+Section: utils
+Priority: optional
+Maintainer: Doug Trier <dougtrier69@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               dh-python,
+               pybuild-plugin-pyproject,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+
+Package: trier-bridge
+Architecture: all
+Depends: ${python3:Depends},
+         ${misc:Depends},
+         python3-gi (>= 3.48),
+         gir1.2-gtk-4.0 (>= 4.14),
+         gir1.2-adw-1 (>= 1.5)
+Recommends: python3-nautilus (>= 4.0)
+Description: Windows-to-Linux experience compatibility layer
+ Trier Bridge gives Windows users a familiar place for the things they
+ already know how to do on Linux. It runs entirely as the signed-in user,
+ uses the desktop's own extension points, and never installs a daemon,
+ a privileged helper, or a change the user did not choose.

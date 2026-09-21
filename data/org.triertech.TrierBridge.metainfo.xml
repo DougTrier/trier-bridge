@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Doug Trier. SPDX-License-Identifier: Apache-2.0 -->
+<component type="desktop-application">
+  <id>org.triertech.TrierBridge</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <name>Trier Bridge</name>
+  <summary>Everything you know. Linux underneath.</summary>
+  <description>
+    <p>
+      Trier Bridge gives Windows users a familiar place for the things they already know how to do:
+      files, apps, settings, printers, network, and familiar troubleshooting tools such as Task
+      Manager and Event Viewer. Linux stays authoritative underneath; nothing runs as root.
+    </p>
+    <p>
+      This is a development build. Views that are not implemented say so and change nothing.
+    </p>
+  </description>
+  <launchable type="desktop-id">org.triertech.TrierBridge.desktop</launchable>
+  <developer id="org.triertech"><name>Doug Trier</name></developer>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0~dev0" date="2026-09-21"><description><p>Foundation 01 shell.</p></description></release>
+  </releases>
+</component>
