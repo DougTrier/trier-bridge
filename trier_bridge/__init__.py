@@ -23,6 +23,6 @@ Everything here runs as the signed-in user. There is no privileged component
 (docs/PRIVILEGE-MODEL.md).
 """
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0.dev1"
 APP_ID = "org.triertech.TrierBridge"
 APP_NAME = "Trier Bridge"

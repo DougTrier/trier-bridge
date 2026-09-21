@@ -8,7 +8,7 @@
 
 [project]
 name = "trier-bridge"
-version = "0.1.0.dev0"
+version = "0.1.0.dev1"
 description = "Windows-to-Linux experience compatibility layer. Everything you know. Linux underneath."
 readme = "README.md"
 requires-python = ">=3.12"

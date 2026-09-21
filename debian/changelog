@@ -1,3 +1,15 @@
+trier-bridge (0.1.0~dev1) unstable; urgency=low
+
+  * Foundations 02 to 07: discovery, everyday pages, read-only system tools,
+    durable state and journal, End task and service control through polkit,
+    Bridge Terminal with PowerShell names, file operations, default apps.
+  * Integrations chosen at first run: tray icon, search provider, familiar
+    launchers, Files context menu, Ctrl+Shift+Esc; all reversible per user.
+  * New commands trier-bridge-tray and trier-bridge-search-provider with
+    manual pages. Development build.
+
+ -- Doug Trier <dougtrier69@gmail.com>  Mon, 21 Sep 2026 09:00:00 -0500
+
 trier-bridge (0.1.0~dev0) unstable; urgency=low
 
   * Foundation 01: application shell, typed core, packaging skeleton.
