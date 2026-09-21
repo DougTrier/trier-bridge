@@ -199,8 +199,11 @@
         "name": "sudo",
         "pattern": "\\bsudo\\s+",
         "severity": "warn",
-        "message": "No privileged shell shortcuts (TB-SEC-002, TB-INV-107)",
-        "code_only": true
+        "message": "No privileged shell shortcuts (TB-SEC-002, TB-INV-107); test harness mount helper excluded by name",
+        "code_only": true,
+        "exclude": [
+          "tests/integration/test_persistence_faults_vm.py"
+        ]
       },
       {
         "id": "TB-TERM-009",

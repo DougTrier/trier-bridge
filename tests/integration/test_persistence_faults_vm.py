@@ -50,17 +50,29 @@ def test_disk_full_keeps_the_last_known_good_state(tiny_fs: Path) -> None:
     assert prefs.set("mode", "bridge").durable
     filler = tiny_fs / "filler"
     with filler.open("wb") as fh:  # consume everything the filesystem will give
+        for chunk in (65536, 4096, 512, 64, 1):
+            try:
+                while True:
+                    fh.write(b"\0" * chunk)
+                    fh.flush()
+            except OSError:
+                continue
+    extra = []
+    for i in range(64):  # and every remaining inode/block a new temp file might use
         try:
-            while True:
-                fh.write(b"\0" * 65536)
+            f = tiny_fs / f"fill{i}"
+            f.write_bytes(b"x" * 4096)
+            extra.append(f)
         except OSError:
-            pass
+            break
     res = prefs.set("mode", "native")
     assert not res.durable and "not changed" in res.plain
     assert json.loads((state / "prefs.json").read_text())["mode"] == "bridge"
     assert prefs.get("mode") == "bridge"
     assert [p.name for p in state.iterdir()] == ["prefs.json"]  # no temp file left behind
     filler.unlink()
+    for f in extra:
+        f.unlink()
     assert prefs.set("mode", "native").durable  # recovers once space returns
 
 
@@ -98,7 +110,8 @@ def test_process_killed_mid_operation_is_flagged_on_restart(tmp_path: Path) -> N
         "import os, sys; sys.path.insert(0, %r)\n"
         "from trier_bridge.state.journal import OperationJournal\n"
         "from trier_bridge.core.state import OperationState\n"
-        "j = OperationJournal(%r)\n"
+        "from pathlib import Path\n"
+        "j = OperationJournal(Path(%r))\n"
         "r = j.open('killed', 'service.restart', 'service', 'ssh.service', {'name': 'ssh.service'})\n"
         "j.advance(r, OperationState.PREVIEWED); j.advance(r, OperationState.AUTHORIZED)\n"
         "j.advance(r, OperationState.EXECUTING)\n"

@@ -85,8 +85,11 @@ def atomic_write_bytes(
     path: Path, data: bytes, validate: Callable[[bytes], bool] | None = None
 ) -> None:
     """Write ``data`` to ``path`` atomically. On any failure the old file remains."""
-    ensure_dir(path.parent)
-    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        ensure_dir(path.parent)
+        fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    except OSError as exc:  # read-only, permission lost, or no space for the temp file
+        raise StateWriteError(f"could not write {path.name}: {exc}") from exc
     tmp = Path(tmp_name)
     try:
         with os.fdopen(fd, "wb") as fh:

@@ -308,7 +308,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if section.key == "settings":
             return SettingsPage(self._catalog, self._router, self.notify)
         if section.key == "taskmanager":
-            self._taskmanager = TaskManagerPage()
+            app = self.get_application()
+            self._taskmanager = TaskManagerPage(getattr(app, "journal", None), self.notify)
             return self._taskmanager
         if section.key == "events":
             self._events = EventViewerPage()

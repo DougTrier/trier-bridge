@@ -33,6 +33,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
+from ..operations.process import TerminatePlan, execute_terminate, plan_terminate  # noqa: E402
+from ..state.journal import OperationJournal  # noqa: E402
 from ..system.processes import ProcessKind, ProcessSample  # noqa: E402
 from ..system.processes import ProcessSampler, SystemTotals  # noqa: E402
 
@@ -77,10 +79,16 @@ def _fmt_uptime(s: float | None) -> str:
 class _ProcessList(Gtk.Box):  # type: ignore[misc]
     """One list of processes with a search box; rows are rebuilt from each sample."""
 
-    def __init__(self, kinds: set[ProcessKind], empty_text: str) -> None:
+    def __init__(
+        self,
+        kinds: set[ProcessKind],
+        empty_text: str,
+        on_end: Callable[[ProcessSample, bool], None] | None = None,
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self._kinds = kinds
         self._empty_text = empty_text
+        self._on_end = on_end
         self._entry = Gtk.SearchEntry(placeholder_text="Find a process…")
         self._entry.update_property([Gtk.AccessibleProperty.LABEL], ["Find a process"])
         self._entry.set_margin_start(12)
@@ -145,6 +153,17 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
                 f"memory {_fmt_bytes(s.rss_bytes)}, {KIND_LABEL[s.kind]}"
             )
             row.update_property([Gtk.AccessibleProperty.LABEL], [spoken])
+            if self._on_end is not None and s.kind.actionable_by_user:
+                end = Gtk.Button(label="End task")
+                end.set_valign(Gtk.Align.CENTER)
+                end.update_property(
+                    [Gtk.AccessibleProperty.DESCRIPTION],
+                    [
+                        f"Ask {s.name} to close. Unsaved work may be lost. You will be asked to confirm."
+                    ],
+                )
+                end.connect("clicked", lambda *_, s=s: self._on_end(s, False))
+                row.add_suffix(end)
             self._list.append(row)
             self._rows.append(row)
         if len(rows) > MAX_ROWS:
@@ -209,20 +228,30 @@ class _PerformancePage(Gtk.Box):  # type: ignore[misc]
 
 
 class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
-    def __init__(self, sampler_factory: Callable[[], ProcessSampler] = ProcessSampler) -> None:
+    def __init__(
+        self,
+        journal: OperationJournal | None = None,
+        notify: Callable[[str], None] | None = None,
+        sampler_factory: Callable[[], ProcessSampler] = ProcessSampler,
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self._journal = journal
+        self._notify = notify or (lambda text: None)
         self._sampler = sampler_factory()
         self._visible = False
         self._timer: int | None = None
         self._busy = False
         banner = Adw.Banner(
-            title="Observation only in this build. Ending a task arrives in a later foundation.",
+            title=(
+                "End task closes one of your own programs after you confirm. "
+                "System and kernel processes cannot be ended here."
+            ),
             revealed=True,
         )
         self.append(banner)
         self._stack = Adw.ViewStack()
         self._apps = _ProcessList(
-            {ProcessKind.APP, ProcessKind.USER}, "No processes of yours are running"
+            {ProcessKind.APP, ProcessKind.USER}, "No processes of yours are running", self._ask_end
         )
         self._background = _ProcessList(
             {ProcessKind.SYSTEM, ProcessKind.OTHER_USER, ProcessKind.KERNEL, ProcessKind.CRITICAL},
@@ -280,6 +309,43 @@ class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
         self._status.set_text(f"Could not read processes: {text}")
         self._busy = False
         return False
+
+    # ---- End task (IMP-06.04): preview, confirm, execute off the main loop, report plainly
+    def _ask_end(self, sample: ProcessSample, force: bool) -> None:
+        plan = plan_terminate(sample.identity, sample.kind, force)
+        if not isinstance(plan, TerminatePlan):
+            self._notify(plan.plain)
+            return
+        dialog = Adw.AlertDialog(
+            heading="Force end task?" if force else "End task?", body=plan.preview
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("end", "Force end" if force else "End task")
+        dialog.set_response_appearance("end", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._on_confirm, plan)
+        dialog.present(self.get_root())
+
+    def _on_confirm(self, _dialog: Adw.AlertDialog, response: str, plan: TerminatePlan) -> None:
+        if response != "end":
+            self._notify(f"Cancelled. {plan.label} was left running.")
+            return
+        threading.Thread(target=self._run_end, args=(plan,), name="tb-endtask", daemon=True).start()
+
+    def _run_end(self, plan: TerminatePlan) -> None:
+        try:
+            result = execute_terminate(plan, self._journal)
+        except Exception as exc:  # report, never hide
+            log.exception("end task failed")
+            GLib.idle_add(self._notify, f"Ending {plan.label} failed unexpectedly: {exc}")
+            return
+        answers = result.three_answers()
+        text = f"{result.plain} {answers['Did anything change?']}"
+        if result.safest_next_step and not result.state.is_success:
+            text += f" Next: {result.safest_next_step}"
+        GLib.idle_add(self._notify, text)
+        GLib.idle_add(self._tick)
 
     def _apply(self, samples: list[ProcessSample], totals: SystemTotals) -> bool:
         self._apps.update(samples)
