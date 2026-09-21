@@ -589,16 +589,169 @@ def cmd_netstat(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return _bounded(lines, "ss -tulpn")
 
 
+FAMILIAR_PROGRAMS = {
+    "notepad": "org.gnome.TextEditor.desktop",
+    "calc": "org.gnome.Calculator.desktop",
+    "explorer": "org.gnome.Nautilus.desktop",
+    "control": "org.gnome.Settings.desktop",
+    "mspaint": "",
+    "cmd": "",
+}
+
+
+def cmd_explorer(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..desktop.launch import Launcher
+
+    target = _path_arg(session, cmd.args[0]) if cmd.args else session.cwd
+    if isinstance(target, CommandOutput):
+        return target
+    if not target.is_dir():
+        return CommandOutput(
+            Exit.FAILED,
+            (f"The system cannot find the path specified: {target}",),
+            "nautilus",
+            False,
+        )
+    res = Launcher().show_folder(f"file://{target}")
+    return CommandOutput(
+        Exit.OK if res.ok else Exit.FAILED,
+        (f"{res.plain} ({target}, {to_windows_path(target)})" if res.ok else res.plain,),
+        f"nautilus {target}",
+        res.ok,
+    )
+
+
+def cmd_start(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    from ..desktop.launch import Launcher
+
+    what = cmd.args[0]
+    low = what.lower().removesuffix(".exe")
+    launcher = Launcher()
+    if low in FAMILIAR_PROGRAMS:
+        desktop_id = FAMILIAR_PROGRAMS[low]
+        if low == "cmd":
+            return CommandOutput(
+                Exit.OK, ("You are in it: this is the Command Prompt (Bridge Mode).",), "-", True
+            )
+        if not desktop_id:
+            return CommandOutput(
+                Exit.UNSUPPORTED,
+                (f"{what} has no direct equivalent here; look under Apps for an image editor.",),
+                "-",
+                False,
+            )
+        res = launcher.launch_app(desktop_id)
+        return CommandOutput(
+            Exit.OK if res.ok else Exit.FAILED, (res.plain,), f"gtk-launch {desktop_id}", res.ok
+        )
+    if "://" in what or low.startswith("www."):
+        uri = what if "://" in what else f"https://{what}"
+        res = launcher.open_uri(uri)
+        return CommandOutput(
+            Exit.OK if res.ok else Exit.FAILED, (res.plain,), f"gio open {uri}", res.ok
+        )
+    target = _path_arg(session, what)
+    if isinstance(target, CommandOutput):
+        return target
+    if not target.exists():
+        return CommandOutput(
+            Exit.FAILED,
+            (
+                f"Windows cannot find '{what}'. Programs here are started from Apps; files and "
+                "folders by their path.",
+            ),
+            "gio open",
+            False,
+        )
+    if target.is_dir():
+        res = launcher.show_folder(f"file://{target}")
+    else:
+        res = launcher.open_uri(f"file://{target}")
+    return CommandOutput(
+        Exit.OK if res.ok else Exit.FAILED, (res.plain,), f"gio open {target}", res.ok
+    )
+
+
+def cmd_net(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    verb = cmd.args[0].lower()
+    if verb in ("start", "stop"):
+        if len(cmd.args) < 2:
+            return CommandOutput(
+                Exit.PARSE_ERROR, (f"net {verb} needs a service name.",), "systemctl", False
+            )
+        fake = BridgeCommand(cmd.spec, cmd.switches, (verb, cmd.args[1]), cmd.raw, cmd.note)
+        return _sc_mutation(verb, fake)
+    teach = {
+        "user": "Accounts are managed in Settings, Users (or the Apps page). There is no "
+        "NetBIOS domain here.",
+        "use": "Network shares are opened in Files (Other Locations, smb://server/share); "
+        "nothing maps a drive letter.",
+        "share": "Sharing a folder is done in Files (folder Properties, Local Network Share).",
+        "view": "Network computers are listed in Files under Other Locations.",
+    }
+    if verb in teach:
+        return CommandOutput(Exit.UNSUPPORTED, (teach[verb],), "Files / Settings", False)
+    return CommandOutput(
+        Exit.UNSUPPORTED, ("net here accepts start, stop, user, use, share, view.",), "-", False
+    )
+
+
+def cmd_date(cmd: BridgeCommand, session: Session) -> CommandOutput:
+    import datetime
+
+    now = datetime.datetime.now().astimezone()
+    label = "date" if cmd.spec.name == "date" else "time"
+    shown = now.strftime("%a %m/%d/%Y") if label == "date" else now.strftime("%H:%M:%S")
+    return CommandOutput(
+        Exit.OK,
+        (
+            f"The current {label} is: {shown} ({now.tzname()})",
+            "Change it in Settings, Date and Time.",
+        ),
+        "date; timedatectl",
+        True,
+    )
+
+
 def cmd_taskkill(cmd: BridgeCommand, session: Session) -> CommandOutput:
     from ..operations.process import TerminatePlan, plan_terminate
     from ..system.processes import ProcessSampler
 
+    if "im" in cmd.switches and cmd.args:
+        rows, _ = ProcessSampler().sample()
+        wanted = cmd.args[0].lower().removesuffix(".exe")
+        mine = [r for r in rows if r.kind.actionable_by_user and r.name.lower() == wanted]
+        if not mine:
+            return CommandOutput(
+                Exit.FAILED, (f'The process "{cmd.args[0]}" not found.',), "pkill", False
+            )
+        if len(mine) > 1:
+            pids = ", ".join(str(r.identity.pid) for r in mine)
+            return CommandOutput(
+                Exit.UNSUPPORTED,
+                (
+                    f"{len(mine)} processes are named {cmd.args[0]} (PIDs {pids}); use "
+                    "taskkill /PID <number> to pick one.",
+                ),
+                "pkill",
+                False,
+            )
+        plan = plan_terminate(mine[0].identity, mine[0].kind, force="f" in cmd.switches)
+        if not isinstance(plan, TerminatePlan):
+            return CommandOutput(Exit.UNSUPPORTED, (plan.plain,), "kill", False)
+        return CommandOutput(
+            Exit.NEEDS_CONFIRMATION,
+            (plan.preview, "Confirm in the dialog to continue; nothing has happened yet."),
+            "kill -TERM" if not plan.force else "kill -KILL",
+            False,
+            plan,
+        )
     if "pid" not in cmd.switches:
         return CommandOutput(
             Exit.UNSUPPORTED,
             (
-                "taskkill here accepts /PID <number> [/F]; names are not matched "
-                "to avoid ending the wrong program.",
+                "taskkill here accepts /PID <number> [/F] or /IM <name> [/F] when exactly one "
+                "of your programs has that name.",
             ),
             "kill",
             False,
@@ -858,6 +1011,11 @@ HANDLERS: dict[str, Callable[[BridgeCommand, Session], CommandOutput]] = {
     "ping": cmd_ping,
     "tracert": cmd_tracert,
     "nslookup": cmd_nslookup,
+    "explorer": cmd_explorer,
+    "start": cmd_start,
+    "net": cmd_net,
+    "date": cmd_date,
+    "time": cmd_date,
     "copy": cmd_copy,
     "move": cmd_move,
     "ren": cmd_ren,

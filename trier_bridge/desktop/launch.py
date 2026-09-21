@@ -136,6 +136,16 @@ class Launcher:
             return LaunchResult(False, "The file manager could not be opened.", err)
         return LaunchResult(True, "Opened in Files.")
 
+    def open_uri(self, uri: str) -> LaunchResult:
+        """Open a web address or file with whatever the desktop associates with it."""
+        try:
+            ok = Gio.AppInfo.launch_default_for_uri(uri, None)
+        except GLib.Error as exc:
+            return LaunchResult(False, "Nothing on this computer opens that.", exc.message)
+        return LaunchResult(
+            bool(ok), f"Opened {uri}." if ok else "Nothing on this computer opens that."
+        )
+
     def launch_app(self, desktop_id: str) -> LaunchResult:
         info = Gio.DesktopAppInfo.new(desktop_id)
         if info is None:
