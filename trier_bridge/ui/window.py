@@ -35,6 +35,7 @@ from ..catalog.model import Catalog  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
 from .pages import AppsPage, EntryPointPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
+from .devices import DeviceManagerPage, StartupPage  # noqa: E402
 from .disks import DisksPage  # noqa: E402
 from .eventviewer import EventViewerPage  # noqa: E402
 from .network import NetworkPage  # noqa: E402
@@ -102,7 +103,22 @@ SECTIONS: tuple[Section, ...] = (
         "Troubleshooting",
         available=True,
     ),
-    Section("devices", "Device Manager", "computer-symbolic", "Device Manager", "Troubleshooting"),
+    Section(
+        "devices",
+        "Device Manager",
+        "computer-symbolic",
+        "Device Manager",
+        "Troubleshooting",
+        available=True,
+    ),
+    Section(
+        "startup",
+        "Startup Apps",
+        "system-run-symbolic",
+        "Startup Apps, msconfig",
+        "Troubleshooting",
+        available=True,
+    ),
     Section(
         "disks",
         "Disk Management",
@@ -224,6 +240,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
                 self._network.start()
             if section.key == "disks":
                 self._disks.start()
+            if section.key == "devices":
+                self._devices.start()
+            if section.key == "startup":
+                self._startup.start()
             self._title.set_title(section.title)
             self._title.set_subtitle(f"Windows: {section.familiar}")
 
@@ -289,6 +309,12 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         if section.key == "disks":
             self._disks = DisksPage(self._launcher, self.notify)
             return self._disks
+        if section.key == "devices":
+            self._devices = DeviceManagerPage()
+            return self._devices
+        if section.key == "startup":
+            self._startup = StartupPage()
+            return self._startup
         if section.key == "sysinfo":
             from ..capability.discovery import Discovery
             from .sysinfo import SystemInfoPage
