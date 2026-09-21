@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner |
+| **Active task** | Page walks for drive letters, Files, Network, and the interrupted-operation banner, plus `test_journeys_vm.py`: the single-instance conflict is gone (no main window running, only the tray), but these all need `Atspi.get_desktop()`, which only works from a process launched inside the interactive console login session — proven not reproducible over SSH even with every session env var copied (entry IMP-03.09 addendum, 2026-09-21). Needs someone to open a terminal at the VM console (as done before, entry IMP-03.09) and run `WAYLAND_DISPLAY=wayland-0 python3 -m pytest tests/integration/test_journeys_vm.py -m integration`, plus walk Disk Management/Files/Network by hand or script from that same terminal. |
 | **Last completed** | IMP-07.13 closed: nslookup's resolver calls bounded by a wall-clock timeout, closing Foundation 07's last open item; IMP-06.08 polkit-caching false-alarm clarified (2026-09-21 01:45 PM CDT) |
 | **Implementation** | Foundations 01–07 fully closed (13/13, 9/9); Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
