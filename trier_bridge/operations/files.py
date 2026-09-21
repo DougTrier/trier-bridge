@@ -120,96 +120,125 @@ def _refuse(
     return OperationResult(op.operation_id, state, plain, safest_next_step=next_step)
 
 
-def plan_file(verb: str, source: str, dest: str | None, cwd: Path) -> FilePlan | OperationResult:
-    """Build the typed operation, or return a terminal result explaining why not."""
-    if verb not in VERBS:
-        raise ValueError(f"unknown file verb {verb}")
-    src = resolve_path(cwd, source)
-    identity = identify(src)
-    target_path: Path | None = None
-    if verb in ("copy", "move"):
-        if not dest:
-            raise ValueError("copy and move need a destination")
-        target_path = resolve_path(cwd, dest)
-        if target_path.is_dir():
-            target_path = target_path / src.name
-    elif verb == "rename":
-        if not dest:
-            raise ValueError("rename needs a new name")
-        new_name = dest.replace("\\", "/")
-        if "/" in new_name:
-            new_name = new_name.rsplit("/", 1)[1]
-        target_path = src.parent / new_name
-    op = Operation(
+def _operation(verb: str, src: Path, identity: FileIdentity | None, dest: Path | None) -> Operation:
+    return Operation(
         kind=f"file.{verb}",
         target=identity or FileIdentity(str(src), 0, 0),
         privilege=PrivilegeClass.B_USER_MUTATION,
-        parameters={"source": str(src), "dest": str(target_path) if target_path else ""},
+        parameters={"source": str(src), "dest": str(dest) if dest else ""},
     )
+
+
+def _plan_mkdir(src: Path) -> FilePlan | OperationResult:
+    op = _operation("mkdir", src, None, None)
     name = src.name or str(src)
-    if verb == "mkdir":
-        if src.exists() or src.is_symlink():
-            return _refuse(
-                op, OperationState.UNSUPPORTED, f"{name} already exists. Nothing was changed."
-            )
-        if not src.parent.is_dir():
-            return _refuse(
-                op,
-                OperationState.FAILED,
-                f"The folder for {name} does not exist ({src.parent}). Nothing was changed.",
-            )
-        preview = f"Create the folder {name} in {src.parent}?"
-        return FilePlan(op.with_preview(preview), verb, src, None, None, name, preview)
-    if identity is None:
+    if src.exists() or src.is_symlink():
         return _refuse(
-            op, OperationState.FAILED, f"The system cannot find the file specified: {source}"
+            op, OperationState.UNSUPPORTED, f"{name} already exists. Nothing was changed."
         )
-    if verb == "rmdir":
-        if not src.is_dir():
-            return _refuse(
-                op, OperationState.UNSUPPORTED, f"{name} is not a folder. Nothing was changed."
-            )
-        if any(src.iterdir()):
-            return _refuse(
-                op,
-                OperationState.UNSUPPORTED,
-                f"{name} is not empty. Nothing was changed.",
-                "Use del to move it to the Trash, where Files can restore it.",
-            )
-        preview = f"Remove the empty folder {name}?"
-        return FilePlan(op.with_preview(preview), verb, src, None, identity, name, preview)
-    if verb == "trash":
-        what = "folder and everything in it" if src.is_dir() and not src.is_symlink() else "file"
-        preview = (
-            f"Move the {what} {name} to the Trash? Files can restore it from there; "
-            "nothing is permanently deleted."
+    if not src.parent.is_dir():
+        return _refuse(
+            op,
+            OperationState.FAILED,
+            f"The folder for {name} does not exist ({src.parent}). Nothing was changed.",
         )
-        return FilePlan(op.with_preview(preview), verb, src, None, identity, name, preview)
-    assert target_path is not None
+    preview = f"Create the folder {name} in {src.parent}?"
+    return FilePlan(op.with_preview(preview), "mkdir", src, None, None, name, preview)
+
+
+def _plan_rmdir(src: Path, identity: FileIdentity) -> FilePlan | OperationResult:
+    op = _operation("rmdir", src, identity, None)
+    name = src.name or str(src)
+    if not src.is_dir():
+        return _refuse(
+            op, OperationState.UNSUPPORTED, f"{name} is not a folder. Nothing was changed."
+        )
+    if any(src.iterdir()):
+        return _refuse(
+            op,
+            OperationState.UNSUPPORTED,
+            f"{name} is not empty. Nothing was changed.",
+            "Use del to move it to the Trash, where Files can restore it.",
+        )
+    preview = f"Remove the empty folder {name}?"
+    return FilePlan(op.with_preview(preview), "rmdir", src, None, identity, name, preview)
+
+
+def _plan_trash(src: Path, identity: FileIdentity) -> FilePlan:
+    op = _operation("trash", src, identity, None)
+    name = src.name or str(src)
+    what = "folder and everything in it" if src.is_dir() and not src.is_symlink() else "file"
+    preview = (
+        f"Move the {what} {name} to the Trash? Files can restore it from there; "
+        "nothing is permanently deleted."
+    )
+    return FilePlan(op.with_preview(preview), "trash", src, None, identity, name, preview)
+
+
+def _target_for(verb: str, src: Path, dest: str, cwd: Path) -> Path:
+    if verb == "rename":
+        new_name = dest.replace("\\", "/")
+        if "/" in new_name:
+            new_name = new_name.rsplit("/", 1)[1]
+        return src.parent / new_name
+    target = resolve_path(cwd, dest)
+    return target / src.name if target.is_dir() else target
+
+
+def _plan_transfer(
+    verb: str, src: Path, identity: FileIdentity, target: Path
+) -> FilePlan | OperationResult:
+    """copy, move, rename: never overwrite, never copy a folder (Files does that)."""
+    op = _operation(verb, src, identity, target)
+    name = src.name or str(src)
     if verb == "copy" and src.is_dir() and not src.is_symlink():
         return _refuse(
             op,
             OperationState.UNSUPPORTED,
             f"{name} is a folder. Folders are copied in Files. Nothing was changed.",
         )
-    if target_path.exists() or target_path.is_symlink():
+    if target.exists() or target.is_symlink():
         return _refuse(
             op,
             OperationState.UNSUPPORTED,
-            f"{target_path.name} already exists. Nothing here overwrites; nothing was changed.",
+            f"{target.name} already exists. Nothing here overwrites; nothing was changed.",
             "Choose another name, or move the existing one to the Trash first.",
         )
-    if not target_path.parent.is_dir():
+    if not target.parent.is_dir():
         return _refuse(
             op,
             OperationState.FAILED,
-            f"The destination folder does not exist ({target_path.parent}). Nothing was changed.",
+            f"The destination folder does not exist ({target.parent}). Nothing was changed.",
         )
-    if verb == "rename":
-        preview = f"Rename {name} to {target_path.name}?"
-    else:
-        preview = f"{VERBS[verb][0]} {name} to {target_path}?"
-    return FilePlan(op.with_preview(preview), verb, src, target_path, identity, name, preview)
+    preview = (
+        f"Rename {name} to {target.name}?"
+        if verb == "rename"
+        else f"{VERBS[verb][0]} {name} to {target}?"
+    )
+    return FilePlan(op.with_preview(preview), verb, src, target, identity, name, preview)
+
+
+def plan_file(verb: str, source: str, dest: str | None, cwd: Path) -> FilePlan | OperationResult:
+    """Build the typed operation, or return a terminal result explaining why not."""
+    if verb not in VERBS:
+        raise ValueError(f"unknown file verb {verb}")
+    if verb in ("copy", "move", "rename") and not dest:
+        raise ValueError(f"{verb} needs a destination")
+    src = resolve_path(cwd, source)
+    if verb == "mkdir":
+        return _plan_mkdir(src)
+    identity = identify(src)
+    if identity is None:
+        op = _operation(verb, src, None, None)
+        return _refuse(
+            op, OperationState.FAILED, f"The system cannot find the file specified: {source}"
+        )
+    if verb == "rmdir":
+        return _plan_rmdir(src, identity)
+    if verb == "trash":
+        return _plan_trash(src, identity)
+    assert dest is not None
+    return _plan_transfer(verb, src, identity, _target_for(verb, src, dest, cwd))
 
 
 def _classify(exc: GLib.Error) -> tuple[OperationState, str]:
