@@ -39,13 +39,15 @@ OBJ_PATH = "/org/triertech/TrierBridge/SearchProvider"
 
 
 @dataclass(frozen=True)
-class Paths:
+class UserDirs:
+    """The user's own XDG directories that integrations write under (not config.Paths)."""
+
     home: Path
     data: Path  # ~/.local/share
     config: Path  # ~/.config
 
     @classmethod
-    def default(cls) -> "Paths":
+    def default(cls) -> "UserDirs":
         home = Path.home()
         return cls(
             home,
@@ -199,7 +201,7 @@ def _write(path: Path, text: str, written: list[str]) -> None:
     written.append(str(path))
 
 
-def _apply_search_provider(paths: Paths, written: list[str]) -> None:
+def _apply_search_provider(paths: UserDirs, written: list[str]) -> None:
     exe = shutil.which("trier-bridge-search-provider") or "/usr/bin/trier-bridge-search-provider"
     _write(
         paths.data / "dbus-1/services" / f"{BUS_NAME}.service",
@@ -215,7 +217,7 @@ def _apply_search_provider(paths: Paths, written: list[str]) -> None:
     )
 
 
-def _apply_tray_icon(paths: Paths, written: list[str]) -> None:
+def _apply_tray_icon(paths: UserDirs, written: list[str]) -> None:
     exe = shutil.which("trier-bridge-tray") or "/usr/bin/trier-bridge-tray"
     _write(
         paths.config / "autostart" / f"{APP_ID}.Tray.desktop",
@@ -226,7 +228,7 @@ def _apply_tray_icon(paths: Paths, written: list[str]) -> None:
     )
 
 
-def _apply_familiar_launchers(paths: Paths, written: list[str]) -> None:
+def _apply_familiar_launchers(paths: UserDirs, written: list[str]) -> None:
     for key, name, comment, keywords in FAMILIAR_LAUNCHERS:
         _write(
             paths.data / "applications" / f"{APP_ID}.{key}.desktop",
@@ -235,7 +237,7 @@ def _apply_familiar_launchers(paths: Paths, written: list[str]) -> None:
         )
 
 
-def _apply_files_menu(paths: Paths, written: list[str]) -> None:
+def _apply_files_menu(paths: UserDirs, written: list[str]) -> None:
     src = data_dir() / "integrations" / "tb_nautilus.py"
     if not src.is_file():
         raise FileNotFoundError("the Files extension is not installed with this build")
@@ -282,9 +284,9 @@ def _remove_shortcut(rec: AppliedIntegration) -> None:
 
 
 def apply(
-    integration_id: str, ledger: IntegrationLedger, paths: Paths | None = None
+    integration_id: str, ledger: IntegrationLedger, paths: UserDirs | None = None
 ) -> ApplyResult:
-    paths = paths or Paths.default()
+    paths = paths or UserDirs.default()
     item = by_id(integration_id)
     if item is None:
         return ApplyResult(False, "Unknown integration. Nothing was changed.")

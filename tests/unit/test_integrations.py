@@ -10,9 +10,9 @@ from trier_bridge.integrations import catalog
 from trier_bridge.integrations.ledger import IntegrationLedger
 
 
-def _paths(tmp_path: Path) -> catalog.Paths:
+def _paths(tmp_path: Path) -> catalog.UserDirs:
     home = tmp_path / "home"
-    return catalog.Paths(home, home / ".local/share", home / ".config")
+    return catalog.UserDirs(home, home / ".local/share", home / ".config")
 
 
 def test_catalog_groups_and_defaults() -> None:
