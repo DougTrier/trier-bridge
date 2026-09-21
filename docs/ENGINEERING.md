@@ -230,7 +230,23 @@ Resource-efficiency principles:
 
 Release measurements to define after implementation: cold/warm startup, idle CPU and memory, active dashboard CPU/memory, process-list scale, journal query scale, package inventory scale, device inventory scale, cache/storage growth, low-space behavior, suspend/resume activity, screen-hidden activity, installer size and dependency growth.
 
-Numeric targets remain **NOT MEASURED** until the stack and baseline hardware profiles are chosen.
+### 11.1 Performance budget (CQ-09, set 2026-09-21)
+
+Baseline: `VALIDATION.md` entry IMP-08.08, measured on the ENV-02 VM (4 vCPU, no GPU, GTK software rendering). Targets are what a release must meet on the same profile; the GPU column is the expectation on ordinary hardware and is NOT MEASURED until run there.
+
+| Measure | Baseline (VM, software rendering) | Target (VM profile) | Expected with a GPU |
+|---|---|---|---|
+| Launch to window frame | 0.93-0.95 s | <= 2.0 s | <= 1.0 s |
+| Idle CPU, any page except Task Manager, 10 s | 0 ticks | 0 ticks (event-driven only) | 0 ticks |
+| Task Manager page CPU, 10 s, ~230 processes | 25 ticks (2.5% of a core) | <= 50 ticks | <= 30 ticks |
+| Window RSS, Home page | 257 MB | <= 350 MB | NOT MEASURED (expected well under 200 MB) |
+| Window RSS, largest page (Services) | 296 MB | <= 400 MB | NOT MEASURED |
+| Tray process RSS / idle CPU | 25 MB / 0 | <= 40 MB / 0 | same |
+| Search provider: cold answer / warm answer / RSS | 42 ms / 4 ms / 23 MB | <= 250 ms / <= 20 ms / <= 40 MB; exits after 60 s idle | same |
+| Package / installed size | 96 KB / 469 KB | <= 1 MB / <= 5 MB | same |
+| Per-user state on disk | 1.8 KB config, 12.6 KB state | logs <= 1 MB x backups; journal pruned | same |
+
+A measurement outside its target is a defect at priority 3-7 of the order above, not a tuning task.
 
 ## 12. Good first issues
 

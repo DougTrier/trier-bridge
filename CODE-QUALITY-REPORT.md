@@ -101,7 +101,7 @@ No baseline files, no disabled rules, no lowered thresholds. Broad `except Excep
 | CQ-06 | 10 complexity | Decompose `read_storage` per object kind as `read_devices` was. | done |
 | CQ-07 | 11 readability | Rename `integrations.catalog.Paths` (user home dirs) so it cannot be confused with `config.Paths`. | done (`UserDirs`) |
 | CQ-08 | 10 complexity | Split `plan_file` per verb. | done (mkdir, rmdir, trash, transfer) |
-| CQ-09 | 9 performance | Write a performance budget (startup, idle CPU, memory per page) into `docs/ENGINEERING.md` and measure on hardware with a GPU. | open |
+| CQ-09 | 9 performance | Write a performance budget (startup, idle CPU, memory per page) into `docs/ENGINEERING.md` and measure on hardware with a GPU. | budget written (section 11.1); GPU measurement open |
 
 ---
 
