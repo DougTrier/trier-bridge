@@ -51,6 +51,7 @@ Administration and command translation are deeper layers.
 - test VM `tb-ubuntu-desktop-2404` created by owner and profiled in-guest; tools verified on Linux (ENV-02, TOOL-05, 2026-09-20 11:10 PM CDT)
 - SCOPE-01..05 written from an in-guest research probe: delivery model, privilege model (no helper needed), packaging, research plan with findings, test strategy (2026-09-20 11:55 PM CDT)
 - live research R2/R17/R18 done in the VM session; stack proposal `docs/STACK-SELECTION.md` written as DEC-020 (proposed) (2026-09-21 12:05 AM CDT)
+- R1 Nautilus extension load and R12 PowerShell-on-Linux verified after the owner enabled sudo in the VM (2026-09-21 12:20 AM CDT)
 - pre-implementation gap review recorded as SCOPE-01..13; non-invasive directive DEC-018 accepted; delivery model DEC-019 proposed (2026-09-20)
 
 ### Not yet done

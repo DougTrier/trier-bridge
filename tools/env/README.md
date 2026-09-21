@@ -86,6 +86,10 @@ From a shell (host has `curl`; Ubuntu Desktop ships `wget`, not `curl`):
 
 State (the note and dropped files) lives under `reports/local/pad/`, which is gitignored so pasted commands and files never enter history; `--state DIR` keeps it elsewhere. Other options: `--port`, `--peer`, `--bind`, `--allow-any`. File names are restricted to a safe character set, path escapes are rejected, uploads are capped at 64 MB, and chunked uploads (piped `curl -T -`) are accepted.
 
+## Guest state beyond the clean-install checkpoint (2026-09-21)
+
+Owner-approved for this test VM: passwordless sudo for `tb` (`/etc/sudoers.d/tb`). Research additions: `python3-nautilus`, `powershell` snap, a per-user search-provider prototype (`~/.local/{bin/tb-search-provider,share/dbus-1/services,share/gnome-shell/search-providers,share/applications}`), a per-user Nautilus extension prototype, and the `tb-pad` launcher. All are reversible per user; take a new checkpoint (for example `research-baseline`) once they are wanted as the new starting point, or restore `clean-install` to drop them.
+
 ## Evidence
 
 Each create and remove writes a JSON record to `reports/local/env-<name>*.json` with the parameters and ISO hash state. Copy the relevant facts into the environment-profile field of any `docs/VALIDATION.md` evidence entry that used the VM.
