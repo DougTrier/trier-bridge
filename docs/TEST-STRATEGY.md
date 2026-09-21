@@ -95,3 +95,31 @@ Every `TB-INV-###` has a default test identity `TB-T###` (INVARIANTS.md section 
 - tests that need root on the developer host;
 - destructive tests on any machine that is not a `tb-` VM restored from a checkpoint;
 - reusing one distro's results for another (TB-INV-231).
+
+## 7. Security and failure regression set (IMP-06.08)
+
+The regression set is the whole automated suite (`python3 tools/dev.py all` on the host and in the VM, then `TRIER_BRIDGE_TEST_PASSWORD=<account password> python3 -m pytest tests/integration -m integration` in the VM) plus the manual probes named in `docs/VALIDATION.md`. This table maps `docs/SECURITY.md` section 37 and its Tests A–D to what covers them today; a gap is a gap, not a pass.
+
+| SECURITY item | Covered by | State |
+|---|---|---|
+| 37.1 valid commands, invalid flags, extra tokens, quoting, Unicode, control characters, shell metacharacters, command substitution, redirection, long input | `tests/unit/test_grammar.py`, `tests/unit/test_cmdlets.py` | covered |
+| 37.1 path traversal | `tests/integration/test_bridge_vm.py::test_type_and_dir_stay_inside_real_paths`, `test_file_operations.py::test_hostile_filenames_are_data_not_syntax` (`del ../../etc/passwd` fails as not found in the working folder; no traversal is interpreted) | covered |
+| 37.1 repeated execution, cancellation | every plan is a fresh identity check; dialog Cancel paths in the terminal are exercised by hand (entries IMP-03.03, IMP-06.04) | partly manual |
+| 37.2 authorization accepted, denied, cancelled, stale target after authorization, privilege boundary after completion | `tests/integration/test_authorization_vm.py` (granted, dismissed, Test B), `test_services_vm.py` (denied without an agent, stale unit), euid checked after grant | covered; dismissed reports as denied on systemd 255 |
+| 37.2 expired, helper missing, caller mismatch, replayed request | no privileged helper exists (docs/PRIVILEGE-MODEL.md); polkit's own cache and caller binding are Linux's, not reimplemented | not applicable / not testable from the product |
+| 37.3 symlink escape, mount boundary | not covered: file operations act on the path given and never recurse; a symlink is trashed as a link. Add when a recursive operation exists | gap (bounded) |
+| 37.3 disappearing target, read-only filesystem, full disk, permission loss, interrupted atomic write | `test_file_operations.py::test_identity_change_between_plan_and_execute_cancels`, `tests/integration/test_persistence_faults_vm.py` (loopback ext4: disk full, read-only, permission loss, kill mid-write) | covered |
+| 37.3 hostile filenames | `test_file_operations.py::test_hostile_filenames_are_data_not_syntax` | covered |
+| 37.4 PID reuse, exits before action, same-user, other-user, protected, TERM timeout, KILL escalation | `tests/integration/test_terminate_vm.py`, `tests/unit/test_processes.py` | covered |
+| 37.5 service absent, auth denied, state changes during preview, restart fails after stop, enable versus start | `tests/integration/test_services_vm.py`, `test_authorization_vm.py`; the PARTIAL result shape is unit-level (`tests/unit/test_operations.py::test_partial_result_must_enumerate`); restart-fails-after-stop is not provoked live | covered except live PARTIAL |
+| 37.5 masked, failed, dependency failure | listing shows masked and failed units; mutation on them refused (static/masked enable UNSUPPORTED). Dependency failure not provoked | partly |
+| 37.6 packages | no package mutation exists (IMP-06.06 not started); read-only provenance only | not applicable yet |
+| 37.7 hostile ANSI, HTML/script-like content, binary content, malformed timestamps, restricted journal | `trier_bridge/system/journal.py` strips escapes and control characters (`tests/unit/test_journal.py::test_sanitize_strips_ansi_and_control_but_keeps_text`); Event Viewer renders text only; restricted journal reported as such (entry IMP-04.03) | covered |
+| 37.7 huge logs | bounded reads (entry IMP-04.03) | covered |
+| 37.8 network | read-only network view only; no network mutation exists (IMP-06.06) | not applicable yet |
+| Test A (Windows knowledge without root) | `test_bridge_vm.py::test_north_star_a_windows_commands_without_root` | covered |
+| Test B (explicit elevation for one service) | `test_authorization_vm.py::test_security_test_b_sc_stop_asks_linux_for_this_one_action` | covered |
+| Test C (injection rejection) | `test_bridge_vm.py::test_north_star_c_injection_is_rejected_and_nothing_runs` | covered |
+| Test D (stale target) | `test_terminate_vm.py::test_stale_identity_cancels_instead_of_killing_a_replacement` | covered |
+
+Every future mutation adds its rows here before its ledger item closes.

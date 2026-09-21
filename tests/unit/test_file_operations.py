@@ -95,3 +95,20 @@ def test_bridge_commands_plan_but_do_not_act(tmp_path: Path) -> None:
     assert out.exit is Exit.FAILED and "cannot find" in out.lines[0]
     out = run_line("copy a.txt /tmp", session)  # a Linux path is an argument, not a switch
     assert out.exit is Exit.NEEDS_CONFIRMATION
+
+
+def test_hostile_filenames_are_data_not_syntax(tmp_path: Path) -> None:
+    """SECURITY 37.3: names with spaces, quotes, dashes, unicode, and shell characters are
+    plain data through the typed path; the terminal refuses shell characters whole."""
+    names = ["with space.txt", "-leading-dash.txt", "quote'mark.txt", "über straße.txt", "a;b.txt"]
+    journal = OperationJournal(tmp_path / "j")
+    for n in names:
+        (tmp_path / n).write_text("x", encoding="utf-8")
+        res = execute_file(_plan("copy", n, n + ".copy", tmp_path), journal)
+        assert res.state is OperationState.VERIFIED, (n, res)
+        assert (tmp_path / (n + ".copy")).read_text(encoding="utf-8") == "x"
+    session = Session(tmp_path)
+    assert run_line('copy "with space.txt" spaced.txt', session).exit is Exit.NEEDS_CONFIRMATION
+    assert run_line("copy a;b.txt c.txt", session).exit is Exit.PARSE_ERROR  # ; is shell syntax
+    assert run_line("del ../../etc/passwd", session).exit is Exit.FAILED  # not found here
+    assert journal.unresolved() == []

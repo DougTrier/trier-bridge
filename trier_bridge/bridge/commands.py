@@ -352,6 +352,8 @@ def cmd_sc(cmd: BridgeCommand, session: Session) -> CommandOutput:
     from ..system.services import Scope, list_services, read_unit
 
     verb = cmd.args[0].lower()
+    if verb in ("start", "stop", "restart", "enable", "disable"):
+        return _sc_mutation(verb, cmd)
     if verb != "query":
         return CommandOutput(
             Exit.UNSUPPORTED,
@@ -387,6 +389,42 @@ def cmd_sc(cmd: BridgeCommand, session: Session) -> CommandOutput:
         lines.append(f"SERVICE_NAME: {s.identity.name}")
         lines.append(f"        STATE: {s.plain_running:<10} START: {s.plain_startup}")
     return _bounded(lines, "systemctl list-units --type=service")
+
+
+def _sc_mutation(verb: str, cmd: BridgeCommand) -> CommandOutput:
+    """sc stop <name> and friends: the same typed ServicePlan as the Services page,
+    confirmed in the UI; system scope asks Linux (polkit) for this one action only."""
+    from ..operations.service import ServicePlan, plan_service
+    from ..system.services import Scope, read_unit
+
+    if len(cmd.args) < 2:
+        return CommandOutput(
+            Exit.PARSE_ERROR, (f"sc {verb} needs a service name.",), "systemctl", False
+        )
+    name = cmd.args[1] if cmd.args[1].endswith(".service") else cmd.args[1] + ".service"
+    info, err = read_unit(Scope.SYSTEM, name)
+    if info is None:
+        return CommandOutput(
+            Exit.FAILED,
+            (f"The specified service does not exist as an installed service: {name}",),
+            f"systemctl {verb} {name}",
+            False,
+        )
+    plan = plan_service(info, verb)
+    if not isinstance(plan, ServicePlan):
+        return CommandOutput(Exit.UNSUPPORTED, (plan.plain,), f"systemctl {verb}", False)
+    asks = (
+        " Linux will ask for administrator permission for this one action."
+        if plan.needs_admin
+        else ""
+    )
+    return CommandOutput(
+        Exit.NEEDS_CONFIRMATION,
+        (plan.preview + asks, "Confirm in the dialog to continue; nothing has happened yet."),
+        f"systemctl {verb} {name}",
+        False,
+        plan,
+    )
 
 
 def cmd_netstat(cmd: BridgeCommand, session: Session) -> CommandOutput:

@@ -37,6 +37,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..bridge.commands import CommandOutput, Exit, Session, is_sensitive, run_line  # noqa: E402
 from ..operations.files import FilePlan, execute_file  # noqa: E402
 from ..operations.process import TerminatePlan, execute_terminate  # noqa: E402
+from ..operations.service import VERB_TEXT, ServicePlan, execute_service  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
 
 log = logging.getLogger("trier_bridge.ui.terminal")
@@ -187,6 +188,8 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
             self._confirm(out.pending_operation)
         elif isinstance(out.pending_operation, FilePlan):
             self._confirm_file(out.pending_operation)
+        elif isinstance(out.pending_operation, ServicePlan):
+            self._confirm_service(out.pending_operation)
         return False
 
     def _confirm(self, plan: TerminatePlan) -> None:
@@ -213,6 +216,38 @@ class TerminalPage(Gtk.Box):  # type: ignore[misc]
         dialog.set_close_response("cancel")
         dialog.connect("response", self._on_confirm_file, plan)
         dialog.present(self.get_root())
+
+    def _confirm_service(self, plan: ServicePlan) -> None:
+        verb = VERB_TEXT[plan.verb][0]
+        dialog = Adw.AlertDialog(heading=f"{verb} {plan.service.identity.name}?", body=plan.preview)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("go", verb)
+        dialog.set_response_appearance(
+            "go",
+            (
+                Adw.ResponseAppearance.DESTRUCTIVE
+                if plan.verb in ("stop", "disable")
+                else Adw.ResponseAppearance.SUGGESTED
+            ),
+        )
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._on_confirm_service, plan)
+        dialog.present(self.get_root())
+
+    def _on_confirm_service(self, _d: Adw.AlertDialog, response: str, plan: ServicePlan) -> None:
+        if response != "go":
+            self._append(f"Cancelled. {plan.service.identity.name} was left as it is.\n\n")
+            return
+
+        def work() -> None:
+            result = execute_service(plan, self._journal)
+            GLib.idle_add(
+                self._append,
+                f"{result.plain} {result.three_answers()['Did anything change?']}\n\n",
+            )
+
+        threading.Thread(target=work, name="tb-service", daemon=True).start()
 
     def _on_confirm_file(self, _d: Adw.AlertDialog, response: str, plan: FilePlan) -> None:
         if response != "go":

@@ -132,3 +132,27 @@ def test_user_manager_reexec_between_read_and_execute(user_unit: str, tmp_path: 
     assert res.state is OperationState.VERIFIED, res
     after, _ = read_unit(Scope.USER, user_unit)
     assert after is not None and after.active_state in ("inactive", "deactivating")
+
+
+def test_security_test_b_sc_stop_asks_linux_for_this_one_action(
+    system_unit: str, tmp_path: Path
+) -> None:
+    """SECURITY Test B: `sc stop <service>` yields one explicit privilege request tied to that
+    service; granted through polkit, the stop is verified; the product never became root."""
+    from trier_bridge.bridge.commands import Exit, Session, run_line
+
+    password = os.environ.get("TRIER_BRIDGE_TEST_PASSWORD", "")
+    if not password:
+        pytest.skip("TRIER_BRIDGE_TEST_PASSWORD not set; the grant path needs the account password")
+    out = run_line(f"sc stop {system_unit.removesuffix('.service')}", Session(tmp_path))
+    assert out.exit is Exit.NEEDS_CONFIRMATION and isinstance(out.pending_operation, ServicePlan)
+    plan = out.pending_operation
+    assert plan.needs_admin and plan.service.identity.name == system_unit
+    assert "administrator permission" in out.lines[0]
+    still, _ = read_unit(Scope.SYSTEM, system_unit)
+    assert still is not None and still.active_state == "active"  # nothing happened yet
+    with PolkitTestAgent("grant", password) as agent:
+        res = execute_service(plan, OperationJournal(tmp_path / "j"))
+    assert agent.prompts == ["org.freedesktop.systemd1.manage-units"]
+    assert res.state is OperationState.VERIFIED, res
+    assert os.geteuid() != 0

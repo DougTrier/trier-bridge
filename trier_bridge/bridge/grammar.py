@@ -146,12 +146,12 @@ COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec(
         "sc",
         (),
-        PrivilegeClass.A_READ_ONLY,
+        PrivilegeClass.C_ADMIN_MUTATION,
         (),
         2,
         min_args=1,
         linux="systemctl",
-        summary="sc query [name]: show services (query only in this build).",
+        summary="sc query [name] shows services; sc start|stop|restart|enable|disable <name> asks.",
     ),
     CommandSpec(
         "dir",
