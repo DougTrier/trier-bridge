@@ -435,6 +435,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the Set flow was not driven through the dialog over AT-SPI (drop-down selection is not exposed as an action; the same plan/execute path is covered by the unit test); the stale-default cancel path is untested where fewer than three programs exist; uninstalling programs (the other half of IMP-03.05) is a package mutation and stays with IMP-06.06.
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED (controls) on Ubuntu 24.04.5
 
+### IMP-06.08 — Security and failure regression set (with SECURITY Test B live)
+
+- **Timestamp:** 2026-09-21 08:45 AM CDT
+- **Candidate revision:** fe28c25
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); host `.venv` for the platform-independent part
+- **Files/modules:** `docs/TEST-STRATEGY.md` section 7 (the mapping), `trier_bridge/bridge/commands.py` (`sc start|stop|restart|enable|disable` through the terminal), `trier_bridge/ui/terminal.py` (service confirmation dialog), `tests/integration/test_authorization_vm.py` (Test B), `tests/unit/test_file_operations.py` (hostile filenames)
+- **Invariant impact:** TB-SEC-001..030 as mapped in the table; TB-INV-094/104 (`sc stop` in the terminal is the same ServicePlan as the Services page, confirmed the same way), TB-INV-109/110 (Test B: one polkit request for one unit, product euid unchanged), TB-INV-089/119 (hostile filenames are data)
+- **Expected result:** SECURITY section 37 and Tests A–D each map to an automated test or an honest gap; the whole suite passes on host and VM; Test B passes end to end from the typed command through polkit.
+- **Observed result:** host `tools/dev.py all` clean, 99 unit passed (5 skipped without gi or POSIX bits); VM `tools/dev.py all` clean, 115 unit passed (1 skipped: fewer than three programs for any common type); integration 42 passed, 1 skipped (console-only desktop test over SSH). Test B: `sc stop tb-test-system` returned NEEDS_CONFIRMATION with a ServicePlan naming that unit and "Linux will ask for administrator permission for this one action"; the unit was still active before confirmation; executing with the real polkit agent produced exactly one `manage-units` prompt and a VERIFIED stop; euid stayed 1000. Hostile filenames (space, leading dash, apostrophe, umlauts and ß, semicolon) copied VERIFIED through the typed path; the terminal refused the semicolon line whole; `del ../../etc/passwd` failed as not found in the working folder.
+- **Tests/checks:** as listed in `docs/TEST-STRATEGY.md` section 7.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** gaps stay listed in the table: symlink escape and mount boundary (no recursive operation exists yet), dependency failure and live PARTIAL restart, packages and network (no mutation exists), expiry/replay (polkit's own), keyboard-driven Cancel paths exercised by hand only.
+- **Evidence state:** INTEGRATION_VERIFIED on Ubuntu 24.04.5; gaps recorded
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

@@ -103,3 +103,9 @@ Run on the real VM, no synthetic fixtures:
 ## 7. Inputs to stack selection
 
 The chosen stack must have a mature D-Bus client that supports proxies, properties, signals, and the polkit interaction flag on the system bus, and must be able to read `/proc` without shelling out. Every candidate under consideration meets this through GLib/GDBus bindings (Python via `python3-gi`, which is preinstalled) or a native library (for example `zbus` in Rust).
+
+## 8. What is implemented (2026-09-21)
+
+The schema of privileged operations is finite and small. Every operation is an `Operation` with a `kind` drawn from a fixed vocabulary (`trier_bridge/core/operations.py`); the only kinds that can require privilege are `service.start`, `service.stop`, `service.restart`, `service.enable`, and `service.disable`, each on one named systemd unit identified by name, object path, and fragment path. They are executed by one method call on `org.freedesktop.systemd1` over the system bus with `ALLOW_INTERACTIVE_AUTHORIZATION`. polkit decides per call and binds any grant to the calling process, its session, and the `org.freedesktop.systemd1.manage-units` action. Trier Bridge never holds a credential, never caches an authorization, never runs a helper, never calls `sudo`, and never runs a shell. The same plan is used whether the request came from the Services page or from `sc stop <name>` in the Bridge Terminal, and it is shown to the user and confirmed before the call is made (TB-INV-094, TB-INV-104, TB-INV-109, TB-INV-110).
+
+Every other mutation (end task, file operations, default apps, integrations) is class B: it changes only what the signed-in user already owns, needs no privilege, and is confirmed and journaled the same way. Evidence: `docs/VALIDATION.md` entries IMP-06.04, IMP-06.05, IMP-06.07, IMP-06.08.

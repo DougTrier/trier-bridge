@@ -18,7 +18,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-06.08 — security/failure regression set assembled from the verified tests |
+| **Active task** | Foundation 08 qualification: upgrade path, performance and resource measurement, clean build |
 | **Last completed** | SCOPE-14: setup screen, Integrations page, tray icon T, search provider, Files extension, shortcut; all verified live from the installed .deb (2026-09-21 03:55 AM CDT) |
 | **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only; integrations shipped and reversible (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
@@ -26,7 +26,7 @@ Documentation completion does not imply implementation, qualification, or releas
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, observed 78.5 of 85, candidate 078048d, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-06.08 regression set → IMP-06.01/02 schema and binding write-ups → IMP-08 qualification (upgrade path, clean build, acceptance cases) |
+| **Next bounded step** | IMP-08.02 upgrade dev0 → dev1 in the VM → IMP-08.08 startup/idle/memory measurements → IMP-08.01 clean-chroot build → acceptance cases (need a person) |
 
 ---
 
@@ -208,15 +208,15 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Foundation 06 — Privilege and typed system mutation
 
-- [ ] **IMP-06.01** Implement finite privileged-operation schema; no generic root execution.
-- [ ] **IMP-06.02** Implement explicit authorization binding to current user intent.
+- [x] **IMP-06.01** Implement finite privileged-operation schema; no generic root execution. Evidence: `docs/PRIVILEGE-MODEL.md` section 8 (the implemented schema: the only privileged kinds are `service.start|stop|restart|enable|disable` on a named unit through systemd's D-Bus API under polkit; `Operation.kind` is validated against a fixed vocabulary, `tests/unit/test_operations.py::test_kind_vocabulary_is_validated`; no helper, no sudo, no shell anywhere in the product).
+- [x] **IMP-06.02** Implement explicit authorization binding to current user intent. Evidence: `docs/PRIVILEGE-MODEL.md` section 8 (plan → preview → the user's confirmation → one D-Bus call with ALLOW_INTERACTIVE_AUTHORIZATION → polkit binds the grant to this process, this session, this action; nothing is cached by the product; entries IMP-06.05, IMP-06.07, IMP-06.08).
 - [x] **IMP-06.03** Implement stable target identity and revalidation. Evidence: `docs/VALIDATION.md` entry IMP-06.04 (PID+start revalidation; stale target cancels); other target kinds as their operations land.
 - [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
 - [x] **IMP-06.05** Implement selected service control. Evidence: `docs/VALIDATION.md` entry IMP-06.05.
 - [ ] **IMP-06.06** Implement selected network/package mutations only if separately qualified.
 - [x] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior. Evidence: `docs/VALIDATION.md` entries IMP-06.04/06.05 (stale target, denial without an agent) and IMP-06.07 (granted and dismissed prompts through a real polkit agent, user-manager re-exec). Limitation recorded: systemd 255 reports a dismissed prompt as access denied; expiry is polkit's cache and not exercised.
   - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
-- [ ] **IMP-06.08** Run security/failure regression set.
+- [x] **IMP-06.08** Run security/failure regression set. Evidence: `docs/TEST-STRATEGY.md` section 7 (mapping of SECURITY section 37 and Tests A–D to tests, gaps named) and `docs/VALIDATION.md` entry IMP-06.08 (Test B live through the terminal and polkit).
 
 ---
 
