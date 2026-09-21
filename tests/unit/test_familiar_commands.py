@@ -31,7 +31,7 @@ def test_windows_tool_names_open_our_pages(tmp_path: Path) -> None:
     # no application object exists under pytest, so the command says where the page lives
     out = run_line("devmgmt.msc", s)
     assert out.exit is Exit.FAILED and out.lines[0].startswith("Device Manager is a page")
-    assert out.linux == "trier-bridge --section devices"
+    assert out.linux_equivalent == "trier-bridge --section devices"
     out = run_line("start eventvwr", s)
     assert out.exit is Exit.FAILED and "Event Viewer" in out.lines[0]
 
