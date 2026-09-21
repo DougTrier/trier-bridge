@@ -5,6 +5,6 @@ Comment=Everything you know. Linux underneath.
 Exec=trier-bridge
 Icon=org.triertech.TrierBridge
 Terminal=false
-Categories=System;Settings;Utility;
+Categories=System;
 Keywords=Windows;Task Manager;Control Panel;Add or Remove Programs;Device Manager;Event Viewer;Disk Management;Services;Command Prompt;
 StartupNotify=true
