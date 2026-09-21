@@ -222,6 +222,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-05.04** Implement atomic configuration writes. Evidence: `docs/VALIDATION.md` entry IMP-01 (config.py) and IMP-05 fault tests.
 - [x] **IMP-05.05** Implement recovery records/retention. Evidence: `docs/VALIDATION.md` entry IMP-05 (unresolved never pruned).
 - [x] **IMP-05.06** Run disk-full/read-only/permission-loss/process-kill/stale-revision tests. Evidence: `docs/VALIDATION.md` entry IMP-05 (loopback ext4 image); stale-revision covered by schema tests; two concurrent instances still open.
+  - 2026-09-21 03:00 PM CDT: two concurrent instances (TB-INV-063) closed. A second launch while the first held the single-instance name exited cleanly with no lingering process, and the first instance's page switched to match the second launch's requested section — the hand-off works. Suspend/resume remains open (needs hardware or an owner-triggered VM suspend).
 
 ---
 
