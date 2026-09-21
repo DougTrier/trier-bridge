@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-03 — Foundation 03: everyday Windows-continuity experience (launcher/search/settings routes, files entry points) |
+| **Active task** | IMP-04 — Foundation 04: read-only familiar system tools (Task Manager observation first) |
 | **Last completed** | Live research R2/R17/R18 in the VM and stack proposal `docs/STACK-SELECTION.md` (2026-09-21 12:05 AM CDT) |
-| **Implementation** | Foundations 01 and 02 complete with evidence (2026-09-21); Foundation 03 starting |
+| **Implementation** | Foundations 01, 02 complete; Foundation 03 read-only slice complete (2026-09-21); Foundation 04 starting |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | Concept catalog data (SCOPE-07 seed) → IMP-03.01 familiar routes → IMP-03.02 files entry points → IMP-03.05 installed apps (read-only) |
+| **Next bounded step** | IMP-04.01 Task Manager observation (procfs, adaptive sampling) → IMP-04.03 Event Viewer over the journal → IMP-04.06 Network inventory |
 
 ---
 
@@ -169,14 +169,16 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 
 # Foundation 03 — Everyday Windows-continuity experience
 
-- [ ] **IMP-03.01** Familiar launcher/search/settings routes.
-- [ ] **IMP-03.02** Files/Documents/Downloads/Desktop/removable/network-location experience.
+- [x] **IMP-03.01** Familiar launcher/search/settings routes. Evidence: concept catalog + Home search + Settings routing, `docs/VALIDATION.md` entry IMP-03.
+- [x] **IMP-03.02** Files/Documents/Downloads/Desktop/removable/network-location experience. Evidence: Files page with real paths, FileManager1 launch verified live (entry IMP-03). Deeper file behaviors stay native (Nautilus).
 - [ ] **IMP-03.03** Right-click/copy/move/paste/rename/delete/properties behavior.
 - [ ] **IMP-03.04** Drag-and-drop behavior.
 - [ ] **IMP-03.05** Installed apps/default apps.
-- [ ] **IMP-03.06** Printer/device entry points.
-- [ ] **IMP-03.07** Wi-Fi/network entry points.
+  - 2026-09-21: read-only half done (inventory with provenance, defaults read; entry IMP-03). Uninstall and default changes are mutations and wait for Foundation 06.
+- [x] **IMP-03.06** Printer/device entry points. Evidence: Printers page routes to the GNOME Settings printers panel; Bluetooth/devices via catalog (entry IMP-03). Live status is Foundation 04.
+- [x] **IMP-03.07** Wi-Fi/network entry points. Evidence: Network page routes to wifi/network panels (entry IMP-03).
 - [ ] **IMP-03.08** Screenshot/clipboard/common shortcut support.
+  - 2026-09-21: teaching entries in the catalog (Print Screen, clipboard differences); keyboard shortcut integration waits for the setup screen (SCOPE-14).
 - [ ] **IMP-03.09** Everyday office-user interaction tests.
 
 ---

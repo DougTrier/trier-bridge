@@ -253,6 +253,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** one environment only; IMP-02.07 (generic fallback on other environments) has unit evidence for the unknown-distro path on real file text but no second live environment yet; `desktop` is taken from the session environment variable, so it reads Unknown over SSH by design.
 - **Evidence state:** INTEGRATION_VERIFIED and DISTRO_VERIFIED (Ubuntu 24.04.5 profile); IMP-02.07 NOT_RUN elsewhere
 
+### IMP-03 — Foundation 03: everyday continuity, first slice (read-only)
+
+- **Timestamp:** 2026-09-21 02:40 AM CDT
+- **Candidate revision:** f9299ac
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); checks over SSH; page runs and the launch test in the console Wayland session bus
+- **Files/modules:** `data/catalog/concepts.json`, `trier_bridge/catalog/`, `trier_bridge/desktop/launch.py`, `trier_bridge/apps/`, `trier_bridge/resources.py`, `trier_bridge/ui/pages.py`, `tests/unit/test_catalog.py`, `test_provenance.py`, `test_resources.py`, `tests/integration/test_desktop_vm.py`
+- **Invariant impact:** TB-INV-003, 065, 105 (catalog: 39 concepts, every non-exact mapping carries a note, no-equivalent concepts cannot open); TB-INV-072, 024 (installed apps keep provenance by real entry path); TB-INV-073 (real Linux paths shown under familiar names); TB-INV-074 (only openable actions get an Open button); TB-INV-078, 192 (every result plain, failures say nothing was changed); TB-INV-010 (desktop tools opened, never replaced)
+- **Expected result:** Windows terms resolve to the right route; folders open in Files through FileManager1; Settings panels open through org.gnome.Settings actions; installed apps list snap and system entries with correct provenance; no markup or crash on any page.
+- **Observed result:** catalog search: "add remove" → Installed Apps, "control panel" → Settings, "recycle" → Recycle Bin, "ipconfig" → Network Connections, "regedit" → Registry Editor (no equivalent, cannot open), "wifi" → Network Connections and Wi-Fi settings. Inventory: 47 apps (41 system, 5 snap: App Center, Firefox, Firmware Updater, PowerShell, Thunderbird; 1 user). Defaults read: PDF → Document Viewer, http → nothing set (reported as empty, not guessed). Integration: 11 passed, including `test_launcher_opens_the_downloads_folder_in_files` (FileManager1.ShowFolders returned without error in the session). Home, Apps, Settings pages ran with 0 markup errors and 0 tracebacks; Home snapshot reviewed. Unit: 53 passed on host and VM.
+- **Tests/checks:** `python3 tools/dev.py all`; `pytest tests/integration -m integration` in the session; AT-SPI walk (search entry exposed with its label).
+- **Artifacts/logs:** `tb-shot3.png` (scratchpad); session transcript.
+- **Failures/limitations:** two defects found and fixed during the run (snap entries invisible to `Gio.AppInfo.get_all` outside a graphical session; Adw rows parsed `&` as markup). Not yet: right-click integration (needs the Nautilus extension and the setup screen, SCOPE-14), uninstall and default-app changes (mutations, Foundation 06), printer/network live status (Foundation 04), office-user acceptance (IMP-03.09, needs a person at the console).
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED for the read-only slice on Ubuntu 24.04.5 GNOME Wayland
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
