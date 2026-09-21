@@ -31,6 +31,8 @@ Not bundled, only invoked if installed: `pwsh` (PowerShell snap 7.6.5 observed).
 | mypy | `python3-mypy` | 1.9.0-4ubuntu1 | `--strict` type checking of `trier_bridge` |
 | black | `black` | 24.2.0-1ubuntu1 | formatting, line length 100 |
 | flake8 | `python3-flake8` | 7.0.0-1 | lint (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0) |
+| flake8-cognitive-complexity | `python3-flake8-cognitive-complexity` | 0.1.0-3 | cognitive-complexity outliers (`CCR001`, threshold 15), reported by `tools/dev.py complexity` (added 2026-09-21, CQ-02) |
+| bandit | `python3-bandit` | 1.6.2-3 | security analyzer over `trier_bridge` (`tools/dev.py security`, any finding fails; added 2026-09-21, CQ-04) |
 | debhelper | `debhelper` | 13.14.1ubuntu5 | `.deb` build |
 | Python build dependency | `python3-all` | 3.12.3-0ubuntu2.1 | required by `Build-Depends` |
 | dh-python | `dh-python` | 6.20240401 | Python packaging helper |
@@ -41,13 +43,13 @@ Not bundled, only invoked if installed: `pwsh` (PowerShell snap 7.6.5 observed).
 | lintian | `lintian` | 2.117.0ubuntu1.5 | package policy checks |
 | gettext | `gettext` | 0.21-14ubuntu2 | localization pipeline (later) |
 
-Host mirror (Windows, `.venv`, gitignored): `black==24.2.0`, `mypy==1.9.0`, `pytest==7.4.4`, `flake8==7.0.0`. The host runs only pure-logic unit tests and static checks; GTK and D-Bus code runs in the VM.
+Host mirror (Windows, `.venv`, gitignored): `black==24.2.0`, `mypy==1.9.0`, `pytest==7.4.4`, `flake8==7.0.0`, `flake8-cognitive-complexity==0.1.0`, `bandit==1.6.2`. The host runs only pure-logic unit tests and static checks; GTK and D-Bus code runs in the VM.
 
 ## 3. Configuration files
 
 - `pyproject.toml`: project metadata, black, mypy (strict), pytest.
 - `.flake8`: lint settings (flake8 does not read `pyproject.toml`).
-- `tools/dev.py`: the single entry point (`format`, `lint`, `typecheck`, `test`, `headers`, `inventory`, `size`, `all`).
+- `tools/dev.py`: the single entry point (`format`, `lint`, `typecheck`, `security`, `complexity`, `test`, `headers`, `inventory`, `size`, `all`).
 - `tools/tb.py headers`: Apache header compliance for every source file.
 
 ## 4. Reproducibility contract (IMP-01.06)

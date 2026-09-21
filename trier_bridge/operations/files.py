@@ -237,7 +237,8 @@ def plan_file(verb: str, source: str, dest: str | None, cwd: Path) -> FilePlan |
         return _plan_rmdir(src, identity)
     if verb == "trash":
         return _plan_trash(src, identity)
-    assert dest is not None
+    if dest is None:  # already refused above; explicit so no assert is needed at runtime
+        raise ValueError(f"{verb} needs a destination")
     return _plan_transfer(verb, src, identity, _target_for(verb, src, dest, cwd))
 
 
@@ -258,11 +259,14 @@ def _classify(exc: GLib.Error) -> tuple[OperationState, str]:
 
 def _verify(plan: FilePlan) -> bool:
     if plan.verb == "copy":
-        assert plan.dest is not None
-        return plan.dest.exists() and plan.source.exists()
+        return plan.dest is not None and plan.dest.exists() and plan.source.exists()
     if plan.verb in ("move", "rename"):
-        assert plan.dest is not None
-        return plan.dest.exists() and not plan.source.exists() and not plan.source.is_symlink()
+        return (
+            plan.dest is not None
+            and plan.dest.exists()
+            and not plan.source.exists()
+            and not plan.source.is_symlink()
+        )
     if plan.verb == "trash":
         return not plan.source.exists() and not plan.source.is_symlink()
     if plan.verb == "mkdir":

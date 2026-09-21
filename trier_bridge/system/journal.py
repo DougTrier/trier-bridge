@@ -218,7 +218,8 @@ class JournalReader:
     def _field(self, j: ctypes.c_void_p, name: str) -> str | None:
         data = ctypes.c_void_p()
         length = ctypes.c_size_t()
-        assert self._lib is not None
+        if self._lib is None:
+            return None
         rc = self._lib.sd_journal_get_data(
             j, name.encode(), ctypes.byref(data), ctypes.byref(length)
         )

@@ -73,6 +73,44 @@ def cmd_test(args: argparse.Namespace) -> int:
     )
 
 
+def _module_present(name: str) -> bool:
+    probe = subprocess.run([PY, "-c", f"import {name}"], cwd=ROOT, capture_output=True)
+    return probe.returncode == 0
+
+
+def cmd_complexity(args: argparse.Namespace) -> int:
+    """Cyclomatic (mccabe) and cognitive (flake8-cognitive-complexity) outliers, reported.
+    Reporting only: every outlier is dispositioned in CODE-QUALITY-REPORT.md."""
+    if not _module_present("cognitive_complexity"):
+        print("== complexity: flake8-cognitive-complexity not installed (docs/TOOLCHAIN.md)")
+        return 1
+    argv = [
+        PY,
+        "-m",
+        "flake8",
+        "--isolated",  # the lint config ignores CCR001; this step is the one that reports it
+        "--select=C901,CCR001",
+        "--max-complexity=10",
+        "--max-cognitive-complexity=15",
+        "trier_bridge",
+    ]
+    print("== complexity: " + " ".join(argv[1:]))
+    proc = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True)
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    cyclo = sum(1 for ln in lines if " C901 " in ln)
+    cog = sum(1 for ln in lines if " CCR001 " in ln)
+    print(f"-- complexity: {cyclo} above cyclomatic 10, {cog} above cognitive 15 (reported)")
+    return 0
+
+
+def cmd_security(args: argparse.Namespace) -> int:
+    """bandit over the product; any finding fails (dispositions live in the report)."""
+    if not _module_present("bandit"):
+        print("== security: bandit not installed (docs/TOOLCHAIN.md)")
+        return 1
+    return run([PY, "-m", "bandit", "-q", "-r", "trier_bridge"], "bandit")
+
+
 def cmd_headers(args: argparse.Namespace) -> int:
     return run([PY, str(ROOT / "tools" / "tb.py"), "headers"], "headers")
 
@@ -127,7 +165,15 @@ def cmd_size(args: argparse.Namespace) -> int:
 
 def cmd_all(args: argparse.Namespace) -> int:
     rc = 0
-    for fn in (cmd_format, cmd_lint, cmd_typecheck, cmd_test, cmd_headers):
+    for fn in (
+        cmd_format,
+        cmd_lint,
+        cmd_typecheck,
+        cmd_security,
+        cmd_complexity,
+        cmd_test,
+        cmd_headers,
+    ):
         rc = max(rc, fn(args))
     print(f"== all: {'clean' if rc == 0 else 'findings'}")
     return rc
@@ -146,6 +192,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("test")
     p.add_argument("--integration", action="store_true")
     p.set_defaults(fn=cmd_test)
+    sub.add_parser("security").set_defaults(fn=cmd_security)
+    sub.add_parser("complexity").set_defaults(fn=cmd_complexity)
     sub.add_parser("headers").set_defaults(fn=cmd_headers)
     sub.add_parser("inventory").set_defaults(fn=cmd_inventory)
     sub.add_parser("size").set_defaults(fn=cmd_size)
