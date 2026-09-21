@@ -71,7 +71,7 @@ def test_taskkill_returns_a_plan_and_does_not_kill_by_itself() -> None:
             out.pending_operation, TerminatePlan
         )
         assert not out.performed and child.poll() is None  # still running: no confirmation yet
-        bad = run_line("taskkill /IM sleep", Session())  # unknown switch: parse error, nothing runs
+        bad = run_line("taskkill /XX sleep", Session())  # unknown switch: parse error, nothing runs
         assert bad.exit is Exit.PARSE_ERROR and not bad.performed and child.poll() is None
         one = run_line("taskkill /PID 1", Session())
         assert one.exit is Exit.UNSUPPORTED and "core system process" in one.lines[0]
