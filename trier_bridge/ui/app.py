@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from typing import Any
 
 import gi
@@ -173,6 +174,14 @@ def run(
     argv: list[str], paths: Paths, journal: OperationJournal, options: dict[str, str] | None = None
 ) -> int:
     opts = options or {}
+    if not Gtk.init_check():  # no display: say so plainly instead of a traceback in a callback
+        log.error("no display could be opened")
+        print(
+            "Trier Bridge needs a desktop session to show its window (no display could be "
+            "opened). Nothing was changed.",
+            file=sys.stderr,
+        )
+        return 2
     app = TrierBridgeApplication(paths, journal, opts)
     app.register(None)
     if app.get_is_remote():

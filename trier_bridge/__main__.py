@@ -62,8 +62,15 @@ def main(argv: list[str] | None = None) -> int:
     journal.prune()
     try:
         from .ui.app import run
-    except ImportError as exc:  # PyGObject / GTK 4 / libadwaita missing on this machine
+    except (ImportError, RuntimeError) as exc:  # libraries missing, or GTK found no display
         log.error("desktop libraries unavailable: %s", exc)
+        if isinstance(exc, RuntimeError):
+            print(
+                "Trier Bridge needs a desktop session to show its window (no display could "
+                "be opened). Nothing was changed.",
+                file=sys.stderr,
+            )
+            return 2
         print(
             "Trier Bridge needs python3-gi, GTK 4, and libadwaita, which are part of Ubuntu "
             "Desktop 24.04. Nothing was changed.",

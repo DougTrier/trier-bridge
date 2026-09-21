@@ -20,6 +20,8 @@ carries an accessible label and description (TB-INV-209).
 """
 from __future__ import annotations
 
+import logging
+
 from pathlib import Path
 
 from dataclasses import dataclass
@@ -49,6 +51,9 @@ from .network import NetworkPage  # noqa: E402
 from .services import ServicesPage  # noqa: E402
 from .taskmanager import TaskManagerPage  # noqa: E402
 from .terminal import TerminalPage  # noqa: E402
+
+
+log = logging.getLogger("trier_bridge.ui.window")
 
 
 @dataclass(frozen=True)
@@ -222,6 +227,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             "It is not certain whether it took effect; check the current state before repeating it."
         )
         self._review_banner.set_revealed(True)
+        log.info("review banner shown for %d interrupted operation(s)", len(records))
 
     # ---- sidebar ------------------------------------------------------------
     def _build_sidebar(self) -> Adw.NavigationPage:
@@ -306,6 +312,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         for rec in self._review_records:
             journal.resolve(rec, "reviewed by the user in the window")
         count = len(self._review_records)
+        log.info("%d interrupted operation(s) marked reviewed", count)
         self.show_unresolved(journal.unresolved())
         self.notify(f"{count} interrupted action{'s' if count != 1 else ''} marked as reviewed.")
 
