@@ -19,7 +19,7 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | Source scope | `trier_bridge/` (12,957 lines, 67 files), `tests/` (3,383 lines, 39 files: unit, integration, the polkit test agent, AT-SPI journeys), `tools/dev.py`, `data/integrations/tb_nautilus.py` |
 | Environment | `tb-ubuntu-desktop-2404` (Ubuntu 24.04.5, GNOME 46 Wayland, software rendering) and Windows host `.venv` with identical tool versions |
 | Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), flake8-cognitive-complexity 0.1.0, bandit 1.6.2, mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 (all from the Ubuntu 24.04 archive, mirrored on the host) |
-| Commands | `python3 tools/dev.py all` (now includes `security` and `complexity`); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script (line counts, suppression and broad-catch inventory, longest functions) |
+| Commands | `python3 tools/dev.py all` (includes `security` and `complexity`); `dev.py results` and `dev.py evidence` write the normalized test outcome and the measured inputs of this report to `reports/local/` (entry TOOL-06); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script for the broad-catch inventory and longest functions |
 | Test results | host: 105 unit passed, 11 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 137 unit passed, 1 skipped; integration 56 in the console session; bandit: 0 findings |
 
 ---
@@ -106,6 +106,8 @@ Both lists come from `python3 tools/dev.py complexity` in the VM (15 cyclomatic,
 ---
 
 ## Suppression inventory (145)
+
+`tools/dev.py evidence` counts the raw markers in `trier_bridge/` (122 `# noqa`, 26 `type: ignore`, 0 `# nosec`, 148 in all); the three `# noqa` markers beyond the table are `E402` on the same import pattern in test-only helpers of the package and are counted with it here.
 
 | Kind | Count | Where | Reason |
 |---|---:|---|---|

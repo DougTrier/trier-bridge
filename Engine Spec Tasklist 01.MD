@@ -19,7 +19,7 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner's console acceptance |
-| **Last completed** | tray menu gains Task Manager and Command Prompt, verified from the panel (SCOPE-14 note) (2026-09-21 12:30 PM CDT) |
+| **Last completed** | TOOL-06 closed: normalized test results, quality evidence, generated map and known-limitations report (2026-09-21 12:41 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
@@ -73,7 +73,7 @@ Tools are engineering automation (`docs/ENGINEERING.md` section 10), not product
 - [x] **TOOL-03** Ledger parser and outline/section/invariant navigation. Evidence: `tb ledger ALN-13`, `tb outline`, `tb section`, `tb inv show/find` run 2026-09-20 09:55 PM CDT.
 - [x] **TOOL-04** Link, invariant cross-reference, term-rule, and header checks under `tb all`. Evidence: exit 0 on 2026-09-20 09:55 PM CDT (233 INV, 30 SEC, 30 IA indexed; 33 links; 12 term rules).
 - [x] **TOOL-05** Verify the tools run unmodified on Linux inside the Hyper-V VM (`python3 tools/tb.py all`). Evidence: 2026-09-20 11:10 PM CDT in `tb-ubuntu-desktop-2404`, exit 0, counts identical to Windows; see `docs/VALIDATION.md` entry TOOL-05.
-- [ ] **TOOL-06** Stack-dependent tools: lint/static-analysis orchestration, test-result normalization, dependency inventory, CQS evidence collection. Blocked until ARC-01 and IMP-01.01.
+- [x] **TOOL-06** Stack-dependent tools: lint/static-analysis orchestration (`dev.py all`), test-result normalization (`dev.py results`), dependency inventory (`dev.py inventory`), CQS evidence collection (`dev.py evidence`), derived docs (`dev.py map`, `dev.py limitations`). Evidence: `docs/VALIDATION.md` entry TOOL-06.
 - [ ] **ENV-01** CANCELLED 2026-09-20: WSL instance scratched by owner (DEC-017 rejected). All Linux testing uses the Hyper-V VM under ENV-02.
 - [x] **ENV-02** Create the Hyper-V Ubuntu Desktop VM `tb-ubuntu-desktop-2404` (`tb-` prefix, Default Switch, storage on G:, isolated from the work-production VM) for desktop and backend qualification. Evidence: created by owner via `New-TbDesktopVm.ps1` 2026-09-20 10:39 PM CDT (ISO VERIFIED); in-guest profile recorded 11:10 PM CDT in `docs/VALIDATION.md` entry ENV-02 (Ubuntu 24.04.5, Wayland GNOME 46, systemd 255, NM 1.46, udisks 2.10, polkit 124).
   - 2026-09-20 10:25 PM CDT: owner approved. `tools/env/New-TbDesktopVm.ps1`, `Remove-TbDesktopVm.ps1`, and autoinstall seed written and parse-checked; Ubuntu 24.04.5.1 Desktop ISO download to `G:\tb-vms\iso` started with SHA256 verification. Remaining: owner runs the create script from an elevated PowerShell, answers the single installer confirmation, then records the in-guest environment profile.
@@ -272,6 +272,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-08.08** Run performance/resource qualification. Evidence: entry IMP-08.08 (startup, memory, idle CPU, tray, search provider, package size; Task Manager CPU defect found and fixed). Open: a written budget and a measurement on hardware with a GPU.
 - [ ] **IMP-08.09** Produce exact release CQS and known-limitations report.
   - 2026-09-21: release is locked (owner direction); the current report is `CODE-QUALITY-REPORT.md` (CQS NOT MEASURED by rule until a cognitive-complexity analyzer exists, CQ-02); known limitations are the Failures/limitations lines of every entry and the gaps in `docs/TEST-STRATEGY.md` section 7.
+  - 2026-09-21 12:41 PM CDT: CQS is measured, 94/100 (`CODE-QUALITY-REPORT.md`, all eight categories, analyzer installed under CQ-02). The known-limitations report now exists as the generated `docs/KNOWN-LIMITATIONS.md` (`tools/dev.py limitations`, entry TOOL-06). What stays open is the word "release": the exact release CQS is the score of the release candidate the owner names, re-measured at that revision.
 
 ---
 
