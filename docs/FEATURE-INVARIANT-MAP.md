@@ -1,6 +1,6 @@
 # Feature to Invariant Map
 
-**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 04:48 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
+**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 05:32 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
 
 | Evidence entry | Feature | Invariants and security rules cited |
 |---|---|---|
@@ -37,5 +37,6 @@
 | IMP-07.13 | nslookup's resolver calls bounded by a wall-clock timeout (TB-INV-101) | TB-INV-041, TB-INV-101 |
 | TOOL-06 | Stack-dependent engineering tools: normalized test results, quality evidence, derived docs | TB-INV-004, TB-INV-109, TB-INV-110 |
 | TOOL-05 | Read-only tools run unmodified on Linux | none cited |
+| DOC-02.01 | In-app file browser, Phase 1: read-only data layer and browsing page | TB-INV-234, TB-INV-237, TB-INV-239, TB-INV-242, TB-INV-243, TB-INV-244 |
 
-101 distinct invariant and security IDs are cited by 33 entries.
+107 distinct invariant and security IDs are cited by 34 entries.
