@@ -4,7 +4,7 @@
 **Owner:** Doug Trier  
 **Project state:** FOUNDATIONS 01–07 CLOSED; FOUNDATION 08 AUTOMATED PARTS DONE; ACCEPTANCE CASES NEED THE OWNER  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
-**CQS:** 94 / 100 (measured 2026-09-21; release still locked)  
+**CQS:** 94 / 100 (all eight categories measured 2026-09-21, `CODE-QUALITY-REPORT.md`; release still locked)  
 
 ---
 

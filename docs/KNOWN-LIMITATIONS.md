@@ -1,6 +1,6 @@
 # Known Limitations
 
-**Generated from `VALIDATION.md` (the "Failures/limitations" and "Evidence state" lines of every evidence entry) by `tools/dev.py limitations`, 2026-09-21 12:37 PM Central Daylight Time.** This is the known-limitations report of IMP-08.09; the release CQS is in `CODE-QUALITY-REPORT.md`. Test gaps beyond these lines are listed in `TEST-STRATEGY.md` section 7 and the open accessibility criteria in `ACCESSIBILITY.md`. Derived, not edited by hand.
+**Generated from `VALIDATION.md` (the "Failures/limitations" and "Evidence state" lines of every evidence entry) by `tools/dev.py limitations`, 2026-09-21 12:42 PM CDT.** This is the known-limitations report of IMP-08.09; the release CQS is in `CODE-QUALITY-REPORT.md`. Test gaps beyond these lines are listed in `TEST-STRATEGY.md` section 7 and the open accessibility criteria in `ACCESSIBILITY.md`. Derived, not edited by hand.
 
 | Evidence entry | Feature | Evidence state | Failures and limitations |
 |---|---|---|---|
@@ -33,4 +33,5 @@
 | IMP-07.09 | explorer, start, net, date, time, taskkill /IM, and the teaching entries | INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5 | `start` knows six program names; anything else must be a path or address; `net start|stop` targets system services only (like `sc`); the Files window opened by `explorer` stays open after the test. |
 | IMP-07.10 | shutdown /s and /r through logind | UNIT_VERIFIED plus a live plan; execution NOT VERIFIED by design | the reboot and power-off calls are unverified by execution (running them would end the VM session and the owner's work); the delay waits inside the worker thread, so closing the window during the wait cancels nothing already promised, which the preview does not say yet. |
 | IMP-07.11 | findstr, find, where, set, path, tree, %VAR% expansion, exit | UNIT_VERIFIED on Ubuntu 24.04.5 (real files) | findstr takes plain text, not regular expressions; wildcards only in the file name part; tree stops at six levels or the output cap; `set X=Y` (assignment) is not offered, the Command Prompt session keeps no variables. |
+| TOOL-06 | Stack-dependent engineering tools: normalized test results, quality evidence, derived docs | TOOL_VERIFIED on Windows 11 and Ubuntu 24.04.5 | `evidence` counts raw suppression markers; the per-kind classification stays a reviewed table in `CODE-QUALITY-REPORT.md`. The CQS score itself is still assigned by review against `docs/CODE-QUALITY.md`; the tool collects the inputs, it does not score. |
 | TOOL-05 | Read-only tools run unmodified on Linux | DISTRO_VERIFIED | `tb.ps1` and `tb-env.ps1` not exercised in the guest (pwsh absent). No git repository in the guest copy, so `git:` reported none. |

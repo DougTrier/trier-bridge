@@ -198,7 +198,12 @@ def _revision() -> str:
 
 
 def _stamp() -> str:
-    return dt.datetime.now().astimezone().strftime("%Y-%m-%d %I:%M %p %Z")
+    """Local time with the CDT/CST label the documents use (Windows spells the zone out)."""
+    now = dt.datetime.now().astimezone()
+    zone = {-5: "CDT", -6: "CST"}.get(
+        int((now.utcoffset() or dt.timedelta()).total_seconds() // 3600)
+    )
+    return now.strftime("%Y-%m-%d %I:%M %p ") + (zone or now.strftime("%Z"))
 
 
 def _case_outcome(case: ET.Element) -> tuple[str, str]:

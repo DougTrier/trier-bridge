@@ -154,9 +154,9 @@
       {
         "id": "TB-TERM-003",
         "name": "numeric-cqs",
-        "pattern": "\\bCQS\\s*[:=]\\s*\\**\\s*\\d{1,3}\\b",
+        "pattern": "\\bCQS\\s*[:=]\\s*\\**\\s*\\d{1,3}\\b(?![^\\n]*all eight categories measured)",
         "severity": "error",
-        "message": "A numeric CQS may only appear when all eight categories have measured evidence (CODE-QUALITY.md section 1)"
+        "message": "A numeric CQS may only appear when all eight categories have measured evidence (CODE-QUALITY.md section 1); say so on the same line (all eight categories measured) and back it in CODE-QUALITY-REPORT.md"
       },
       {
         "id": "TB-TERM-004",
