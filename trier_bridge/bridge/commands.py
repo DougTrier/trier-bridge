@@ -559,55 +559,59 @@ def cmd_assoc(cmd: BridgeCommand, session: Session) -> CommandOutput:
     return CommandOutput(Exit.OK, tuple(lines), "xdg-mime query default", True)
 
 
+NETSH_HELP = (
+    "netsh here accepts: interface set interface <name> enable|disable; "
+    "interface ip set address <name> static <ip> <mask> [gateway] | dhcp; "
+    "interface ip set dns <name> static <ip> | dhcp."
+)
+
+
+def _netsh_interface(a: list[str]) -> tuple[str, str, dict[str, str]] | str:
+    """netsh interface set interface <name> enable|disable"""
+    name = a[3].split("=", 1)[-1]
+    state = a[4].lower()
+    if state in ("enable", "enabled"):
+        return name, "connect", {}
+    if state in ("disable", "disabled"):
+        return name, "disconnect", {}
+    return f"netsh: '{a[4]}' is not enable or disable."
+
+
+def _netsh_ip_address(name: str, rest: list[str]) -> tuple[str, str, dict[str, str]] | str:
+    """netsh interface ip set address <name> static <ip> <mask> [gateway] | dhcp"""
+    if rest and rest[0].lower() == "dhcp":
+        return name, "auto", {}
+    if len(rest) >= 3 and rest[0].lower() == "static":
+        gateway = rest[3] if len(rest) > 3 else ""
+        return name, "static", {"address": rest[1], "mask": rest[2], "gateway": gateway}
+    return "netsh: use 'static <ip> <mask> [gateway]' or 'dhcp' after the interface name."
+
+
+def _netsh_ip_dns(name: str, rest: list[str]) -> tuple[str, str, dict[str, str]] | str:
+    """netsh interface ip set dns <name> static <ip> [ip...] | dhcp"""
+    if rest and rest[0].lower() == "dhcp":
+        return name, "dns-auto", {}
+    if len(rest) >= 2 and rest[0].lower() == "static":
+        return name, "dns", {"dns": ",".join(rest[1:])}
+    return "netsh: use 'static <ip> [ip...]' or 'dhcp' after the interface name."
+
+
 def netsh_request(args: tuple[str, ...]) -> tuple[str, str, dict[str, str]] | str:
     """Parse the netsh forms this build accepts into (interface, verb, fields), or a plain
-    reason. Windows syntax: netsh interface set interface <name> enable|disable;
-    netsh interface ip set address <name> static <ip> <mask> [gateway] | dhcp;
-    netsh interface ip set dns <name> static <ip> | dhcp. name=\"x\" is accepted."""
+    reason. name="x" is accepted where Windows accepts it."""
     a = [x for x in args]
-    if (
-        len(a) >= 5
-        and a[0].lower() == "interface"
-        and a[1].lower() == "set"
-        and a[2].lower() == "interface"
-    ):
-        name = a[3].split("=", 1)[-1]
-        state = a[4].lower()
-        if state in ("enable", "enabled"):
-            return name, "connect", {}
-        if state in ("disable", "disabled"):
-            return name, "disconnect", {}
-        return f"netsh: '{a[4]}' is not enable or disable."
-    if len(a) >= 5 and [x.lower() for x in a[:3]] == ["interface", "ip", "set"]:
+    low = [x.lower() for x in a[:3]]
+    if len(a) >= 5 and low == ["interface", "set", "interface"]:
+        return _netsh_interface(a)
+    if len(a) >= 5 and low == ["interface", "ip", "set"]:
         what = a[3].lower()
         name = a[4].split("=", 1)[-1]
-        rest = a[5:]
         if what in ("address", "addr"):
-            if rest and rest[0].lower() == "dhcp":
-                return name, "auto", {}
-            if len(rest) >= 3 and rest[0].lower() == "static":
-                return (
-                    name,
-                    "static",
-                    {
-                        "address": rest[1],
-                        "mask": rest[2],
-                        "gateway": rest[3] if len(rest) > 3 else "",
-                    },
-                )
-            return "netsh: use 'static <ip> <mask> [gateway]' or 'dhcp' after the interface name."
+            return _netsh_ip_address(name, a[5:])
         if what in ("dns", "dnsservers"):
-            if rest and rest[0].lower() == "dhcp":
-                return name, "dns-auto", {}
-            if len(rest) >= 2 and rest[0].lower() == "static":
-                return name, "dns", {"dns": ",".join(rest[1:])}
-            return "netsh: use 'static <ip> [ip...]' or 'dhcp' after the interface name."
+            return _netsh_ip_dns(name, a[5:])
         return f"netsh: 'ip set {a[3]}' is not available here (address or dns)."
-    return (
-        "netsh here accepts: interface set interface <name> enable|disable; "
-        "interface ip set address <name> static <ip> <mask> [gateway] | dhcp; "
-        "interface ip set dns <name> static <ip> | dhcp."
-    )
+    return NETSH_HELP
 
 
 def cmd_netsh(cmd: BridgeCommand, session: Session) -> CommandOutput:

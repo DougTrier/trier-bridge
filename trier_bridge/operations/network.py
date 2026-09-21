@@ -500,77 +500,66 @@ def execute_network(
 
 
 def _verify(bus: Bus, plan: NetworkPlan, finish: Callable[..., OperationResult]) -> OperationResult:
+    if plan.verb in ("disconnect", "connect"):
+        return _verify_link(bus, plan, finish)
+    return _verify_profile(bus, plan, finish)
+
+
+def _verify_link(
+    bus: Bus, plan: NetworkPlan, finish: Callable[..., OperationResult]
+) -> OperationResult:
+    """disconnect/connect: poll the adapter until it reports the expected link state."""
     name = plan.device.interface
     deadline = time.monotonic() + VERIFY_TIMEOUT_S
     last = ""
-    if plan.verb in ("disconnect", "connect"):
-        while time.monotonic() < deadline:
-            fresh = _fresh_device(bus, plan)
-            last = fresh.link_state if fresh else "gone"
-            if plan.verb == "disconnect" and fresh is None:
-                return finish(
-                    OperationState.VERIFIED,
-                    f"{name} is disconnected; the virtual adapter is removed until it "
-                    "connects again.",
-                    "Device.Disconnect ok; software device unrealized",
-                )
-            if plan.verb == "disconnect" and fresh is not None and not fresh.connection_uuid:
-                return finish(
-                    OperationState.VERIFIED,
-                    f"{name} is disconnected ({fresh.link_state}).",
-                    "Device.Disconnect ok; ActiveConnection cleared",
-                )
-            if plan.verb == "connect" and fresh is not None and fresh.link_state == "Connected":
-                return finish(
-                    OperationState.VERIFIED,
-                    f"{name} is connected to {fresh.connection_name} "
-                    f"({', '.join(fresh.ipv4) or 'no IPv4 address yet'}).",
-                    "ActivateConnection ok; State=100",
-                )
-            if fresh is not None and fresh.link_state == "Failed":
-                return finish(
-                    OperationState.FAILED,
-                    f"{name} could not connect (NetworkManager reports Failed).",
-                    "State=120",
-                    "Check the connection profile in Settings.",
-                )
-            time.sleep(0.5)
-        return finish(
-            OperationState.OUTCOME_UNKNOWN,
-            f"{name} was asked to {plan.verb} but reports '{last}' after "
-            f"{int(VERIFY_TIMEOUT_S)} seconds.",
-            "verify timeout",
-            "Refresh Network in a moment.",
-        )
+    while time.monotonic() < deadline:
+        fresh = _fresh_device(bus, plan)
+        last = fresh.link_state if fresh else "gone"
+        if plan.verb == "disconnect" and fresh is None:
+            return finish(
+                OperationState.VERIFIED,
+                f"{name} is disconnected; the virtual adapter is removed until it connects again.",
+                "Device.Disconnect ok; software device unrealized",
+            )
+        if plan.verb == "disconnect" and fresh is not None and not fresh.connection_uuid:
+            return finish(
+                OperationState.VERIFIED,
+                f"{name} is disconnected ({fresh.link_state}).",
+                "Device.Disconnect ok; ActiveConnection cleared",
+            )
+        if plan.verb == "connect" and fresh is not None and fresh.link_state == "Connected":
+            return finish(
+                OperationState.VERIFIED,
+                f"{name} is connected to {fresh.connection_name} "
+                f"({', '.join(fresh.ipv4) or 'no IPv4 address yet'}).",
+                "ActivateConnection ok; State=100",
+            )
+        if fresh is not None and fresh.link_state == "Failed":
+            return finish(
+                OperationState.FAILED,
+                f"{name} could not connect (NetworkManager reports Failed).",
+                "State=120",
+                "Check the connection profile in Settings.",
+            )
+        time.sleep(0.5)
+    return finish(
+        OperationState.OUTCOME_UNKNOWN,
+        f"{name} was asked to {plan.verb} but reports '{last}' after "
+        f"{int(VERIFY_TIMEOUT_S)} seconds.",
+        "verify timeout",
+        "Refresh Network in a moment.",
+    )
+
+
+def _verify_profile(
+    bus: Bus, plan: NetworkPlan, finish: Callable[..., OperationResult]
+) -> OperationResult:
+    """static/auto/dns: the re-read profile is the truth; a fixed address must also show up."""
+    name = plan.device.interface
     profile = _profile_path(bus, plan.device.object_path)
     method, addresses, dns = _settings_show(bus, profile) if profile else ("", [], [])
     if plan.verb == "static" and plan.settings is not None:
-        want = f"{plan.settings.address}/{plan.settings.prefix}"
-        if method != "manual" or want not in addresses:
-            return finish(
-                OperationState.FAILED,
-                f"The profile for {name} did not keep the fixed address.",
-                f"method={method} addresses={addresses}",
-            )
-        while time.monotonic() < deadline:
-            fresh = _fresh_device(bus, plan)
-            if fresh is not None and want in fresh.ipv4:
-                return finish(
-                    OperationState.VERIFIED,
-                    f"{name} now uses {want}"
-                    + (f" with gateway {plan.settings.gateway}" if plan.settings.gateway else "")
-                    + ".",
-                    "Settings.Update + Device.Reapply ok; IP4Config shows the address",
-                )
-            time.sleep(0.5)
-        return finish(
-            OperationState.PARTIAL,
-            f"The fixed address is saved for {name} but the adapter does not show it yet.",
-            f"profile ok; IP4Config lacks {want}",
-            "Refresh Network in a moment; reconnect the adapter if it stays missing.",
-            succeeded=("address saved in the profile",),
-            failed=("address applied to the adapter",),
-        )
+        return _verify_static(bus, plan, finish, method, addresses)
     if plan.verb == "auto":
         if method != "auto":
             return finish(
@@ -594,4 +583,43 @@ def _verify(bus: Bus, plan: NetworkPlan, finish: Callable[..., OperationResult])
         OperationState.VERIFIED,
         f"{name} DNS: {', '.join(dns) if dns else 'from the network'}.",
         "Settings.Update + Device.Reapply ok; dns re-read",
+    )
+
+
+def _verify_static(
+    bus: Bus,
+    plan: NetworkPlan,
+    finish: Callable[..., OperationResult],
+    method: str,
+    addresses: list[str],
+) -> OperationResult:
+    name = plan.device.interface
+    s = plan.settings
+    if s is None:
+        return finish(OperationState.FAILED, "No address was given.")
+    want = f"{s.address}/{s.prefix}"
+    if method != "manual" or want not in addresses:
+        return finish(
+            OperationState.FAILED,
+            f"The profile for {name} did not keep the fixed address.",
+            f"method={method} addresses={addresses}",
+        )
+    deadline = time.monotonic() + VERIFY_TIMEOUT_S
+    while time.monotonic() < deadline:
+        fresh = _fresh_device(bus, plan)
+        if fresh is not None and want in fresh.ipv4:
+            gw = f" with gateway {s.gateway}" if s.gateway else ""
+            return finish(
+                OperationState.VERIFIED,
+                f"{name} now uses {want}{gw}.",
+                "Settings.Update + Device.Reapply ok; IP4Config shows the address",
+            )
+        time.sleep(0.5)
+    return finish(
+        OperationState.PARTIAL,
+        f"The fixed address is saved for {name} but the adapter does not show it yet.",
+        f"profile ok; IP4Config lacks {want}",
+        "Refresh Network in a moment; reconnect the adapter if it stays missing.",
+        succeeded=("address saved in the profile",),
+        failed=("address applied to the adapter",),
     )
