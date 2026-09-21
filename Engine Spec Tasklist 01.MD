@@ -18,8 +18,8 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | None. Section 4 (page walks and journeys) resolved 2026-09-21 02:26 PM CDT. The IMP-06.04 confirmation-dialog gap is now closed too (02:50 PM CDT): the owner ran `sleep 60` and End task from the console and confirmed the dialog worked end to end (shown, read, confirmed, verified) — the earlier empty-dialog finding was specific to this session's own SSH-launched test instances, not a product defect. Full account in the `docs/VALIDATION.md` IMP-06.04 addendum. |
-| **Last completed** | IMP-07.13 closed: nslookup's resolver calls bounded by a wall-clock timeout, closing Foundation 07's last open item; IMP-06.08 polkit-caching false-alarm clarified (2026-09-21 01:45 PM CDT) |
+| **Active task** | None. |
+| **Last completed** | A same-VM sweep through the afternoon of 2026-09-21, each closed with `docs/VALIDATION.md` evidence: IMP-07.13 (`nslookup` timeout, closing Foundation 07 13/13 → 14/14), section 4's page walks and `test_journeys_vm.py` (after fixing a stuck accessibility-bus daemon, the owner's own action, and correcting an earlier wrong "SSH vs. console" hypothesis in place), the End task confirmation dialog (an apparent gap turned out to be specific to this session's SSH-launched test instances, resolved when the owner ran the exact check himself), two concurrent instances (TB-INV-063), and the PowerShell button. Along the way corrected stale cross-references this same sweep had itself left behind in `CODE-QUALITY-REPORT.md`, `CONTEXT.md`, and this file's own CQS line — refreshed to candidate `e6ad2f8`, unchanged CQS 94/100 (2026-09-21 03:11 PM CDT). |
 | **Implementation** | Foundations 01–07 fully closed (13/13, 9/9); Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
