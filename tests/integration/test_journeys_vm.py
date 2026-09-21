@@ -28,11 +28,30 @@ APP = "trier-bridge"
 
 def _app():
     desktop = Atspi.get_desktop(0)
+    desktop.clear_cache()  # the app list is cached from the first look, before our window existed
     for i in range(desktop.get_child_count()):
         a = desktop.get_child_at_index(i)
         if a is not None and (a.get_name() or "") == APP:
+            a.set_cache_mask(Atspi.Cache.NONE)  # every answer from the live tree, no cache
             return a
     return None
+
+
+def _children(node):
+    """Children that still exist; a widget torn down between two calls must not end the search."""
+    try:
+        count = node.get_child_count()
+    except Exception:
+        return []
+    out = []
+    for i in range(count):
+        try:
+            c = node.get_child_at_index(i)
+        except Exception:
+            continue
+        if c is not None:
+            out.append(c)
+    return out
 
 
 def _find(node, role: str, name: str, depth: int = 0):
@@ -41,12 +60,12 @@ def _find(node, role: str, name: str, depth: int = 0):
     try:
         if node.get_role_name() == role and (node.get_name() or "") == name:
             return node
-        for i in range(node.get_child_count()):
-            hit = _find(node.get_child_at_index(i), role, name, depth + 1)
-            if hit is not None:
-                return hit
     except Exception:
         return None
+    for c in _children(node):
+        hit = _find(c, role, name, depth + 1)
+        if hit is not None:
+            return hit
     return None
 
 
@@ -58,25 +77,21 @@ def _texts(node, depth: int = 0, out: list[str] | None = None) -> list[str]:
         name = node.get_name() or ""
         if name:
             out.append(name)
-        for i in range(node.get_child_count()):
-            _texts(node.get_child_at_index(i), depth + 1, out)
     except Exception:
-        pass
+        return out
+    for c in _children(node):
+        _texts(c, depth + 1, out)
     return out
 
 
 def _wait(predicate, seconds: float):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
-        # libatspi caches children and updates them from events; a test process has no
-        # main loop of its own, so pump the default context and drop the app's cache
+        # libatspi delivers tree updates through the default main context; pump it
         ctx = GLib.MainContext.default()
         for _ in range(20):
             if not ctx.iteration(False):
                 break
-        app = _app()
-        if app is not None:
-            app.clear_cache()
         value = predicate()
         if value:
             return value
