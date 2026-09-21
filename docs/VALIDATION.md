@@ -281,6 +281,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** APP versus USER classification is not yet distinguished (no window/desktop-entry correlation); no End task (Foundation 06); Startup tab not yet present (IMP-04.02).
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5 GNOME Wayland
 
+### IMP-04.03 — Event Viewer over the journal
+
+- **Timestamp:** 2026-09-21 02:50 AM CDT
+- **Candidate revision:** 73e2fc0
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); user `tb` is in `adm` so the system journal is readable; page run in the console Wayland session
+- **Files/modules:** `trier_bridge/system/journal.py` (ctypes binding to libsystemd sd-journal), `trier_bridge/ui/eventviewer.py`, `tests/unit/test_journal.py`, `tests/integration/test_journal_vm.py`
+- **Invariant impact:** TB-INV-045 (native API, no CLI parsing in the product), TB-INV-068/147 (familiar views are filters; native fields preserved), TB-INV-100/144 (ANSI and control characters stripped; text is data), TB-INV-145 (restricted access stated as restricted), TB-INV-146 (bounded to 500, cancellable), TB-INV-148 (nothing in a message is a link or executed)
+- **Expected result:** newest entries agree with an independent journalctl read; access state matches group membership; cancellation returns early; page renders with the access banner, view drop-down, and level badges.
+- **Observed result:** 3 integration tests passed (access matches `id -Gn`; at least 25 of the newest 50 messages matched `journalctl -o json`, all sanitized; cancel returned an empty list). Sample of 200 entries: System 195, Application 5, Security 81, Errors 0, Boot 0 (views overlap by design). Page in session: banner, combo box 'All events', '500 of the newest 500 entries', Information badges; 0 tracebacks, 0 markup errors. Unit 61 passed on host and VM; integration total 18 passed.
+- **Tests/checks:** `python3 tools/dev.py all`; `pytest tests/integration -m integration`; AT-SPI walk.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the restricted-account path (user outside `adm`) is implemented but not yet exercised live; Boot view empty because the current boot's kernel messages fell outside the newest 500 (time-range and boot filters are follow-ups); the Security view is identifier-based, not audit-based.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT
