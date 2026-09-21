@@ -371,7 +371,7 @@ Do not record planned behavior as observed evidence.
 - **Candidate revision:** 078048d
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), package built from the tree and installed with apt (`trier-bridge_0.1.0~dev0_all.deb`); GNOME session unlocked so the Ubuntu AppIndicator extension is active (session-mode extensions are inactive while the screen is locked, which is why the StatusNotifier host was first missing)
 - **Files/modules:** `trier_bridge/integrations/{catalog,ledger,search_provider,tray}.py`, `trier_bridge/ui/integrations.py`, `trier_bridge/ui/app.py` (single-instance launch actions), `data/integrations/tb_nautilus.py`, `data/trier-bridge-{tray,search-provider}.1`, `tests/unit/test_integrations.py`
-- **Invariant impact:** TB-INV-025/026 (package touches `/usr` only; the setup screen writes only under the user's home and records every file), TB-INV-077 (each integration individually reversible; removal deletes exactly the recorded files, including the compiled copy Files makes of the extension), TB-INV-076 (shortcut is an individual item, never in a group), TB-SEC-003 (search provider, tray, and Files extension launch the window with fixed argument lists, no shell), DEC-018 c (tray and search provider exit when idle or turned off; no daemon), DEC-019 (groups Essentials, Files, Shortcuts; whole-group or single-item choice; changeable any time; tray icon "T" with a menu: open, Task Manager, Command Prompt, change integrations, turn off; extended to five items at b7143d3 and read back from the panel over com.canonical.dbusmenu GetLayout on 2026-09-21 08:10 PM CDT)
+- **Invariant impact:** TB-INV-025/026 (package touches `/usr` only; the setup screen writes only under the user's home and records every file), TB-INV-077 (each integration individually reversible; removal deletes exactly the recorded files, including the compiled copy Files makes of the extension), TB-INV-076 (shortcut is an individual item, never in a group), TB-SEC-003 (search provider, tray, and Files extension launch the window with fixed argument lists, no shell), DEC-018 c (tray and search provider exit when idle or turned off; no daemon), DEC-019 (groups Essentials, Files, Shortcuts; whole-group or single-item choice; changeable any time; tray icon "T" with a menu: open, Task Manager, Command Prompt, change integrations, turn off; extended to five items at b7143d3 and read back from the panel over com.canonical.dbusmenu GetLayout on 2026-09-21 12:30 PM CDT)
 - **Expected result:** first launch shows the setup screen; Apply with the recommended group writes the tray autostart entry, the search-provider `.ini` and D-Bus service file, and eight launcher entries, and records them; every switch on the Integrations page reverses exactly; the tray registers with the StatusNotifier host and its menu reaches the window; the search provider answers Windows words and opens the running window at the right place; the Files extension is loaded by Nautilus.
 - **Observed result:** setup screen appeared on the first run (AT-SPI: groups, "Whole group" checks, five items, Not now, Apply); Apply recorded 3 integrations and 11 files, all under `/home/tb`. Tray: process `trier-bridge-tray` registered as `org.kde.StatusNotifierItem-<pid>-1`, the panel exposed a `menu: 'Trier Bridge'` with `Open Trier Bridge`; dbusmenu `GetLayout` returned the four entries; `Event 4 clicked` turned the tray off from its own menu (process gone, autostart entry deleted, ledger updated) and the open Integrations page then showed the switch off (ledger re-reads the shared file; found and fixed live). Switch toggles: Ctrl+Shift+Esc wrote the custom keybinding and its removal restored `custom-keybindings` to the recorded previous value (`[]`); Files extension copied to `~/.local/share/nautilus-python/extensions`, Nautilus compiled it on load (pyc appeared), removal took both. Search provider: D-Bus activation started it, `GetInitialResultSet(['add','remove'])` returned `tb.installedapps`, `GetResultMetas` carried the mapping note, `ActivateResult('tb.taskmanager')` switched the running window to Task Manager (0 → 136 End task buttons). Launch options: `trier-bridge --section integrations` from a second process reached the running window (remote action) and exited 0. Package: lintian silent after man pages were added; `man -w` finds both. Unit 94 passed on the host (3 skipped: gi absent, Windows permission bits), 102 in the VM; integration 38 passed, 1 skipped.
 - **Tests/checks:** `python3 tools/dev.py all` (host and VM); `pytest tests/integration -m integration`; `dpkg-buildpackage -us -uc -b`; `lintian`; AT-SPI walks and actions (`a11y_walk.py`, `a11y_do.py`, test aids kept outside the repo); `gdbus`/`busctl` calls against the live provider, watcher, and menu.
@@ -381,7 +381,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-06.07 — Authorization paths driven end to end: granted, dismissed, backend re-exec
 
-- **Timestamp:** 2026-09-21 04:30 AM CDT
+- **Timestamp:** 2026-09-21 03:55 AM CDT
 - **Candidate revision:** c31be9d
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), over SSH (logind session of type tty); polkit 124; systemd 255. Prompts answered by a real polkit authentication agent registered for the test's own session (`tests/integration/polkit_agent.py`): it either dismisses the prompt or runs the system's setuid `polkit-agent-helper-1` with the test account's password taken from `TRIER_BRIDGE_TEST_PASSWORD` (never stored in the repository), exactly as graphical agents do.
 - **Files/modules:** `trier_bridge/operations/service.py`, `trier_bridge/system/services.py`, `tests/integration/polkit_agent.py`, `tests/integration/test_authorization_vm.py`
@@ -395,7 +395,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-07.06/07 — PowerShell entry through real pwsh; cmdlet names through typed operations
 
-- **Timestamp:** 2026-09-21 04:50 AM CDT
+- **Timestamp:** 2026-09-21 04:00 AM CDT
 - **Candidate revision:** 3a59f1f
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); `powershell` snap 7.6.5 installed (F19); GUI session env for the launch check
 - **Files/modules:** `trier_bridge/bridge/cmdlets.py`, `trier_bridge/bridge/grammar.py` (translation hook, `powershell` command), `trier_bridge/bridge/commands.py` (`cmd_powershell`, help), `trier_bridge/ui/terminal.py` (PowerShell button), `tests/unit/test_cmdlets.py`
@@ -409,7 +409,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-03.03 — Everyday file operations: copy, move, rename, Trash, folders (typed, confirmed)
 
-- **Timestamp:** 2026-09-21 07:40 AM CDT
+- **Timestamp:** 2026-09-21 07:35 AM CDT
 - **Candidate revision:** 910961d
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); unit tests on real files under the repository checkout (ext4, same filesystem as the home Trash); UI driven through AT-SPI in the console session
 - **Files/modules:** `trier_bridge/operations/files.py`, `trier_bridge/bridge/grammar.py` (copy, move, ren, del, md, rd; Linux paths starting with / are arguments for these), `trier_bridge/bridge/commands.py`, `trier_bridge/bridge/cmdlets.py` (Copy-Item, Move-Item, Rename-Item, Remove-Item), `trier_bridge/ui/terminal.py` (confirmation dialog for file plans), `tests/unit/test_file_operations.py`
@@ -423,7 +423,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-03.05 — Default apps: choose which listed program opens a kind of file (typed, reversible)
 
-- **Timestamp:** 2026-09-21 08:10 AM CDT
+- **Timestamp:** 2026-09-21 07:40 AM CDT
 - **Candidate revision:** 9f779ce
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); the tb user's own `~/.config/mimeapps.list`; two programs registered per common type in this VM
 - **Files/modules:** `trier_bridge/operations/defaults.py`, `trier_bridge/ui/pages.py` (Apps page: a program drop-down and Set button per kind of file, confirmation dialog), `trier_bridge/bridge/grammar.py` and `commands.py` (`assoc`/`ftype` read-only listing), `tests/unit/test_default_apps.py`
@@ -437,7 +437,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-06.08 — Security and failure regression set (with SECURITY Test B live)
 
-- **Timestamp:** 2026-09-21 08:45 AM CDT
+- **Timestamp:** 2026-09-21 07:45 AM CDT
 - **Candidate revision:** fe28c25
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); host `.venv` for the platform-independent part
 - **Files/modules:** `docs/TEST-STRATEGY.md` section 7 (the mapping), `trier_bridge/bridge/commands.py` (`sc start|stop|restart|enable|disable` through the terminal), `trier_bridge/ui/terminal.py` (service confirmation dialog), `tests/integration/test_authorization_vm.py` (Test B), `tests/unit/test_file_operations.py` (hostile filenames)
@@ -451,7 +451,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-08.02 — Install, upgrade in place, purge; per-user state and ownership
 
-- **Timestamp:** 2026-09-21 09:40 AM CDT
+- **Timestamp:** 2026-09-21 07:55 AM CDT
 - **Candidate revision:** fdc7569 (package versions 0.1.0~dev0 → 0.1.0~dev1)
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); apt on the `.deb` files built from the tree in the VM
 - **Files/modules:** `debian/*`, `data/org.triertech.TrierBridge.metainfo.xml` (release entries), `data/*.1`, `pyproject.toml`, `trier_bridge/__init__.py`
@@ -465,7 +465,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-08.08 — Performance and resource measurement (with one defect found and fixed)
 
-- **Timestamp:** 2026-09-21 09:40 AM CDT
+- **Timestamp:** 2026-09-21 07:55 AM CDT
 - **Candidate revision:** fdc7569
 - **Environment/profile:** tb-ubuntu-desktop-2404: 4 vCPU, 10 GB RAM, Hyper-V without GPU acceleration (`hyperv_drm`; GTK falls back to software rendering, so memory figures are an upper bound for this stack), installed package for the window and tray, checkout for the after-fix Task Manager run
 - **Files/modules:** `trier_bridge/ui/taskmanager.py` (row reuse), measurement aid `vm_perf.sh` (outside the repo)
@@ -479,7 +479,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-08.01 — Clean-chroot build (sbuild) reproduces the in-VM build bit for bit
 
-- **Timestamp:** 2026-09-21 10:30 AM CDT
+- **Timestamp:** 2026-09-21 08:05 AM CDT
 - **Candidate revision:** d689fb6 (package 0.1.0~dev1)
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02) as the build host; a fresh `noble` buildd chroot created with `sbuild-createchroot` from archive.ubuntu.com (main and universe; `pybuild-plugin-pyproject` lives in universe); `sbuild` 0.85 as shipped by Ubuntu 24.04
 - **Files/modules:** `debian/*`, `debian/source/format` (`3.0 (native)`), `debian/changelog`
@@ -493,7 +493,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-03.08 — Print Screen through the desktop portal (implemented; unverifiable in this VM)
 
-- **Timestamp:** 2026-09-21 11:50 AM CDT
+- **Timestamp:** 2026-09-21 08:20 AM CDT
 - **Candidate revision:** 941e5d7
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02): `xdg-desktop-portal` 1.18 with the GNOME backend (`gnome.portal` lists `org.freedesktop.impl.portal.Screenshot`); the VM has no GPU and `xdg-desktop-portal-gnome` logs an EGL initialisation failure at start
 - **Files/modules:** `trier_bridge/desktop/screenshot.py`, `trier_bridge/catalog/model.py` (route kind `action`), `data/catalog/concepts.json` (`tb.screenshot`), `trier_bridge/ui/pages.py` (Router actions), `trier_bridge/ui/window.py`, `tests/unit/test_screenshot_route.py`
@@ -507,7 +507,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-03.09 — Office-user journeys as automated interaction tests (console session)
 
-- **Timestamp:** 2026-09-21 01:40 PM CDT
+- **Timestamp:** 2026-09-21 08:35 AM CDT
 - **Candidate revision:** 4c2daa6
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), console session (`WAYLAND_DISPLAY` set), the product started as a real process by the test
 - **Files/modules:** `tests/integration/test_journeys_vm.py`
@@ -521,7 +521,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-03.06/HELP — Live printer queues from CUPS; Help generated from the build
 
-- **Timestamp:** 2026-09-21 02:20 PM CDT
+- **Timestamp:** 2026-09-21 08:55 AM CDT
 - **Candidate revision:** 45f9f34
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); `cups-daemon` 2.4.7 running with no printers configured; `python3-cups` 2.0.1 present as Ubuntu Desktop ships it
 - **Files/modules:** `trier_bridge/system/printers.py`, `trier_bridge/ui/printers.py`, `trier_bridge/help.py`, `trier_bridge/ui/help.py`, `trier_bridge/ui/window.py`, `debian/control` (Recommends `python3-cups`), `tests/unit/test_help_and_printers.py`
@@ -535,7 +535,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-06.06 — Network translation layer: adapter and IPv4 changes through NetworkManager
 
-- **Timestamp:** 2026-09-21 04:10 PM CDT
+- **Timestamp:** 2026-09-21 09:25 AM CDT
 - **Candidate revision:** afa244c
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); NetworkManager 1.46.0; polkit 124; a dummy connection `tb-dummy` on `tbdummy0` created with `nmcli` as the test object; the VM's uplink `eth0` never touched (checked before and after)
 - **Files/modules:** `trier_bridge/operations/network.py`, `trier_bridge/bridge/grammar.py` and `commands.py` (`netsh`), `trier_bridge/ui/network.py` (Disconnect/Connect and IPv4 dialog per adapter), `trier_bridge/ui/terminal.py` (network confirmation), `tests/unit/test_network_ops.py`, `tests/integration/test_network_vm.py`
@@ -549,7 +549,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-04.07 — Drive letters: C:, D:, ... as a familiar label over Linux mounts
 
-- **Timestamp:** 2026-09-21 04:10 PM CDT
+- **Timestamp:** 2026-09-21 09:25 AM CDT
 - **Candidate revision:** afa244c
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02): `/` ext4, `/boot/efi` vfat, `/media/tb/CIDATA` vfat
 - **Files/modules:** `trier_bridge/system/driveletters.py`, `trier_bridge/operations/files.py` (paths), `trier_bridge/bridge/commands.py` (cd, dir, type accept Windows spellings and show them), `trier_bridge/ui/disks.py` (letters next to volumes, a Drive letters group), `trier_bridge/ui/pages.py` (Drives on the Files page), `tests/unit/test_driveletters.py`
@@ -563,7 +563,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-07.08 — ping, tracert, nslookup, ipconfig /flushdns
 
-- **Timestamp:** 2026-09-21 05:30 PM CDT
+- **Timestamp:** 2026-09-21 09:35 AM CDT
 - **Candidate revision:** eb139b7
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); `net.ipv4.ping_group_range = 1 0` (unprivileged ICMP sockets disabled, `/usr/bin/ping` carries `cap_net_raw`); systemd-resolved with DNS 172.20.240.1; `tracepath` present, `traceroute` absent
 - **Files/modules:** `trier_bridge/system/netdiag.py`, `trier_bridge/bridge/grammar.py`, `commands.py` (`ping`, `tracert`, `nslookup`, `ipconfig /flushdns|/renew|/release`, `ActionPlan`), `cmdlets.py` (Test-Connection, Test-NetConnection, Resolve-DnsName, Clear-DnsClientCache), `trier_bridge/ui/terminal.py` (action confirmation), `tests/unit/test_netdiag.py`, `tests/integration/test_netdiag_vm.py`
@@ -577,7 +577,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-07.09 — explorer, start, net, date, time, taskkill /IM, and the teaching entries
 
-- **Timestamp:** 2026-09-21 06:15 PM CDT
+- **Timestamp:** 2026-09-21 09:40 AM CDT
 - **Candidate revision:** 9630a12
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02), console session for the launches
 - **Files/modules:** `trier_bridge/bridge/grammar.py`, `commands.py`, `trier_bridge/desktop/launch.py` (`open_uri`), `tests/unit/test_familiar_commands.py`, `tests/integration/test_familiar_vm.py`
@@ -591,7 +591,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-07.10 — shutdown /s and /r through logind
 
-- **Timestamp:** 2026-09-21 06:50 PM CDT
+- **Timestamp:** 2026-09-21 09:45 AM CDT
 - **Candidate revision:** f8746cb
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); logind answers `CanPowerOff`/`CanReboot` = challenge for the tb account over SSH (polkit asks)
 - **Files/modules:** `trier_bridge/bridge/grammar.py`, `commands.py` (`cmd_shutdown`, `power_ability`, `power_action`), `tests/unit/test_shutdown.py`
@@ -605,7 +605,7 @@ Do not record planned behavior as observed evidence.
 
 ### IMP-07.11 — findstr, find, where, set, path, tree, %VAR% expansion, exit
 
-- **Timestamp:** 2026-09-21 07:30 PM CDT
+- **Timestamp:** 2026-09-21 09:50 AM CDT
 - **Candidate revision:** 9df0709
 - **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); unit tests on real files under the checkout
 - **Files/modules:** `trier_bridge/bridge/grammar.py` (specs; a known switch now wins over a Linux path for path-taking commands), `commands.py` (`_search`, `cmd_findstr`, `cmd_find`, `cmd_where`, `cmd_set`, `cmd_path`, `cmd_tree`, `cmd_exit`, `expand_vars`, `WINDOWS_VARS`), `tests/unit/test_familiar_commands2.py`
