@@ -561,6 +561,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the Disk Management and Files pages were not walked over AT-SPI yet (queued behind the owner's open window); letters can shift when removable media come and go, exactly as on Windows, and that is stated on the page.
 - **Evidence state:** INTEGRATION_VERIFIED (terminal and operations) on Ubuntu 24.04.5; page walks pending
 
+### IMP-07.08 — ping, tracert, nslookup, ipconfig /flushdns
+
+- **Timestamp:** 2026-09-21 05:30 PM CDT
+- **Candidate revision:** eb139b7
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); `net.ipv4.ping_group_range = 1 0` (unprivileged ICMP sockets disabled, `/usr/bin/ping` carries `cap_net_raw`); systemd-resolved with DNS 172.20.240.1; `tracepath` present, `traceroute` absent
+- **Files/modules:** `trier_bridge/system/netdiag.py`, `trier_bridge/bridge/grammar.py`, `commands.py` (`ping`, `tracert`, `nslookup`, `ipconfig /flushdns|/renew|/release`, `ActionPlan`), `cmdlets.py` (Test-Connection, Test-NetConnection, Resolve-DnsName, Clear-DnsClientCache), `trier_bridge/ui/terminal.py` (action confirmation), `tests/unit/test_netdiag.py`, `tests/integration/test_netdiag_vm.py`
+- **Invariant impact:** TB-INV-119 (a host is validated as a name or address before anything runs; shell characters are refused whole), TB-SEC-003 (ping and tracert run the system's own programs through the desktop terminal with a fixed argument list; no shell of ours), TB-INV-004 (the answer says why ping opens a window instead of pretending to send ICMP), TB-INV-078/083 (flushdns asks first, then is verified against the resolver's cache statistics)
+- **Expected result:** `nslookup localhost` answers with the resolver's servers and 127.0.0.1; an unknown name is reported as not found; `ipconfig /flushdns` returns a plan, and running it empties systemd-resolved's cache; `ping -n 1 127.0.0.1` opens the system ping in a terminal window in the desktop session; `ping ubuntu.com; rm -rf /` is refused as shell syntax; `ipconfig /renew` explains the Linux way.
+- **Observed result:** three integration tests passed in the VM: nslookup (Server: 172.20.240.1, Address: 127.0.0.1; `no-such-host.invalid` reported "Can't find"), flushdns (plan returned, run gave "Successfully flushed the DNS Resolver Cache.", cache size 0 afterwards), ping (terminal window opened with `ping -c 1 127.0.0.1`). Unit tests on the host cover host validation (names, IPv4, IPv6, refusals for spaces, semicolons, `$(x)`, over-long names), the `-n` count bounds, and the cmdlet mappings. `tools/dev.py all` clean on host and VM (VM unit 128 passed).
+- **Tests/checks:** `pytest tests/integration/test_netdiag_vm.py -m integration` in the VM session; `tools/dev.py all`.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** ping replies appear in the terminal window, not in the Bridge Terminal (an in-process ping would need CAP_NET_RAW, which the product will not carry); tracert uses `tracepath` (no ICMP mode); `ipconfig /release` and `/renew` teach the reconnect route instead of acting.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED (ping window) on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

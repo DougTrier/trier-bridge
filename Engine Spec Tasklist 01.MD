@@ -19,7 +19,7 @@ Documentation completion does not imply implementation, qualification, or releas
 |---|---|
 | **Active phase** | Design / engineering foundation |
 | **Active task** | Page walks for drive letters and the interrupted-operation banner (queued behind the owner's open window); otherwise waiting on the owner's console acceptance |
-| **Last completed** | Network translation layer (IMP-06.06) and drive letters (IMP-04.07) per DEC-024, verified in the VM (2026-09-21 04:10 PM CDT) |
+| **Last completed** | ping, tracert, nslookup, ipconfig /flushdns in the Command Prompt (IMP-07.08) (2026-09-21 05:30 PM CDT) |
 | **Implementation** | Foundations 01–07 closed except IMP-03.08/09 and IMP-06.06; integrations shipped and reversible; Foundation 08: 01, 02, 07, 08 closed, 03 one cell, 04/05/06 need a person, 09 waits for release (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
@@ -234,6 +234,7 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [x] **IMP-07.04** Reject unknown/unparsed syntax without shell fallback. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection tests).
 - [x] **IMP-07.05** Implement bounded output/history/redaction. Evidence: `docs/VALIDATION.md` entry IMP-07.
 - [x] **IMP-07.06** Integrate real `pwsh` where selected/available. Evidence: `docs/VALIDATION.md` entry IMP-07.06/07 (`powershell` Bridge command and Terminal button open an installed pwsh in the desktop terminal; explains the snap when absent; never bundled).
+- [x] **IMP-07.08** Network diagnostics a Windows user types first: `ping`, `tracert`, `nslookup`, `ipconfig /flushdns` (plus Test-Connection, Resolve-DnsName, Clear-DnsClientCache). Evidence: entry IMP-07.08.
 - [x] **IMP-07.07** Implement selected compatibility cmdlets only through typed operations. Evidence: entry IMP-07.06/07 (16 cmdlet names translate to Bridge commands with a visible note; Get-EventLog and Get-WmiObject teach; unknown parameters refuse the line).
 - [x] **IMP-07.08** Run injection/quoting/path/Unicode/timeout/cancellation tests. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection, quoting, Unicode, length); timeout/cancellation of long commands still open.
 
