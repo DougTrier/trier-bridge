@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-21 12:05 AM CDT  
 **Owner:** Doug Trier  
-**Project state:** FOUNDATION 06 IN PROGRESS  
+**Project state:** FOUNDATIONS 06/07 SLICES DONE; SETUP/INTEGRATIONS NEXT  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
 **CQS:** NOT MEASURED  
 
@@ -52,6 +52,7 @@ Administration and command translation are deeper layers.
 - SCOPE-01..05 written from an in-guest research probe: delivery model, privilege model (no helper needed), packaging, research plan with findings, test strategy (2026-09-20 11:55 PM CDT)
 - live research R2/R17/R18 done in the VM session; stack proposal `docs/STACK-SELECTION.md` written as DEC-020 (proposed) (2026-09-21 12:05 AM CDT)
 - R1 Nautilus extension load and R12 PowerShell-on-Linux verified after the owner enabled sudo in the VM (2026-09-21 12:20 AM CDT)
+- Services control (user scope verified, system denial verified) and Bridge Terminal read-only vocabulary verified live (2026-09-21 03:15 AM CDT)
 - Foundation 05 complete with loopback fault tests; End task (first typed mutation) verified live (2026-09-21 03:05 AM CDT)
 - Foundation 04 complete: Task Manager, Event Viewer, Network, Disks, Devices, Startup read-only tools verified live (2026-09-21 02:55 AM CDT)
 - Foundation 03 read-only slice complete: 39-concept catalog, Home search, Files places, Installed Apps with provenance, Settings routing; 11 integration tests in the session (2026-09-21 02:40 AM CDT)
@@ -114,7 +115,7 @@ Before implementation:
 
 0. take the `clean-install` checkpoint of the test VM (ENV-03)
 1. review root/project documents for alignment (ALN-12)
-1a. Foundation 06: service control (systemd1 D-Bus, polkit-mediated), then Services page; denial/cancel/stale-target checks; then Bridge Terminal (Foundation 07)
+1a. SCOPE-14: integration catalog with groups, first-run setup screen, integration ledger with exact reversal; ship search provider, tray icon, Files extension in the package
 2. decide implementation stack
 3. research desktop integration mechanisms for the selected first-release environments
 4. select first-release distro/desktop qualification matrix

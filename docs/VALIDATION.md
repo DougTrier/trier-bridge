@@ -337,6 +337,34 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the confirmation dialog path was not driven end to end by automation (button present, dialog not clicked); Force end is reachable only after a PARTIAL result (no separate button yet).
 - **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
 
+### IMP-06.05 — Service control through systemd (polkit-mediated)
+
+- **Timestamp:** 2026-09-21 03:15 AM CDT
+- **Candidate revision:** 05a2971
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); user-scope tests on a real transient unit created with systemd-run; system-scope denial exercised over SSH where no polkit agent exists; page in the console session
+- **Files/modules:** `trier_bridge/system/services.py`, `trier_bridge/operations/service.py`, `trier_bridge/ui/services.py`, `tests/integration/test_services_vm.py`
+- **Invariant impact:** TB-INV-053/142 (unit revalidated by name, object path, fragment path; a replaced unit cancels), TB-INV-067/138/139 (Running and Start-at-boot are separate facts; start/stop/restart/enable/disable are separate operations; static and masked units cannot be enabled), TB-INV-143 (restart that stops but fails to start is PARTIAL), TB-INV-006 (success is the observed ActiveState/UnitFileState), TB-SEC-007/TB-INV-126 (denial is a DENIED result; no fallback), TB-INV-109/110 (system-scope calls use ALLOW_INTERACTIVE_AUTHORIZATION so polkit prompts only from a user action; Trier Bridge holds no privilege)
+- **Expected result:** stopping a user unit is VERIFIED and matches systemctl; a stale identity cancels without touching the unit; a system-scope restart without an agent is DENIED with the unit unchanged; enable on a static unit is UNSUPPORTED.
+- **Observed result:** all five service integration tests passed: tb-test-service.service stopped and VERIFIED (systemctl --user is-active reported inactive), stale fragment path CANCELLED with the unit still active, cups.service restart over SSH DENIED with ActiveState unchanged, static unit enable UNSUPPORTED, listing kept ssh.service Running/Manual distinct. Services page in session: banner, scope drop-down, 168 of 168 services, per-row action menus; 0 tracebacks.
+- **Tests/checks:** `pytest tests/integration/test_services_vm.py`; AT-SPI walk.
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** the interactive polkit prompt on the console (grant path) was not driven by automation; enable/disable on a real unit file was not mutated in the test (only planned); PARTIAL restart path not provoked live.
+- **Evidence state:** INTEGRATION_VERIFIED (user scope, denial path) and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
+### IMP-07 — Bridge Terminal (grammar, read-only vocabulary, taskkill via typed plan)
+
+- **Timestamp:** 2026-09-21 03:15 AM CDT
+- **Candidate revision:** 05a2971
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); commands run against live NetworkManager, systemd, procfs; page in the console session
+- **Files/modules:** `trier_bridge/bridge/{grammar,commands}.py`, `trier_bridge/ui/terminal.py`, `tests/unit/test_grammar.py`, `tests/unit/test_bridge_commands.py`, `tests/integration/test_bridge_vm.py`
+- **Invariant impact:** TB-INV-082/102 (Bridge Mode only, mode label always visible, no shell fall-through), TB-INV-083/084 (grammar, typed commands), TB-INV-085/086/087/088 (unknown commands, unknown switches, residue, and any shell metacharacter rejected as a whole), TB-INV-089 (CMD quoting and Unicode preserved), TB-INV-093 (read-only commands never elevate), TB-INV-094/104 (taskkill returns the same typed plan as Task Manager and requires confirmation), TB-INV-096 (no fabricated fields; Unknown shown), TB-INV-098 (sensitive lines excluded from history), TB-INV-099/100 (bounded output, no escape interpretation), TB-INV-105 (regedit and format are educational only), TB-SEC-004
+- **Expected result:** SECURITY.md test A (tasklist, ipconfig, sc query useful without root) and test C (injection strings rejected, nothing executes).
+- **Observed result:** ipconfig /all showed eth0 with the MAC from sysfs and the connectivity check; tasklist listed the test's own PID; sc query ssh reported Running/Manual with the unit file; hostname, whoami, systeminfo, getmac, netstat matched independent facts; euid stayed non-root. Five injection lines (redirect, chaining, backticks, $()) all parsed to nothing and no marker file appeared. taskkill /PID returned a TerminatePlan without killing; /PID 1 refused; unknown switch parsed to nothing. type on /etc/shadow reported Access is denied. Terminal page: banner, Mode: Bridge label, command entry, bounded output view, Run button; 0 tracebacks. Unit 95 passed; integration 39 passed.
+- **Tests/checks:** `python3 tools/dev.py all`; `pytest tests/integration -m integration`; AT-SPI walk; sample runs (ver, ipconfig, sc query cups, injection, regedit).
+- **Artifacts/logs:** session transcript.
+- **Failures/limitations:** Bash and PowerShell modes are not offered yet (IMP-07.06); no persistent history file; netstat parses /proc/net directly and shows listening sockets only by default.
+- **Evidence state:** INTEGRATION_VERIFIED and DESKTOP_VERIFIED on Ubuntu 24.04.5
+
 ### TOOL-05 — Read-only tools run unmodified on Linux
 
 - **Timestamp:** 2026-09-20 11:10 PM CDT

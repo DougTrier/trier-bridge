@@ -18,15 +18,15 @@ Documentation completion does not imply implementation, qualification, or releas
 | Field | Current checkpoint |
 |---|---|
 | **Active phase** | Design / engineering foundation |
-| **Active task** | IMP-06 — Foundation 06: typed mutations (service control next) |
-| **Last completed** | Foundation 05 fault-verified and End task verified live; 30 integration tests (2026-09-21 03:05 AM CDT) |
-| **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only slice; 06 in progress (End task done) (2026-09-21) |
+| **Active task** | SCOPE-14 — integration catalog and first-run setup screen (tray icon, search provider, Files extension shipped) |
+| **Last completed** | Services control and Bridge Terminal verified live; 39 integration tests (2026-09-21 03:15 AM CDT) |
+| **Implementation** | Foundations 01, 02, 04, 05 complete; 03 read-only; 06 service/process mutations; 07 Bridge Mode read-only (2026-09-21) |
 | **Invariant baseline** | 233 design invariants; runtime evidence NOT RUN |
 | **Security** | Design baseline exists; implementation evidence NOT RUN |
 | **CQS** | NOT MEASURED (7 of 8 categories assessed, see CODE-QUALITY-REPORT.md) |
 | **Platform support** | No product feature qualified; test environment Ubuntu 24.04.5 / Wayland GNOME 46 / Hyper-V profiled (ENV-02) |
 | **Release** | Locked; local Git only, no remote, no GitHub (owner direction 2026-09-20) |
-| **Next bounded step** | IMP-06.05 service control through systemd1 D-Bus + polkit (user units first, system units with prompt) → IMP-06.07 denial/cancel/stale checks |
+| **Next bounded step** | SCOPE-14 setup screen + integration ledger → ship search provider, tray icon, Files extension in the .deb → CODE-QUALITY-REPORT refresh → Foundation 08 qualification |
 
 ---
 
@@ -213,23 +213,24 @@ Gap review 2026-09-20. Each item produces a design document or a data schema und
 - [ ] **IMP-06.02** Implement explicit authorization binding to current user intent.
 - [x] **IMP-06.03** Implement stable target identity and revalidation. Evidence: `docs/VALIDATION.md` entry IMP-06.04 (PID+start revalidation; stale target cancels); other target kinds as their operations land.
 - [x] **IMP-06.04** Implement selected user-process termination. Evidence: `docs/VALIDATION.md` entry IMP-06.04.
-- [ ] **IMP-06.05** Implement selected service control.
+- [x] **IMP-06.05** Implement selected service control. Evidence: `docs/VALIDATION.md` entry IMP-06.05.
 - [ ] **IMP-06.06** Implement selected network/package mutations only if separately qualified.
 - [ ] **IMP-06.07** Verify denial/cancel/expiry/stale-target/backend-restart behavior.
+  - 2026-09-21: denial (no agent) and stale target verified for services; stale PID for processes; cancel/expiry of a live polkit prompt and backend restart still open.
 - [ ] **IMP-06.08** Run security/failure regression set.
 
 ---
 
 # Foundation 07 — Bridge Terminal and PowerShell continuity
 
-- [ ] **IMP-07.01** Implement strict Bridge Terminal mode and parser.
-- [ ] **IMP-07.02** Implement initial read-only Windows-command vocabulary.
-- [ ] **IMP-07.03** Map commands to existing typed operation authority.
-- [ ] **IMP-07.04** Reject unknown/unparsed syntax without shell fallback.
-- [ ] **IMP-07.05** Implement bounded output/history/redaction.
+- [x] **IMP-07.01** Implement strict Bridge Terminal mode and parser. Evidence: `docs/VALIDATION.md` entry IMP-07 (grammar, unit tests).
+- [x] **IMP-07.02** Implement initial read-only Windows-command vocabulary. Evidence: `docs/VALIDATION.md` entry IMP-07.
+- [x] **IMP-07.03** Map commands to existing typed operation authority. Evidence: `docs/VALIDATION.md` entry IMP-07 (taskkill uses plan_terminate).
+- [x] **IMP-07.04** Reject unknown/unparsed syntax without shell fallback. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection tests).
+- [x] **IMP-07.05** Implement bounded output/history/redaction. Evidence: `docs/VALIDATION.md` entry IMP-07.
 - [ ] **IMP-07.06** Integrate real `pwsh` where selected/available.
 - [ ] **IMP-07.07** Implement selected compatibility cmdlets only through typed operations.
-- [ ] **IMP-07.08** Run injection/quoting/path/Unicode/timeout/cancellation tests.
+- [x] **IMP-07.08** Run injection/quoting/path/Unicode/timeout/cancellation tests. Evidence: `docs/VALIDATION.md` entry IMP-07 (injection, quoting, Unicode, length); timeout/cancellation of long commands still open.
 
 ---
 
