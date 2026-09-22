@@ -208,11 +208,26 @@ def run_in_terminal(argv: list[str], title: str) -> tuple[bool, str]:
     The terminal's own "close when the command exits" behavior would otherwise
     close the window the instant ping/tracepath finishes (a few seconds), before
     the user can read the replies. ``_STAY_OPEN_TAIL`` is a fixed string with no
-    user-controlled content, appended after the already-quoted argv so the shell
-    pauses for a keypress instead (TB-SEC-003: still no shell of ours runs
-    unvalidated text, only this constant plus individually quoted argv tokens).
+    user-controlled content, meant to keep the shell open for a keypress after
+    the diagnostic exits.
+
+    ``Gio.AppInfo.create_from_commandline`` tokenizes its ``commandline`` with
+    ``g_shell_parse_argv``, which only does shell-style quoting/word-splitting
+    (the same subset ``GLib.shell_quote`` quotes against) -- it does not
+    interpret shell operators like ``;`` at all, so a first attempt at this fix
+    that simply appended ``_STAY_OPEN_TAIL`` after the quoted argv turned it
+    into more literal arguments to ``ping`` itself (confirmed with
+    ``GLib.shell_parse_argv``), never a second command -- the window still
+    closed the instant ping exited, only now with a malformed host argument.
+    The fix is to make the one program actually launched be ``sh -c
+    "<argv...>; <tail>"``: ``sh`` is a real shell that DOES interpret ``;``,
+    and the whole thing stays a single fixed-shape argv (TB-SEC-003 still
+    holds -- the only dynamic parts are the individually quoted argv tokens
+    already validated by ``diagnostic_tool()``/the host validator, now nested
+    one level deeper via a second, outer ``GLib.shell_quote``).
     """
-    commandline = " ".join(GLib.shell_quote(a) for a in argv) + _STAY_OPEN_TAIL
+    inner = " ".join(GLib.shell_quote(a) for a in argv) + _STAY_OPEN_TAIL
+    commandline = "sh -c " + GLib.shell_quote(inner)
     try:
         info = Gio.AppInfo.create_from_commandline(
             commandline, title, Gio.AppInfoCreateFlags.NEEDS_TERMINAL
