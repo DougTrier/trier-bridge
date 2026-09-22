@@ -44,6 +44,8 @@ DEFAULTS: dict[str, Any] = {
     "last_section": "home",
     "task_manager_interval_ms": 2000,
     "show_command_lines": False,  # TB-INV-133: off by default
+    "sidebar_hue": 213,  # cosmetic only (TB-INV-253); clamped on read, see ui/theme.py
+    "ui_zoom_percent": 100,  # cosmetic only (TB-INV-253/254); clamped on read
 }
 
 

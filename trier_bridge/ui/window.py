@@ -31,15 +31,17 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk  # noqa: E402
+from gi.repository import Adw, Gdk, Gtk  # noqa: E402
 
-from .. import APP_NAME  # noqa: E402
+from .. import APP_NAME, __version__  # noqa: E402
 from ..capability.model import CapabilityRecord, EnvironmentProfile  # noqa: E402
 from ..state.journal import JournalRecord  # noqa: E402
 from ..catalog.model import Catalog  # noqa: E402
 from ..desktop.launch import Launcher, LaunchResult  # noqa: E402
 from ..resources import catalog_path  # noqa: E402
 from ..desktop.screenshot import ScreenshotRequest  # noqa: E402
+from . import theme  # noqa: E402
+from .about import AboutPage  # noqa: E402
 from .pages import AppsPage, FilesPage, HomePage, Router, SettingsPage  # noqa: E402
 from .devices import DeviceManagerPage, StartupPage  # noqa: E402
 from .disks import DisksPage  # noqa: E402
@@ -166,6 +168,14 @@ SECTIONS: tuple[Section, ...] = (
         "Trier Bridge",
         available=True,
     ),
+    Section(
+        "about",
+        "About Trier Bridge",
+        "help-about-symbolic",
+        "About [Program]",
+        "Trier Bridge",
+        available=True,
+    ),
     Section("help", "Help", "help-browser-symbolic", "Help", "Trier Bridge", available=True),
 )
 
@@ -189,9 +199,25 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._screenshot: ScreenshotRequest | None = None
         self._toasts = Adw.ToastOverlay()
 
+        prefs = getattr(application, "preferences", None)
+        self._hue = theme.clamp_hue(
+            prefs.get("sidebar_hue") if prefs is not None else theme.DEFAULT_HUE
+        )
+        self._zoom = theme.clamp_zoom(
+            prefs.get("ui_zoom_percent") if prefs is not None else theme.DEFAULT_ZOOM
+        )
+        self._css_provider = Gtk.CssProvider()
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            self._css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+        self._apply_css()
+
         self._split = Adw.NavigationSplitView()
         self._split.set_sidebar(self._build_sidebar())
         self._content_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
+        self._content_stack.add_css_class("tb-content-zoom")
         for section in SECTIONS:
             page = self._build_page(section)
             self._pages[section.key] = page
@@ -209,10 +235,66 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         content_toolbar.set_content(content_box)
         self._toasts.set_child(content_toolbar)
         self._split.set_content(Adw.NavigationPage.new(self._toasts, APP_NAME))
-        self.set_content(self._split)
-        prefs = getattr(application, "preferences", None)
+        outer = Adw.ToolbarView()
+        outer.set_content(self._split)
+        outer.add_bottom_bar(self._build_zoom_bar())
+        self.set_content(outer)
         last = prefs.get("last_section") if prefs is not None else "home"
         self._select(last if any(sec.key == last for sec in SECTIONS) else "home")
+
+    # ---- shell theming (TB-INV-252/253/254) ----------------------------------
+    def _apply_css(self) -> None:
+        css = theme.generate_css(self._hue, self._zoom)
+        self._css_provider.load_from_data(css.encode("utf-8"))
+
+    def _on_hue_changed(self, scale: Gtk.Scale) -> None:
+        self._hue = theme.clamp_hue(int(scale.get_value()))
+        self._apply_css()
+        prefs = getattr(self.get_application(), "preferences", None)
+        if prefs is not None:
+            prefs.set("sidebar_hue", self._hue)
+
+    def _set_zoom(self, value: int) -> None:
+        self._zoom = theme.clamp_zoom(value)
+        self._apply_css()
+        self._zoom_scale.set_value(self._zoom)
+        self._zoom_label.set_label(f"{self._zoom}%")
+        prefs = getattr(self.get_application(), "preferences", None)
+        if prefs is not None:
+            prefs.set("ui_zoom_percent", self._zoom)
+
+    def _on_zoom_changed(self, scale: Gtk.Scale) -> None:
+        self._set_zoom(int(scale.get_value()))
+
+    def _build_zoom_bar(self) -> Gtk.Box:
+        bar = Gtk.Box(spacing=10, margin_start=16, margin_end=16, margin_top=6, margin_bottom=6)
+        bar.add_css_class("tb-zoombar")
+        label = Gtk.Label(label=f"{APP_NAME} · {__version__}", xalign=0.0, hexpand=True)
+        bar.append(label)
+        out_button = Gtk.Button(icon_name="zoom-out-symbolic", valign=Gtk.Align.CENTER)
+        out_button.update_property([Gtk.AccessibleProperty.LABEL], ["Zoom out"])
+        out_button.connect("clicked", lambda *_: self._set_zoom(self._zoom - 10))
+        bar.append(out_button)
+        self._zoom_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, theme.MIN_ZOOM, theme.MAX_ZOOM, 10
+        )
+        self._zoom_scale.set_size_request(120, -1)
+        self._zoom_scale.set_draw_value(False)
+        self._zoom_scale.set_value(self._zoom)
+        self._zoom_scale.set_valign(Gtk.Align.CENTER)
+        self._zoom_scale.update_property([Gtk.AccessibleProperty.LABEL], ["Zoom level"])
+        self._zoom_scale.connect("value-changed", self._on_zoom_changed)
+        bar.append(self._zoom_scale)
+        in_button = Gtk.Button(icon_name="zoom-in-symbolic", valign=Gtk.Align.CENTER)
+        in_button.update_property([Gtk.AccessibleProperty.LABEL], ["Zoom in"])
+        in_button.connect("clicked", lambda *_: self._set_zoom(self._zoom + 10))
+        bar.append(in_button)
+        self._zoom_label = Gtk.Button(label=f"{self._zoom}%", valign=Gtk.Align.CENTER)
+        self._zoom_label.add_css_class("flat")
+        self._zoom_label.update_property([Gtk.AccessibleProperty.LABEL], ["Reset zoom to 100%"])
+        self._zoom_label.connect("clicked", lambda *_: self._set_zoom(theme.DEFAULT_ZOOM))
+        bar.append(self._zoom_label)
+        return bar
 
     def show_unresolved(self, records: list[JournalRecord]) -> None:
         """Interrupted operations are surfaced, never silently repeated (TB-INV-060)."""
@@ -252,12 +334,53 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             self._list.append(row)
         self._list.connect("row-selected", self._on_row_selected)
         scroller = Gtk.ScrolledWindow(child=self._list, hscrollbar_policy=Gtk.PolicyType.NEVER)
+        scroller.set_vexpand(True)
+
+        body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        body.add_css_class("tb-sidebar")
+        body.append(self._build_wordmark())
+        body.append(self._build_hue_control())
+        body.append(scroller)
+
         toolbar = Adw.ToolbarView()
         header = Adw.HeaderBar()
-        header.set_title_widget(Adw.WindowTitle(title=APP_NAME, subtitle="Everything you know"))
+        header.add_css_class("flat")
+        header.set_show_title(False)
         toolbar.add_top_bar(header)
-        toolbar.set_content(scroller)
+        toolbar.set_content(body)
         return Adw.NavigationPage.new(toolbar, "Sections")
+
+    def _build_wordmark(self) -> Gtk.Box:
+        box = Gtk.Box(spacing=10, margin_start=20, margin_end=20, margin_top=18, margin_bottom=14)
+        pill = Gtk.Label(label="T Bridge")
+        pill.add_css_class("tb-wordmark-pill")
+        box.append(pill)
+        sub = Gtk.Label(label="for Linux")
+        sub.add_css_class("tb-wordmark-sub")
+        box.append(sub)
+        return box
+
+    def _build_hue_control(self) -> Gtk.Box:
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=8,
+            margin_start=20,
+            margin_end=20,
+            margin_bottom=14,
+        )
+        label = Gtk.Label(label="SIDEBAR COLOR", xalign=0.0)
+        label.add_css_class("caption-heading")
+        label.add_css_class("tb-hue-label")
+        box.append(label)
+        scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, theme.MIN_HUE, theme.MAX_HUE, 1
+        )
+        scale.set_draw_value(False)
+        scale.set_value(self._hue)
+        scale.update_property([Gtk.AccessibleProperty.LABEL], ["Sidebar color"])
+        scale.connect("value-changed", self._on_hue_changed)
+        box.append(scale)
+        return box
 
     def _group_header(self, row: Gtk.ListBoxRow, before: Gtk.ListBoxRow | None) -> None:
         section = SECTIONS[row.get_index()]
@@ -266,8 +389,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             label = Gtk.Label(
                 label=section.group, xalign=0.0, margin_start=12, margin_top=8, margin_bottom=2
             )
-            label.add_css_class("dim-label")
             label.add_css_class("caption-heading")
+            label.add_css_class("tb-group-label")
             row.set_header(label)
         else:
             row.set_header(None)
@@ -444,6 +567,8 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             app = self.get_application()
             self._integrations = IntegrationsPage(app.ledger, self.notify)
             return self._integrations
+        if section.key == "about":
+            return AboutPage(self._launcher, self.notify)
         return self._status(section.title, NOT_YET, section.icon)
 
     def _status(self, title: str, description: str, icon: str) -> Gtk.Widget:
@@ -456,6 +581,5 @@ def Gio_menu() -> Any:
     from gi.repository import Gio
 
     model = Gio.Menu()
-    model.append("About Trier Bridge", "app.about")
     model.append("Quit", "app.quit")
     return model

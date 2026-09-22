@@ -55,7 +55,6 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         GLib.set_application_name(APP_NAME)
         GLib.set_prgname("trier-bridge")  # AT-SPI application name (RESEARCH F17)
         self._window: MainWindow | None = None
-        self._add_action("about", self._on_about)
         self._add_action("quit", lambda *_: self.quit())
         self._add_param_action("open-section", self._on_open_section)
         self._add_param_action("open-concept", self._on_open_concept)
@@ -102,18 +101,6 @@ class TrierBridgeApplication(Adw.Application):  # type: ignore[misc]
         if not self.ledger.setup_completed and not self.ledger.read_only:
             GLib.idle_add(self._window.show_setup)
         self._window.present()
-
-    def _on_about(self, *_: Any) -> None:
-        about = Adw.AboutDialog(
-            application_name=APP_NAME,
-            application_icon=APP_ID,
-            developer_name="Doug Trier",
-            version=__version__,
-            license_type=Gtk.License.APACHE_2_0,
-            comments="Everything you know. Linux underneath.",
-            copyright="Copyright 2026 Doug Trier",
-        )
-        about.present(self._window)
 
     # ---- development aids -------------------------------------------------
     def _install_dev_aids(self, window: MainWindow) -> None:

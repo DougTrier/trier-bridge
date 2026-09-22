@@ -410,6 +410,20 @@ Scoped 2026-09-21 for a Windows-Task-Manager-style Performance tab (owner reques
 | **TB-INV-250** | Loopback network (`lo`) and snap/loop pseudo-block-devices are excluded from the graphed resource list, consistent with how `storage.py` and `network.py` already treat them elsewhere in this codebase. | A pseudo-device never appears dressed up as a real, graphable disk or adapter. |
 | **TB-INV-251** | A sample the worker thread fails to collect for one tick is shown as a real gap in that chart, never interpolated or repeated from the last good value. | Graceful failure here means an honest missing point, not fabricated continuity that hides a real read failure. |
 
+### 3.16 Shell theming, personalization, and about/support info
+
+Scoped 2026-09-21: the owner approved a branded navy sidebar with a user-adjustable accent color (a hue slider, replacing an earlier tile-based picker after a real bug in it was traced and fixed), a persistent zoom control in the window chrome, and a new sidebar "About Trier Bridge" page (moved out of the header-bar menu, positioned directly above Help) carrying real version/license info plus the owner's own donation links, reused from another of his public projects (`github.com/DougTrier/trier-os`, its `.github/FUNDING.yml` and `AboutView.jsx`) with no personal photo carried over. This family exists because, unlike every other foundation so far, none of this reads or changes anything on the computer — its entire risk surface is making sure personalization stays cosmetic and never quietly drifts into something that looks like a capability claim or a functional change.
+
+| ID | Must remain true | Graceful failure requirement |
+|---|---|---|
+| **TB-INV-252** | The sidebar hue and the zoom level are stored preferences (`Preferences`, TB-INV-179/180) and are clamped to their valid range (hue 0–360, zoom within its declared min/max) the moment they are read back, before anything paints. | A hand-edited or corrupted preferences file can never crash the window or paint an undefined color; an out-of-range value is clamped, never rejected into a blank UI. |
+| **TB-INV-253** | Recoloring the sidebar or changing the zoom level changes only paint (CSS colors, font scale) — never a row's target section, never what a button does, never any typed operation's argv. | Extends TB-INV-064 (terminology/mode is presentation, never authorization): personalization is presentation too. |
+| **TB-INV-254** | Zoom changes the UI's text/element scale only; the underlying data shown on any page (process list, file list, event log, ...) is identical at every zoom level — only its rendered size changes. | A zoomed-in page must never show a truncated or re-filtered subset of what the same page shows at 100%; if content must scroll to fit, it scrolls, it is not silently dropped. |
+| **TB-INV-255** | The About page's support/donation links are plain outbound links opened only on explicit click, through the same `Launcher.open_uri` every other outbound link in this codebase already uses (TB-INV-239's family) — never opened automatically, never carrying any per-user or machine-identifying data in the URL. | A link that cannot be opened (no browser association) reports that plainly, the same as any other `Launcher.open_uri` failure; it never fails silently. |
+| **TB-INV-256** | Version and license text on the About page are read from the same single source the rest of the app already uses (`trier_bridge.__version__`, the Apache-2.0 license text), never a second hand-typed copy that can drift out of sync. | Extends TB-INV-004: nothing on the About page is a claim independent of what the running build actually is. |
+| **TB-INV-257** | The color picker and the zoom control live in the window's shared shell (sidebar chrome, persistent bottom bar), not duplicated per page — every section inherits the same one, so there is exactly one hue and one zoom level for the whole window, never a per-page drift. | If a page cannot be reached (not yet implemented, `NOT_YET`), the shell chrome around it — sidebar, zoom bar — still renders normally; a missing page body never takes the whole shell down with it. |
+| **TB-INV-258** | The hue slider and the zoom control carry real accessible names and current-value text (TB-INV-209's family), not a bare unlabeled `Gtk.Scale`. | A screen reader user can discover and operate both without sighted help; an accessible-property failure is a defect here, not an acceptable gap. |
+
 ---
 
 ## 4. Invariant family index
@@ -431,8 +445,9 @@ Scoped 2026-09-21 for a Windows-Task-Manager-style Performance tab (owner reques
 | Updates, supply chain, extensions, testing, and release | TB-INV-219–TB-INV-233 |
 | In-app file browsing and navigation | TB-INV-234–TB-INV-245 |
 | Live performance graphs | TB-INV-246–TB-INV-251 |
+| Shell theming, personalization, and about/support info | TB-INV-252–TB-INV-258 |
 
-**Total baseline invariants: 251.**
+**Total baseline invariants: 258.**
 
 ---
 
