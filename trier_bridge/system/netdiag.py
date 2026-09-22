@@ -36,10 +36,12 @@ because the call only reads and writes nothing Trier Bridge owns.
 from __future__ import annotations
 
 import ipaddress
+import os
 import re
 import shutil
 import socket
 import threading
+import time
 from dataclasses import dataclass, field
 from typing import Callable, TypeVar
 
@@ -48,6 +50,7 @@ import gi
 gi.require_version("Gio", "2.0")
 from gi.repository import Gio, GLib  # noqa: E402
 
+from ..config import ensure_dir, resolve_paths  # noqa: E402
 from .bus import Bus  # noqa: E402
 
 _T = TypeVar("_T")
@@ -201,11 +204,14 @@ def diagnostic_tool(kind: str) -> tuple[str, list[str]]:
 
 _STAY_OPEN_TAIL = "; echo; printf '%s' 'Press Enter to close... '; read _"
 
-# The one diagnostic terminal window Trier Bridge itself has open, if any (module-level
-# by design: there is exactly one Bridge Terminal session per running app, TB-INV-063).
-# Re-running ping/tracert force-exits this one before opening the next, so repeated use
-# from Bridge Terminal replaces the old window instead of piling up new ones.
-_last_terminal: Gio.Subprocess | None = None
+# The pid of the shell running inside the one diagnostic terminal window Trier
+# Bridge itself has open, if any (module-level by design: one Bridge Terminal
+# session per running app, TB-INV-063). Re-running ping/tracert kills this one
+# before opening the next, so repeated use replaces the old window instead of
+# piling up new ones.
+_last_terminal_pid: int | None = None
+_MARKER_WAIT_S = 0.05
+_MARKER_WAIT_TRIES = 20
 
 
 def run_in_terminal(argv: list[str], title: str) -> tuple[bool, str]:
@@ -225,34 +231,52 @@ def run_in_terminal(argv: list[str], title: str) -> tuple[bool, str]:
     literal arguments to ``ping`` itself instead of a second command).
     TB-SEC-003 still holds: the only dynamic content is the individually
     quoted argv tokens already validated by ``diagnostic_tool()``/the host
-    validator.
+    validator, plus the fixed, non-user-controlled marker path below.
 
-    Window reuse: Ubuntu's ``x-terminal-emulator`` alternative (confirmed on
-    ENV-02 to resolve to ``gnome-terminal.wrapper``, which always passes
-    ``--wait`` through to the real terminal) is spawned directly with
-    ``Gio.Subprocess`` instead of the generic ``Gio.AppInfo.launch``, so this
-    function holds a real handle to it -- unlike ``Gio.AppInfo``, which
-    reports success/failure but gives back no way to reach the spawned
-    process again. ``--wait`` means that handle stays alive for exactly as
-    long as the window does, so force-exiting it before the next launch
-    reliably closes a still-open previous window without touching anything
-    the user opened themselves. Falls back to the previous ``Gio.AppInfo``
-    delegation (no reuse, but still correct) if no ``x-terminal-emulator`` is
-    on PATH, e.g. a desktop other than this project's target.
+    Window reuse: on Ubuntu/GNOME (ENV-02) ``x-terminal-emulator`` resolves to
+    ``gnome-terminal.wrapper``, which ``exec``s into ``gnome-terminal --wait
+    -- sh -c "<inner>"``. gnome-terminal is a single background server shared
+    by every window; the client process this spawns is only a wait handle the
+    *server* signals when that one terminal closes (confirmed on the VM: the
+    client stays alive for the window's whole lifetime, but killing the
+    client itself does nothing to the window -- a first attempt at reuse did
+    exactly that and left the old window open). The actual per-window
+    resource under Trier Bridge's control is the leaf shell the server forks
+    inside the window's pty. ``inner`` starts with ``echo $$ > <marker>`` so
+    that shell reports its own pid to a private file under
+    ``resolve_paths().state``; killing *that* pid ends the shell, and the
+    terminal's own "close when the command exits" behavior (the same one
+    ``_STAY_OPEN_TAIL`` works around above) closes the window -- verified on
+    the VM directly: the marker reliably appears within ~0.2s, and killing
+    the pid it names ends both that shell and the still-waiting client.
+    Falls back to the previous ``Gio.AppInfo`` delegation (no reuse, but
+    still correct) if no ``x-terminal-emulator`` is on PATH.
     """
-    global _last_terminal
+    global _last_terminal_pid
     inner = " ".join(GLib.shell_quote(a) for a in argv) + _STAY_OPEN_TAIL
     terminal = shutil.which("x-terminal-emulator")
     if terminal is not None:
-        if _last_terminal is not None:
-            _last_terminal.force_exit()
-            _last_terminal = None
+        if _last_terminal_pid is not None:
+            try:
+                os.kill(_last_terminal_pid, 15)  # SIGTERM
+            except ProcessLookupError:
+                pass
+            _last_terminal_pid = None
+        marker = ensure_dir(resolve_paths().state) / "terminal.pid"
+        marker.unlink(missing_ok=True)
+        tagged_inner = f"echo $$ > {GLib.shell_quote(str(marker))}; " + inner
         try:
-            _last_terminal = Gio.Subprocess.new(
-                [terminal, "-e", "sh", "-c", inner], Gio.SubprocessFlags.NONE
-            )
+            Gio.Subprocess.new([terminal, "-e", "sh", "-c", tagged_inner], Gio.SubprocessFlags.NONE)
         except GLib.Error as exc:
             return False, f"The terminal window could not be opened: {exc.message}"
+        for _ in range(_MARKER_WAIT_TRIES):
+            time.sleep(_MARKER_WAIT_S)
+            if marker.exists():
+                try:
+                    _last_terminal_pid = int(marker.read_text().strip())
+                except (OSError, ValueError):
+                    _last_terminal_pid = None
+                break
         return True, f"{title} opened in a terminal window."
     commandline = "sh -c " + GLib.shell_quote(inner)
     try:
