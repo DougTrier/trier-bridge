@@ -25,7 +25,6 @@ import logging
 from pathlib import Path
 
 from dataclasses import dataclass
-from typing import Any
 
 import gi
 
@@ -492,14 +491,11 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
 
     # ---- content -------------------------------------------------------------
     def _build_content_header(self) -> Adw.HeaderBar:
+        # No menu button (SCOPE-16): its only entries were About (moved to its own sidebar
+        # page) and Quit, which already duplicates the window's own close control.
         header = Adw.HeaderBar()
         self._title = Adw.WindowTitle(title="Home", subtitle="")
         header.set_title_widget(self._title)
-        menu = Gtk.MenuButton(icon_name="open-menu-symbolic")
-        menu.update_property([Gtk.AccessibleProperty.LABEL], ["Main menu"])
-        model = Gio_menu()
-        menu.set_menu_model(model)
-        header.pack_end(menu)
         return header
 
     def notify(self, text: str) -> None:
@@ -575,11 +571,3 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         page = Adw.StatusPage(title=title, description=description, icon_name=icon)
         page.update_property([Gtk.AccessibleProperty.DESCRIPTION], [description])
         return page
-
-
-def Gio_menu() -> Any:
-    from gi.repository import Gio
-
-    model = Gio.Menu()
-    model.append("Quit", "app.quit")
-    return model

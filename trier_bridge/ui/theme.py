@@ -98,4 +98,33 @@ def generate_css(hue: int, zoom_percent: int) -> str:
 .tb-content-zoom {{
   font-size: {zoom}%;
 }}
+.tb-about-hero {{
+  background-image: linear-gradient(135deg, {top} 0%, {bottom} 100%);
+  border-radius: 16px;
+  padding: 22px 24px;
+}}
+.tb-about-hero-title {{
+  color: #ffffff;
+}}
+.tb-about-hero-subtitle {{
+  color: #cfdbea;
+}}
+.tb-support-icon {{
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 24px;
+  min-height: 24px;
+}}
+.tb-support-sponsors {{
+  background-color: alpha(#c2255c, 0.14);
+  color: #c2255c;
+}}
+.tb-support-collective {{
+  background-color: alpha(#1f4f85, 0.14);
+  color: #1f4f85;
+}}
+.tb-support-coffee {{
+  background-color: alpha(#a2681f, 0.14);
+  color: #a2681f;
+}}
 """

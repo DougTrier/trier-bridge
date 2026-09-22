@@ -37,24 +37,23 @@ from .. import APP_ID, APP_NAME, __version__  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 
 _CAREER_START = date(1992, 9, 21)
+_GOAL = (
+    "Trier Bridge doesn't ask you to relearn Linux from scratch. Type what you already know "
+    "how to look for — Task Manager, Control Panel, Command Prompt — and it shows you "
+    "the real Linux place for it, honestly, including the times it isn't the same. Every "
+    "action it takes is a typed, reviewable operation, never a hidden shell command, and it "
+    "never claims something works when it doesn't."
+)
 _BIO = (
-    "Bridging {years} years of industrial grit and enterprise technology. Doug's journey began "
-    "on the front lines — driving delivery routes, working the floor, and operating "
-    "production equipment — before evolving into architecting enterprise digital "
-    "infrastructure. Trier Bridge is one piece of that same throughline: taking hard-won "
-    "operational knowledge and building a tool that makes Linux make sense to people who "
-    "already know how to get work done on Windows."
+    "{years} years bridging industrial operations and enterprise technology — from driving "
+    "routes and running the floor to architecting digital infrastructure. Trier Bridge is the "
+    "same idea applied here: hard-won operational knowledge, built into a tool."
 )
-_TITLES = (
-    "Platform Architect",
-    "Systems Administrator",
-    "Enterprise Operations Technologist",
-    "Mobile Infrastructure Specialist",
-)
+_TITLES = ("Platform Architect", "Systems Administrator")
 _LINKS = (
-    ("Sponsor on GitHub", "https://github.com/sponsors/dougtrier"),
-    ("Open Collective", "https://opencollective.com/trier-os"),
-    ("Buy Me a Coffee", "https://www.buymeacoffee.com/dougtrier"),
+    ("Sponsor on GitHub", "https://github.com/sponsors/dougtrier", "tb-support-sponsors"),
+    ("Open Collective", "https://opencollective.com/trier-os", "tb-support-collective"),
+    ("Buy Me a Coffee", "https://www.buymeacoffee.com/dougtrier", "tb-support-coffee"),
 )
 
 
@@ -73,39 +72,45 @@ class AboutPage(Gtk.Box):  # type: ignore[misc]
         self._notify = notify
         page = Adw.PreferencesPage()
         page.set_vexpand(True)
+        page.set_margin_top(4)
 
-        app_group = Adw.PreferencesGroup()
-        header = Adw.ActionRow(title=APP_NAME, subtitle="Everything you know. Linux underneath.")
-        icon = Gtk.Image.new_from_icon_name(APP_ID)
-        icon.set_pixel_size(48)
-        header.add_prefix(icon)
-        app_group.add(header)
-        app_group.add(Adw.ActionRow(title="Version", subtitle=__version__))
+        page.add(self._hero_group())
+
+        goal_group = Adw.PreferencesGroup(title="Our goal")
+        goal_row = Adw.ActionRow(use_markup=False)
+        goal_row.set_subtitle(_GOAL)
+        goal_row.set_subtitle_lines(6)
+        goal_group.add(goal_row)
+        page.add(goal_group)
+
+        info_group = Adw.PreferencesGroup()
+        info_group.add(Adw.ActionRow(title="Version", subtitle=__version__))
         license_row = Adw.ActionRow(title="License", subtitle="Apache License 2.0")
         license_row.add_suffix(self._link_button("https://www.apache.org/licenses/LICENSE-2.0"))
-        app_group.add(license_row)
-        app_group.add(Adw.ActionRow(title="Copyright", subtitle="Copyright 2026 Doug Trier"))
-        page.add(app_group)
+        info_group.add(license_row)
+        info_group.add(Adw.ActionRow(title="Copyright", subtitle="Copyright 2026 Doug Trier"))
+        page.add(info_group)
 
-        creator_group = Adw.PreferencesGroup(title="Built by")
+        made_group = Adw.PreferencesGroup(title="Made by")
         creator_row = Adw.ActionRow(
-            title="Doug Trier", subtitle=" · ".join(_TITLES), subtitle_lines=2
+            title="Doug Trier", subtitle=" · ".join(_TITLES), subtitle_lines=1
         )
-        creator_row.add_prefix(Adw.Avatar(text="Doug Trier", show_initials=True, size=48))
-        creator_group.add(creator_row)
+        creator_row.add_prefix(Adw.Avatar(text="Doug Trier", show_initials=True, size=44))
+        made_group.add(creator_row)
         bio_row = Adw.ActionRow(use_markup=False)
         bio_row.set_subtitle(_BIO.format(years=_years_experience()))
-        bio_row.set_subtitle_lines(6)
-        creator_group.add(bio_row)
-        page.add(creator_group)
+        bio_row.set_subtitle_lines(3)
+        made_group.add(bio_row)
+        page.add(made_group)
 
         support_group = Adw.PreferencesGroup(
             title="Support this project",
             description="Trier Bridge is independent work. If it's useful to you, these are the "
             "real ways to say so.",
         )
-        for title, url in _LINKS:
+        for title, url, accent_class in _LINKS:
             row = Adw.ActionRow(title=title, subtitle=url)
+            row.add_prefix(self._support_icon(accent_class))
             row.add_suffix(self._link_button(url))
             row.set_activatable(True)
             row.connect("activated", lambda *_r, u=url: self._open(u))
@@ -114,8 +119,35 @@ class AboutPage(Gtk.Box):  # type: ignore[misc]
 
         self.append(page)
 
+    def _hero_group(self) -> Adw.PreferencesGroup:
+        hero = Gtk.Box(spacing=16, valign=Gtk.Align.CENTER)
+        hero.add_css_class("tb-about-hero")
+        icon = Gtk.Image.new_from_icon_name(APP_ID)
+        icon.set_pixel_size(56)
+        hero.append(icon)
+        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER)
+        title = Gtk.Label(label=APP_NAME, xalign=0.0)
+        title.add_css_class("title-1")
+        title.add_css_class("tb-about-hero-title")
+        text.append(title)
+        subtitle = Gtk.Label(label="Everything you know. Linux underneath.", xalign=0.0)
+        subtitle.add_css_class("tb-about-hero-subtitle")
+        text.append(subtitle)
+        hero.append(text)
+        group = Adw.PreferencesGroup()
+        group.add(hero)
+        return group
+
+    def _support_icon(self, accent_class: str) -> Gtk.Image:
+        icon = Gtk.Image.new_from_icon_name("emblem-favorite-symbolic")
+        icon.add_css_class("tb-support-icon")
+        icon.add_css_class(accent_class)
+        icon.set_valign(Gtk.Align.CENTER)
+        return icon
+
     def _link_button(self, url: str) -> Gtk.Button:
         button = Gtk.Button(icon_name="web-browser-symbolic", valign=Gtk.Align.CENTER)
+        button.add_css_class("flat")
         button.update_property([Gtk.AccessibleProperty.DESCRIPTION], [f"Open {url}"])
         button.connect("clicked", lambda *_b, u=url: self._open(u))
         return button

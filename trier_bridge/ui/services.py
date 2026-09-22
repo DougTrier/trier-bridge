@@ -150,31 +150,12 @@ class ServicesPage(Gtk.Box):  # type: ignore[misc]
             menu = Gtk.MenuButton(icon_name="view-more-symbolic")
             menu.set_valign(Gtk.Align.CENTER)
             menu.update_property([Gtk.AccessibleProperty.LABEL], [f"Actions for {s.identity.name}"])
-            box = Gtk.Box(
-                orientation=Gtk.Orientation.VERTICAL,
-                spacing=4,
-                margin_top=6,
-                margin_bottom=6,
-                margin_start=6,
-                margin_end=6,
-            )
-            for verb, label in (
-                ("start", "Start"),
-                ("stop", "Stop"),
-                ("restart", "Restart"),
-                ("enable", "Start at boot"),
-                ("disable", "Do not start at boot"),
-            ):
-                b = Gtk.Button(label=label)
-                b.add_css_class("flat")
-                b.update_property(
-                    [Gtk.AccessibleProperty.DESCRIPTION],
-                    [f"{label} {s.identity.name}. You will be asked to confirm."],
-                )
-                b.connect("clicked", partial(self._ask, s, verb))
-                box.append(b)
-            pop = Gtk.Popover(child=box)
-            menu.set_popover(pop)
+            # Real, reported lag on first opening this page: with ~190 system services on a
+            # typical desktop, building a Popover + 5 buttons for every row eagerly meant
+            # ~1,300 extra widgets constructed synchronously on the main thread before anything
+            # painted. set_create_popup_func defers that to the moment a row's menu is actually
+            # opened, so a page with 190 services builds 0 popovers up front instead of 190.
+            menu.set_create_popup_func(self._build_service_popup, s)
             row.add_suffix(menu)
             self._list.append(row)
             self._rows.append(row)
@@ -183,6 +164,32 @@ class ServicesPage(Gtk.Box):  # type: ignore[misc]
             more.set_title(f"{len(shown) - MAX_ROWS} more; narrow the search to see them")
             self._list.append(more)
             self._rows.append(more)
+
+    def _build_service_popup(self, menu: Gtk.MenuButton, service: ServiceInfo) -> None:
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4,
+            margin_top=6,
+            margin_bottom=6,
+            margin_start=6,
+            margin_end=6,
+        )
+        for verb, label in (
+            ("start", "Start"),
+            ("stop", "Stop"),
+            ("restart", "Restart"),
+            ("enable", "Start at boot"),
+            ("disable", "Do not start at boot"),
+        ):
+            b = Gtk.Button(label=label)
+            b.add_css_class("flat")
+            b.update_property(
+                [Gtk.AccessibleProperty.DESCRIPTION],
+                [f"{label} {service.identity.name}. You will be asked to confirm."],
+            )
+            b.connect("clicked", partial(self._ask, service, verb))
+            box.append(b)
+        menu.set_popover(Gtk.Popover(child=box))
 
     def _ask(self, service: ServiceInfo, verb: str, *_: object) -> None:
         plan = plan_service(service, verb)
