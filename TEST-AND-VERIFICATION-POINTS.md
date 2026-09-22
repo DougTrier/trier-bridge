@@ -133,6 +133,7 @@ If you want the full technical evidence behind any row — exact commands, exact
 |---|---|---|---|---|
 | 7.1 | Open **Services**. | A real list of systemd services/units with their state. | | |pass
 | 7.2 | Pick a user-scope service you don't mind restarting. Restart it. | Confirmation dialog, then Linux asks for permission if needed, then a verified result. | | |
+| 7.2a | Switch to "My services", search for `dbus`, try to **Stop** or **Restart** `dbus.service`. | Refused outright — "cannot be stopped from here... it runs your desktop session... would sign you out." No confirmation dialog even appears. | | Same real fix as 10.1: user-scope service changes need no polkit prompt at all, so this one had the identical risk as the systemd process did. `dbus.service` and `gnome-session-manager@...` are now named and refused; the row also shows "Critical" in its own subtitle so it's visible before you even try. |
 | 7.3 | Try to change a system-scope service. | Either asks Linux for permission (a real polkit prompt) or is denied plainly — never silently succeeds without you noticing. | | |pass
 
 ---
@@ -154,9 +155,9 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 9.1 | Open **Apps**. Find a file type with more than one program available. | A drop-down shows the current default; a **Set** button next to it. | | |
-| 9.2 | Change the default to the other option, confirm. Leave the Apps page (go to Home, say) and come back. | The new default is still shown selected — the change actually stuck, not just a UI flicker. | | (Skip this if you want — it doesn't need proving beyond what's on screen. If you're curious whether it's real at the Linux level too: `xdg-mime query default x-scheme-handler/mailto` for Email links, `inode/directory` for Folders, `x-scheme-handler/http` for Web links, should print the program you just set. Not required.) |
-| 9.3 | Change it back the same way. | Reverts cleanly — the original default shows again after leaving and returning. | | |
+| 9.1 | Open **Apps**. Find a file type with more than one program available. | A drop-down shows the current default; a **Set** button next to it. | | |pass
+| 9.2 | Change the default to the other option, confirm. Leave the Apps page (go to Home, say) and come back. | The new default is still shown selected — the change actually stuck, not just a UI flicker. | | (Skip this if you want — it doesn't need proving beyond what's on screen. If you're curious whether it's real at the Linux level too: `xdg-mime query default x-scheme-handler/mailto` for Email links, `inode/directory` for Folders, `x-scheme-handler/http` for Web links, should print the program you just set. Not required.) |not doing - no typical user is doing this
+| 9.3 | Change it back the same way. | Reverts cleanly — the original default shows again after leaving and returning. | | |not needed
 
 ---
 
@@ -166,7 +167,7 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 10.1 | Try to end a system-critical process (search Task Manager for `systemd`, PID 1 if visible, or `gnome-shell`). | No End task button is offered at all — protected processes aren't actionable. | | |
+| 10.1 | Try to end a system-critical process (search Task Manager for `systemd`, PID 1 if visible, or `gnome-shell`). | No End task button is offered at all — protected processes aren't actionable. **Also check the Background tab** — `systemd` (PID 1 and your own session instance), `gnome-shell`, `gnome-session-b`, and `dbus-daemon` should all be listed there, not under "Apps and processes." | | Real fix, 2026-09-21: this row is exactly what caught a real gap — searching "systemd" in Apps and processes previously showed the user's own session instance with an End task button, and ending it force-logged the owner out. Only PID 1 itself was protected before; now the session's own `systemd`, `gnome-shell`, `gnome-session-b`, and `dbus-daemon` are too, and they've moved to the Background tab where nothing has an End task button at all. Please retest — this is the fix for the incident you hit. |
 | 10.2 | Try `taskkill` in Command Prompt against a process you don't own. | Refused, naming why. | | |
 
 ---
