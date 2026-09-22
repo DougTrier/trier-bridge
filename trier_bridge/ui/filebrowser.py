@@ -510,6 +510,9 @@ class FileBrowserPage(Gtk.Box):  # type: ignore[misc]
             self._list.remove(child)
         for r in shown[:VISIBLE_CAP]:
             row = Adw.ActionRow(use_markup=False, title=r.name, subtitle=r.subtitle)
+            row.set_activatable(True)  # Adw.ActionRow is not activatable by default (real bug,
+            # found live 2026-09-21: clicking/double-clicking a row did nothing at all, and
+            # AT-SPI confirmed it exposed zero accessible actions until this was added)
             row.tb_activate = r.activate
             row.tb_entry = r.entry
             row.add_prefix(Gtk.Image.new_from_icon_name(r.icon))
