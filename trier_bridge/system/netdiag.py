@@ -199,9 +199,20 @@ def diagnostic_tool(kind: str) -> tuple[str, list[str]]:
     return "", []
 
 
+_STAY_OPEN_TAIL = "; echo; printf '%s' 'Press Enter to close... '; read _"
+
+
 def run_in_terminal(argv: list[str], title: str) -> tuple[bool, str]:
-    """Open the desktop's terminal running a fixed program with validated arguments."""
-    commandline = " ".join(GLib.shell_quote(a) for a in argv)
+    """Open the desktop's terminal running a fixed program with validated arguments.
+
+    The terminal's own "close when the command exits" behavior would otherwise
+    close the window the instant ping/tracepath finishes (a few seconds), before
+    the user can read the replies. ``_STAY_OPEN_TAIL`` is a fixed string with no
+    user-controlled content, appended after the already-quoted argv so the shell
+    pauses for a keypress instead (TB-SEC-003: still no shell of ours runs
+    unvalidated text, only this constant plus individually quoted argv tokens).
+    """
+    commandline = " ".join(GLib.shell_quote(a) for a in argv) + _STAY_OPEN_TAIL
     try:
         info = Gio.AppInfo.create_from_commandline(
             commandline, title, Gio.AppInfoCreateFlags.NEEDS_TERMINAL
