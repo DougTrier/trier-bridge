@@ -201,6 +201,12 @@ def diagnostic_tool(kind: str) -> tuple[str, list[str]]:
 
 _STAY_OPEN_TAIL = "; echo; printf '%s' 'Press Enter to close... '; read _"
 
+# The one diagnostic terminal window Trier Bridge itself has open, if any (module-level
+# by design: there is exactly one Bridge Terminal session per running app, TB-INV-063).
+# Re-running ping/tracert force-exits this one before opening the next, so repeated use
+# from Bridge Terminal replaces the old window instead of piling up new ones.
+_last_terminal: Gio.Subprocess | None = None
+
 
 def run_in_terminal(argv: list[str], title: str) -> tuple[bool, str]:
     """Open the desktop's terminal running a fixed program with validated arguments.
@@ -211,22 +217,43 @@ def run_in_terminal(argv: list[str], title: str) -> tuple[bool, str]:
     user-controlled content, meant to keep the shell open for a keypress after
     the diagnostic exits.
 
-    ``Gio.AppInfo.create_from_commandline`` tokenizes its ``commandline`` with
-    ``g_shell_parse_argv``, which only does shell-style quoting/word-splitting
-    (the same subset ``GLib.shell_quote`` quotes against) -- it does not
-    interpret shell operators like ``;`` at all, so a first attempt at this fix
-    that simply appended ``_STAY_OPEN_TAIL`` after the quoted argv turned it
-    into more literal arguments to ``ping`` itself (confirmed with
-    ``GLib.shell_parse_argv``), never a second command -- the window still
-    closed the instant ping exited, only now with a malformed host argument.
-    The fix is to make the one program actually launched be ``sh -c
-    "<argv...>; <tail>"``: ``sh`` is a real shell that DOES interpret ``;``,
-    and the whole thing stays a single fixed-shape argv (TB-SEC-003 still
-    holds -- the only dynamic parts are the individually quoted argv tokens
-    already validated by ``diagnostic_tool()``/the host validator, now nested
-    one level deeper via a second, outer ``GLib.shell_quote``).
+    The one program actually launched is ``sh -c "<argv...>; <tail>"``: ``sh``
+    is a real shell that interprets ``;`` (unlike ``Gio.AppInfo``'s own
+    ``g_shell_parse_argv`` tokenizer, which only does shell-style quoting, not
+    operator interpretation -- confirmed with ``GLib.shell_parse_argv`` after
+    a first attempt at the stay-open fix silently turned the tail into extra
+    literal arguments to ``ping`` itself instead of a second command).
+    TB-SEC-003 still holds: the only dynamic content is the individually
+    quoted argv tokens already validated by ``diagnostic_tool()``/the host
+    validator.
+
+    Window reuse: Ubuntu's ``x-terminal-emulator`` alternative (confirmed on
+    ENV-02 to resolve to ``gnome-terminal.wrapper``, which always passes
+    ``--wait`` through to the real terminal) is spawned directly with
+    ``Gio.Subprocess`` instead of the generic ``Gio.AppInfo.launch``, so this
+    function holds a real handle to it -- unlike ``Gio.AppInfo``, which
+    reports success/failure but gives back no way to reach the spawned
+    process again. ``--wait`` means that handle stays alive for exactly as
+    long as the window does, so force-exiting it before the next launch
+    reliably closes a still-open previous window without touching anything
+    the user opened themselves. Falls back to the previous ``Gio.AppInfo``
+    delegation (no reuse, but still correct) if no ``x-terminal-emulator`` is
+    on PATH, e.g. a desktop other than this project's target.
     """
+    global _last_terminal
     inner = " ".join(GLib.shell_quote(a) for a in argv) + _STAY_OPEN_TAIL
+    terminal = shutil.which("x-terminal-emulator")
+    if terminal is not None:
+        if _last_terminal is not None:
+            _last_terminal.force_exit()
+            _last_terminal = None
+        try:
+            _last_terminal = Gio.Subprocess.new(
+                [terminal, "-e", "sh", "-c", inner], Gio.SubprocessFlags.NONE
+            )
+        except GLib.Error as exc:
+            return False, f"The terminal window could not be opened: {exc.message}"
+        return True, f"{title} opened in a terminal window."
     commandline = "sh -c " + GLib.shell_quote(inner)
     try:
         info = Gio.AppInfo.create_from_commandline(
