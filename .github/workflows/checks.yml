@@ -1,0 +1,121 @@
+# Copyright 2026 Doug Trier
+# SPDX-License-Identifier: Apache-2.0
+name: Build, tests, and security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  code-and-unit:
+    name: Code and non-destructive unit checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install the documented Ubuntu archive tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            black python3-mypy python3-pytest python3-flake8 \
+            python3-flake8-cognitive-complexity python3-bandit
+          /usr/bin/python3 --version
+          dpkg-query -W black python3-mypy python3-pytest python3-flake8 \
+            python3-flake8-cognitive-complexity python3-bandit
+      - name: Documentation, invariants, and source headers
+        run: /usr/bin/python3 tools/tb.py all
+      - name: Formatting
+        run: /usr/bin/python3 tools/dev.py format
+      - name: Lint
+        run: /usr/bin/python3 tools/dev.py lint
+      - name: Types
+        run: /usr/bin/python3 tools/dev.py typecheck
+      - name: Python security analysis
+        run: /usr/bin/python3 tools/dev.py security
+      - name: Complexity report
+        run: /usr/bin/python3 tools/dev.py complexity
+      - name: Approved unit subset
+        run: /usr/bin/python3 tools/ci-unit.py
+      - name: Save unit results, including skips
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unit-results
+          path: reports/local/ci-unit.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  package:
+    name: Debian build, policy, and reproducibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DEB_BUILD_OPTIONS: nocheck
+      PYBUILD_DISABLE: test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install the documented Debian build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            debhelper dh-python pybuild-plugin-pyproject python3-all \
+            python3-setuptools python3-build lintian
+          dpkg-query -W debhelper dh-python pybuild-plugin-pyproject \
+            python3-all python3-setuptools python3-build lintian
+      - name: Build twice from clean copies of this commit
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          mkdir -p "$RUNNER_TEMP/build-one/source" "$RUNNER_TEMP/build-two/source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/build-one/source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/build-two/source"
+          (cd "$RUNNER_TEMP/build-one/source" && dpkg-buildpackage -us -uc -b)
+          (cd "$RUNNER_TEMP/build-two/source" && dpkg-buildpackage -us -uc -b)
+          cmp "$RUNNER_TEMP"/build-one/trier-bridge_*_all.deb \
+              "$RUNNER_TEMP"/build-two/trier-bridge_*_all.deb
+          sha256sum "$RUNNER_TEMP"/build-one/trier-bridge_*_all.deb
+      - name: Package policy and contents
+        run: |
+          lintian --fail-on error,warning "$RUNNER_TEMP"/build-one/trier-bridge_*_all.deb
+          dpkg-deb --info "$RUNNER_TEMP"/build-one/trier-bridge_*_all.deb
+          dpkg-deb --contents "$RUNNER_TEMP"/build-one/trier-bridge_*_all.deb
+      # No package install, desktop tests, package upload, signing, or release.
+
+  secrets:
+    name: Secret scan of commit history
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download and verify the pinned scanner
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            --output "$RUNNER_TEMP/gitleaks.tar.gz"
+          printf '%s  %s\n' \
+            '9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c' \
+            "$RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan every commit reachable from the checked revision
+        run: |
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --log-opts=HEAD .

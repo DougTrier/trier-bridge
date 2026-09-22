@@ -67,3 +67,9 @@ Evidence for each is recorded in `VALIDATION.md` per candidate revision.
 ## 5. Change control
 
 Bumping any pin is a ledger task with evidence on the VM. A newer Ubuntu release becomes a second row here, never a silent replacement of the 24.04 baseline (DEC-016).
+
+## 6. GitHub checks (CI-01)
+
+Owner-approved on 2026-09-22: disposable GitHub `ubuntu-24.04` runners use Ubuntu archive development tools for static checks, an explicit non-destructive unit subset, and package builds. The workflow uses `/usr/bin/python3` so archive-installed modules and the interpreter match. Resolved package versions are recorded in each job log. These runs do not replace VM qualification or desktop testing.
+
+The CI-only action pins, checksum-pinned Gitleaks CLI, coverage exclusions, and evidence rules are recorded in `CI.md`. No product runtime dependency or frozen development-tool pin is changed by this setup.

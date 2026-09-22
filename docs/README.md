@@ -38,6 +38,7 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 
 | Document | Purpose |
 |---|---|
+| `CI.md` | GitHub build, unit, and security checks; runner boundaries, tool pins, and evidence limits. |
 | `PLATFORMS.md` | Environment identity, support states, capability discovery, adapter contract, hardware profiles. |
 | `STATE-AND-PERSISTENCE.md` | Capability/authorization/operation/recovery state models and what Trier Bridge may persist. |
 | `EXPERIENCE.md` | Interaction rules, screen inventory, search, connectivity, displays, Manual, localization, theming. |
