@@ -1,6 +1,6 @@
 # Known Limitations
 
-**Generated from `VALIDATION.md` (the "Failures/limitations" and "Evidence state" lines of every evidence entry) by `tools/dev.py limitations`, 2026-09-21 08:08 PM CDT.** This is the known-limitations report of IMP-08.09; the release CQS is in `CODE-QUALITY-REPORT.md`. Test gaps beyond these lines are listed in `TEST-STRATEGY.md` section 7 and the open accessibility criteria in `ACCESSIBILITY.md`. Derived, not edited by hand.
+**Generated from `VALIDATION.md` (the "Failures/limitations" and "Evidence state" lines of every evidence entry) by `tools/dev.py limitations`, 2026-09-21 08:14 PM CDT.** This is the known-limitations report of IMP-08.09; the release CQS is in `CODE-QUALITY-REPORT.md`. Test gaps beyond these lines are listed in `TEST-STRATEGY.md` section 7 and the open accessibility criteria in `ACCESSIBILITY.md`. Derived, not edited by hand.
 
 | Evidence entry | Feature | Evidence state | Failures and limitations |
 |---|---|---|---|

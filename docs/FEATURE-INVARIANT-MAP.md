@@ -1,6 +1,6 @@
 # Feature to Invariant Map
 
-**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 08:08 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
+**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 08:14 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
 
 | Evidence entry | Feature | Invariants and security rules cited |
 |---|---|---|
