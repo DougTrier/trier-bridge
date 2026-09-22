@@ -1,7 +1,7 @@
 # Trier Bridge Documentation
 
-**Updated:** 2026-09-21 12:05 AM CDT  
-**Status:** Design foundation. Every runtime, test, or evidence statement in this pack is a design contract or template until observed evidence is recorded.
+**Updated:** 2026-09-22 01:47 AM CDT
+**Status:** Version 1.0.0 is complete per Doug's direction on 2026-09-22; documentation cleanup is complete. Design documents state requirements, while `VALIDATION.md` records observed results and remaining qualification gaps. The repository remains private during review.
 
 ## Authority order
 

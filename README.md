@@ -32,7 +32,7 @@
 
 ## 🚀 Install
 
-One Debian package for Ubuntu 24.04 Desktop: **`trier-bridge_1.0.0_all.deb`** (about 140 KB). It depends only on what Ubuntu Desktop already ships — Python 3, GTK 4, libadwaita — and pulls in nothing else. Get it from the [Releases](https://github.com/DougTrier/trier-bridge/releases) page.
+One Debian package for Ubuntu 24.04 Desktop: **`trier-bridge_1.0.0_all.deb`** (about 140 KB). Its runtime dependencies are Python 3, PyGObject, GTK 4, and libadwaita; it also recommends the Ubuntu packages for printer and Files integration. The installer resolves any missing dependencies. Get it from the [Releases](https://github.com/DougTrier/trier-bridge/releases) page.
 
 **Without a terminal.** Right-click the `.deb` in Files → *Open With* → **App Center**, tick *Always use for this file type*, then press **Install**. From then on a double-click installs. (On a stock Ubuntu 24.04 the archive viewer is the default for `.deb` files, so the first time needs that one choice. Once Trier Bridge is installed, *Apps → Default apps → Software installers (.deb)* offers the same choice inside the app.)
 
@@ -42,7 +42,7 @@ One Debian package for Ubuntu 24.04 Desktop: **`trier-bridge_1.0.0_all.deb`** (a
 sudo apt install ./trier-bridge_1.0.0_all.deb
 ```
 
-Everything Trier Bridge writes stays in your home folder (`~/.config/trier-bridge`, `~/.local/state/trier-bridge`); removing the package leaves those behind, the way a Windows uninstall leaves AppData. It never installs or removes other software, never runs as root, and asks Linux for permission — through the normal password prompt — each time a change needs it.
+Trier Bridge keeps its preferences and operation records in your user configuration and state folders (normally `~/.config/trier-bridge` and `~/.local/state/trier-bridge`); removing the package leaves those behind, the way a Windows uninstall leaves AppData. File operations affect the files you select, and service or network changes go through the corresponding Linux service. Trier Bridge never installs or removes other software and runs as your signed-in user. Linux decides whether an authorized system change requires a password prompt.
 
 ---
 
@@ -95,7 +95,7 @@ Everything Trier Bridge writes stays in your home folder (`~/.config/trier-bridg
 
 **Advanced**
 
-- **Services** — running state and start-at-boot, changed only after Linux's own permission prompt.
+- **Services** — running state and start-at-boot, with Linux controlling permission for system services.
 - **Command Prompt** — Windows commands and PowerShell names, each turned into a typed operation; nothing you type is ever passed to a shell.
 - **System Information** — this computer's hardware and software, and what Trier Bridge can and cannot do here.
 
@@ -138,9 +138,9 @@ If no safe, faithful Linux equivalent exists, Trier Bridge says so and performs 
 ## 🛡️ How it is built
 
 - **Typed operations, never shell text.** A command becomes a parsed, typed operation with a fixed argument list. Not one line of Trier Bridge hands text to a shell, and the project's own gate refuses any change that tries.
-- **Linux stays in charge.** Nothing runs as root. Any change that needs permission — a service, a network setting, ending a system process — goes through Linux's own prompt, every time.
+- **Linux stays in charge.** Trier Bridge runs as your signed-in user. System service and network changes go through Linux's authorization checks; Linux decides when to prompt. Task Manager can end your own eligible programs and protects system and session-critical processes.
 - **Honest about what it knows.** A value it cannot read shows as *Unknown*, never as zero. An action interrupted mid-way is shown to you afterward, never silently repeated. Where Windows and Linux differ, it says so instead of inventing a match.
-- **Verified on the real thing.** Every change is gated on a real Ubuntu 24.04 desktop: unit and integration tests run against real files, real processes, real services — no mocks anywhere. The package is reproducible and lintian-clean. The **258 invariants** in [`docs/INVARIANTS.md`](./docs/INVARIANTS.md) each trace to evidence tied to a commit hash in [`docs/VALIDATION.md`](./docs/VALIDATION.md), and the code-quality score in [`CODE-QUALITY-REPORT.md`](./CODE-QUALITY-REPORT.md) is measured, not asserted.
+- **Evidence from a real desktop.** Recorded checks include unit and integration tests on the project's Ubuntu 24.04 desktop VM, reproducible package builds, and lintian checks. The **258 invariants** in [`docs/INVARIANTS.md`](./docs/INVARIANTS.md) define the requirements. [`docs/VALIDATION.md`](./docs/VALIDATION.md) records the exact candidates and environments checked, including limitations and checks not run. The measured code-quality score is in [`CODE-QUALITY-REPORT.md`](./CODE-QUALITY-REPORT.md).
 
 Guiding order, always: **everyday continuity → familiar troubleshooting → advanced Windows continuity → optional Linux learning.** Learning Linux is optional. Productivity is not.
 
@@ -148,7 +148,7 @@ Guiding order, always: **everyday continuity → familiar troubleshooting → ad
 
 ## 🔐 Security
 
-- No privileged helper, no cached authority: system-scope changes go through polkit and Linux asks each time.
+- No privileged helper or privilege cache in Trier Bridge: system-scope changes use Linux authorization. Polkit may retain a grant according to the system's policy; Trier Bridge does not control that cache.
 - Explicit trust boundaries; untrusted input (typed commands, IPC, files) is validated on the trusted side; malformed input performs no operation.
 - Fixed executable argument arrays everywhere — no shell interpolation, no dynamic command construction.
 - Secrets never enter UI state; records are kept without them.
