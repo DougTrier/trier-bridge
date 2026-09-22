@@ -14,13 +14,11 @@
 """About Trier Bridge: version/license (TB-INV-256) and the owner's own support links.
 
 Moved here from the header-bar menu's dialog into a normal sidebar page,
-positioned directly above Help. Donation links are the owner's real ones,
-reused from another of his public projects (github.com/DougTrier/trier-os,
-its .github/FUNDING.yml and AboutView.jsx) with his personal photo left out
-per his instruction -- the source page itself uses initials only, which is
-exactly what Adw.Avatar renders here too, so nothing needed to be stripped.
-Every link opens only on click, through the same Launcher.open_uri every
-other outbound link in this codebase already uses (TB-INV-255).
+positioned directly above Help. The support links are the author's own
+(GitHub Sponsors, Buy Me a Coffee); no photo, initials only, by his
+instruction. Every link opens only on click, through the same
+Launcher.open_uri every other outbound link in this codebase already uses
+(TB-INV-255).
 """
 from __future__ import annotations
 
@@ -51,20 +49,13 @@ _BIO = (
 )
 _TITLES = ("Platform architect", "Systems administrator")
 # (label, address, icon, chip class). The icons are this package's own full-color
-# marks, shipped beside the launcher icons: a GitHub-style star, an Open
-# Collective-style ring, a coffee cup.
+# marks, shipped beside the launcher icons: a GitHub-style star and a coffee cup.
 _LINKS = (
     (
         "Sponsor on GitHub",
         "https://github.com/sponsors/dougtrier",
         f"{APP_ID}-star",
         "tb-support-sponsors",
-    ),
-    (
-        "Open Collective",
-        "https://opencollective.com/trier-os",
-        f"{APP_ID}-collective",
-        "tb-support-collective",
     ),
     (
         "Buy Me a Coffee",

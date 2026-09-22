@@ -1,8 +1,8 @@
 # Trier Bridge
 ## Everything You Know. Linux Underneath.
 
-**Version:** 1.0.0 — built, gated, and installed on the project's Ubuntu 24.04 test environment; the owner's acceptance pass and the first session with a real Windows user are what remain (see *Current project state* below)  
-**Owner:** Doug Trier  
+**Version:** 1.0.0  
+**Author:** Doug Trier  
 **License:** Apache License 2.0
 
 > **Trier Bridge is designed so a Windows user can move to Linux without feeling like they have to relearn how to use a computer.**
@@ -164,17 +164,27 @@ Everything Trier Bridge writes lives in your home folder (`~/.config/trier-bridg
 
 ![Home: the accent-framed shell, the goal paragraph, the Windows-vocabulary search, and the Start-here cards](docs/screenshots/home.png)
 
-Rendered from the installed 1.0.0 package on the project's Ubuntu 24.04 test VM (960×640, the default window size).
+Rendered from the installed 1.0.0 package on my Ubuntu 24.04 test VM (960×640, the default window size).
 
-## Current project state
+## What's in 1.0.0
 
-As of September 21, 2026 (version 1.0.0, candidate `5791bdc`):
+- **Everyday:** Home — type what you would look for on Windows and go to the Linux place for it; Files, with an in-app browser and drive letters (`C:`, `D:`) shown as labels next to the real Linux paths; Apps, with where each program came from and a Default apps chooser; Settings, routed to the desktop's own panels; Printers; Network, as a translation layer over NetworkManager.
+- **Troubleshooting:** Task Manager (End task, live Performance graphs for CPU, memory, every disk and adapter); Event Viewer; Device Manager; Startup Apps; Disk Management.
+- **Advanced:** Services (changes go through Linux's own permission prompt); Command Prompt and PowerShell names, turned into typed operations — nothing is ever passed to a shell; System Information.
+- **Integrations you choose at setup, each reversible:** tray icon, desktop search that understands Windows words, familiar launchers in the app grid, a Files context-menu entry, Ctrl+Shift+Esc.
 
-- **Built:** Home search over the Windows vocabulary; Files with an in-app browser and drive letters as labels over real Linux paths; Apps with provenance and default-app choice; Settings routed to the desktop's own panels; Printers; Network as a translation layer over NetworkManager; Task Manager (End task, live Performance graphs); Event Viewer; Device Manager; Startup Apps; Disk Management; Services through polkit; Command Prompt and PowerShell names as typed operations; System Information; Integrations (tray icon, desktop search, launchers, Files menu, Ctrl+Shift+Esc — all chosen at setup, all reversible); About and Help.
-- **Verified:** every change gated on the Windows host and on the real Ubuntu VM (unit tests on real files, processes, and services — no mocks); the package is reproducible and lintian-clean; **258 invariants** with an evidence trail tied to commit hashes (`docs/VALIDATION.md`); CQS **94 / 100**, all eight categories measured.
-- **Not yet:** nobody the product is for has used it — the owner's own acceptance pass and the first ten minutes with a real Windows user are the next two steps, then a second desktop (Mint or Zorin). Publication to a package repository is a later, owner-gated step.
+## How it is built
 
-The project separates design claims from implementation evidence on purpose; the ledger (`Engine Spec Tasklist 01.MD`) says what is proven and what is not.
+- **Typed operations, never shell text.** A Windows-style command becomes a parsed, typed operation with a fixed argument list; nothing you type is ever handed to a shell. If there is no faithful Linux equivalent, Trier Bridge says so and does nothing.
+- **Linux stays in charge.** Nothing runs as root. Any change that needs permission (a service, a network setting, ending a system process) goes through Linux's own prompt, every time.
+- **Honest about what it knows.** A value it cannot read shows as Unknown, never as zero. An action interrupted mid-way is shown to you afterward, never silently repeated.
+- **Verified on the real thing.** Every change is gated on a real Ubuntu 24.04 desktop — tests run against real files, real processes, real services, with no mocks. The package is reproducible and lintian-clean. The **258 invariants** in `docs/INVARIANTS.md` each trace to evidence tied to a commit hash in `docs/VALIDATION.md`, and the code-quality score in `CODE-QUALITY-REPORT.md` is measured, not asserted.
+
+## What's next
+
+- Builds for Linux Mint and Zorin.
+- A package repository, so updates arrive the normal Ubuntu way.
+- More of the Windows vocabulary in Home search.
 
 ---
 

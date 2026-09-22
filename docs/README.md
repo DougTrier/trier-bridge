@@ -66,9 +66,9 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 | `LICENSE`, `NOTICE`, `SOURCE-HEADER.txt` | Apache-2.0 text, attribution, canonical source header. |
 | `tools/` | Read-only engineering tools (`tb context`, `tb all`, `tb section`, ...). See `tools/README.md`. |
 
-## Lineage
+## How the documents are organized
 
-The document architecture was adapted from the Goldenage Retro `docs` folder, used as an engineering-document structure reference only. Gaming-, scanner-, and Gradle-specific documents were not carried over. Security patterns cite earlier Trier projects (Trier OS, More AI, Aura, Trier Fantasy Football) as precedents, not as implemented controls.
+Design documents state commitments; `VALIDATION.md` records what has been shown true, entry by entry, with the commit hash it was shown on; the ledger tracks what is done and what is not. The security design in `SECURITY.md` is stated as Trier Bridge's own principles, and whether the code honors each one is a question for the invariants and the evidence, never for the prose.
 
 ## Consolidation record — 2026-09-20
 

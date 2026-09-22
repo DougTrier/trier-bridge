@@ -10,7 +10,6 @@ data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.network.svg usr/share
 data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.apps.svg usr/share/icons/hicolor/scalable/apps
 data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.terminal.svg usr/share/icons/hicolor/scalable/apps
 data/icons/hicolor/scalable/apps/org.triertech.TrierBridge-star.svg usr/share/icons/hicolor/scalable/apps
-data/icons/hicolor/scalable/apps/org.triertech.TrierBridge-collective.svg usr/share/icons/hicolor/scalable/apps
 data/icons/hicolor/scalable/apps/org.triertech.TrierBridge-coffee.svg usr/share/icons/hicolor/scalable/apps
 data/icons/hicolor/symbolic/apps/org.triertech.TrierBridge-symbolic.svg usr/share/icons/hicolor/symbolic/apps
 NOTICE usr/share/doc/trier-bridge

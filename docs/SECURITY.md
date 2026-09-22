@@ -52,50 +52,41 @@ It is intentionally failure-first. A feature is not considered secure because it
 
 ---
 
-## 2. Security Design Lineage
+## 2. Security Design Principles
 
-Trier Bridge should preserve the security patterns established across existing Trier projects while adapting them to Linux administration.
+Trier Bridge's security design rests on the following principles. Each is stated here as a commitment; whether the running code honors it is a matter for the invariants (section 5 onward) and the evidence in `VALIDATION.md`, never for this list alone.
 
-### Trier OS patterns retained
+### Boundaries and authority
 
 - explicit trust boundaries
 - narrow role/operation scope
-- fixed executable argument arrays rather than shell interpolation
-- honest documentation of validated behavior versus unverified assumptions
-- recovery paths treated separately from happy-path success
-- deployment controls do not masquerade as application guarantees
-- tests do not claim to prove physical or operational behavior that was not actually exercised
+- operational authority lives behind the UI; the UI is never the system of record for a security decision
+- privileged and network operations are owned by the operation layer, not by the presentation layer
+- untrusted input at every boundary (IPC, D-Bus, files, typed commands) is validated on the trusted side
 
-### More AI patterns retained
+### Execution
 
-- secrets never enter frontend state
-- privileged/network operations remain backend-owned
-- fail-closed behavior
-- schema validation at trust boundaries
-- explicit offline behavior
-- no silent downgrade of security
-- dependency review and release security checks
-- security-relevant audit records without raw secrets
-
-### Aura patterns retained
-
-- operational authority lives behind the UI
-- UI is not the system-of-record for security decisions
+- fixed executable argument arrays; no shell interpolation and no dynamic command construction, ever
 - static allowlists for sensitive actions
-- no dynamic command construction
-- untrusted IPC input is validated by the trusted backend
-- dependency additions are reviewed rather than silently introduced
-- release security is a gate, not a post-release cleanup task
+- fail-closed behavior: malformed, unauthenticated, or unexpected input performs no operation
+- trusted state is reached only through explicit state transitions
+- no silent downgrade of security, and no plaintext fallback when a secure path fails
+- replay and duplicate behavior are considered explicitly, not assumed away
 
-### Trier Fantasy Football patterns retained
+### Secrets and records
 
-- malformed or unauthenticated messages fail closed
-- trusted state is reached through explicit state transitions
-- no plaintext downgrade when a secure path fails
-- replay/duplicate behavior is explicitly considered
+- secrets never enter UI state
+- security-relevant records are kept without raw secrets
 - cryptographic trust and application trust are separate concepts
 
-These are architectural precedents, not claims that Trier Bridge already implements those controls.
+### Honesty
+
+- validated behavior is documented separately from unverified assumptions
+- recovery paths are treated separately from happy-path success
+- explicit offline behavior
+- deployment controls never masquerade as application guarantees
+- tests never claim to prove physical or operational behavior that was not actually exercised
+- dependency additions are reviewed, never silently introduced; release security is a gate, not a post-release cleanup task
 
 ---
 

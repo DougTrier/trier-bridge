@@ -288,10 +288,6 @@ def generate_css(hue: int, zoom_percent: int) -> str:
   background-color: alpha(#e8a317, 0.16);
   color: #b7790f;
 }}
-.tb-support-collective {{
-  background-color: alpha(#1f4f85, 0.14);
-  color: #1f4f85;
-}}
 .tb-support-coffee {{
   background-color: alpha(#a2681f, 0.14);
   color: #a2681f;
