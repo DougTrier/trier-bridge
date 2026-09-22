@@ -29,11 +29,16 @@ def test_apply_and_remove_launchers_are_exact(tmp_path: Path) -> None:
     assert not ledger.exists and not ledger.setup_completed
     res = catalog.apply("familiar-launchers", ledger, paths)
     assert res.ok and len(res.files) == len(catalog.FAMILIAR_LAUNCHERS)
+    icons_seen = set()
     for f in res.files:
         p = Path(f)
         assert p.is_file() and str(p).startswith(str(paths.home))
         text = p.read_text(encoding="utf-8")
         assert "Exec=trier-bridge --section " in text and "[Desktop Entry]" in text
+        icon_line = next(line for line in text.splitlines() if line.startswith("Icon="))
+        assert icon_line != f"Icon={catalog.APP_ID}"  # each launcher gets its own real icon
+        icons_seen.add(icon_line)
+    assert len(icons_seen) == len(catalog.FAMILIAR_LAUNCHERS)  # every one distinct
     assert ledger.is_applied("familiar-launchers")
     doc = json.loads((tmp_path / "ledger.json").read_text())
     assert (

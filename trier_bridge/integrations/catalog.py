@@ -85,49 +85,62 @@ def _desktop_entry(
     )
 
 
-FAMILIAR_LAUNCHERS: tuple[tuple[str, str, str, str], ...] = (
+FAMILIAR_LAUNCHERS: tuple[tuple[str, str, str, str, str], ...] = (
     (
         "taskmanager",
         "Task Manager",
         "See running programs and end one of yours",
         "Task Manager;taskmgr;processes;",
+        "utilities-system-monitor",
     ),
-    ("events", "Event Viewer", "System and application log", "Event Viewer;eventvwr;logs;"),
+    (
+        "events",
+        "Event Viewer",
+        "System and application log",
+        "Event Viewer;eventvwr;logs;",
+        "document-properties",
+    ),
     (
         "devices",
         "Device Manager",
         "What hardware is present and which driver runs it",
         "Device Manager;devmgmt;hardware;",
+        "computer",
     ),
     (
         "disks",
         "Disk Management",
         "Disks, partitions and where they are mounted",
         "Disk Management;diskmgmt;partitions;",
+        "drive-harddisk",
     ),
     (
         "services",
         "Services",
         "Start, stop and inspect background services",
         "Services;services.msc;",
+        "preferences-system",
     ),
     (
         "network",
         "Network Connections",
         "Adapters, IP addresses and DNS",
         "Network Connections;ncpa.cpl;ipconfig;",
+        "preferences-system-network",
     ),
     (
         "apps",
         "Installed Apps",
         "What programs are installed and where they came from",
         "Add or Remove Programs;appwiz.cpl;Installed Apps;",
+        "system-software-install",
     ),
     (
         "terminal",
         "Command Prompt",
         "Windows commands as typed Linux operations",
         "Command Prompt;cmd;",
+        "utilities-terminal",
     ),
 )
 
@@ -229,10 +242,10 @@ def _apply_tray_icon(paths: UserDirs, written: list[str]) -> None:
 
 
 def _apply_familiar_launchers(paths: UserDirs, written: list[str]) -> None:
-    for key, name, comment, keywords in FAMILIAR_LAUNCHERS:
+    for key, name, comment, keywords, icon in FAMILIAR_LAUNCHERS:
         _write(
             paths.data / "applications" / f"{APP_ID}.{key}.desktop",
-            _desktop_entry(name, comment, f"trier-bridge --section {key}", keywords),
+            _desktop_entry(name, comment, f"trier-bridge --section {key}", keywords, icon),
             written,
         )
 
