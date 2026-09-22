@@ -15,4 +15,5 @@ data/icons/hicolor/scalable/apps/org.triertech.TrierBridge-coffee.svg usr/share/
 data/icons/hicolor/symbolic/apps/org.triertech.TrierBridge-symbolic.svg usr/share/icons/hicolor/symbolic/apps
 NOTICE usr/share/doc/trier-bridge
 data/catalog/concepts.json usr/share/trier-bridge/catalog
+data/terminal/tb-hold-terminal.py usr/share/trier-bridge/terminal
 data/integrations/tb_nautilus.py usr/share/trier-bridge/integrations

@@ -126,7 +126,9 @@ SECTIONS: tuple[Section, ...] = (
     Section(
         "taskmanager",
         "Task Manager",
-        "utilities-system-monitor-symbolic",
+        # Not "utilities-system-monitor-symbolic": the session's Adwaita theme has no such
+        # icon, so it had rendered as GTK's missing-image placeholder (found in SCOPE-16).
+        "speedometer-symbolic",
         "Task Manager",
         "Troubleshooting",
         available=True,
@@ -290,6 +292,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._toasts.set_child(content_toolbar)
         self._split.set_content(Adw.NavigationPage.new(self._toasts, APP_NAME))
         outer = Adw.ToolbarView()
+        outer.add_css_class("tb-shell")
         outer.set_content(self._split)
         outer.add_bottom_bar(self._build_zoom_bar())
         self.set_content(outer)
@@ -324,7 +327,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._set_zoom(int(scale.get_value()))
 
     def _build_zoom_bar(self) -> Gtk.Box:
-        bar = Gtk.Box(spacing=10, margin_start=16, margin_end=16, margin_top=6, margin_bottom=6)
+        bar = Gtk.Box(spacing=10)  # spacing inside comes from .tb-zoombar's padding, edge to edge
         bar.add_css_class("tb-zoombar")
         label = Gtk.Label(label=f"{APP_NAME} · {__version__}", xalign=0.0, hexpand=True)
         bar.append(label)
@@ -438,7 +441,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
 
         toolbar = Adw.ToolbarView()
         header = Adw.HeaderBar()
-        header.add_css_class("flat")
+        header.add_css_class("tb-topbar")  # same accent as the body, so the strip is one piece
         header.set_show_title(False)
         toolbar.add_top_bar(header)
         toolbar.set_content(body)

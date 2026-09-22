@@ -8,7 +8,7 @@
 
 [project]
 name = "trier-bridge"
-version = "0.1.0.dev1"
+version = "1.0.0"
 description = "Windows-to-Linux experience compatibility layer. Everything you know. Linux underneath."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -40,7 +40,7 @@ warn_unreachable = true
 packages = ["trier_bridge"]
 # PyGObject has no complete type stubs on the target; UI modules isolate gi imports.
 [[tool.mypy.overrides]]
-module = ["gi", "gi.*", "cups"]
+module = ["gi", "gi.*", "cups", "cairo"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

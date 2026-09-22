@@ -1,3 +1,20 @@
+trier-bridge (1.0.0) unstable; urgency=medium
+
+  * First release: the owner's own end-to-end test pass on Ubuntu 24.04 is
+    complete; what remained was presentation, done in this release.
+  * In-app file browser with drive letters as labels over real paths; Task
+    Manager Performance tab with live per-disk and per-adapter graphs, one
+    color per resource; branded launcher icons; navy shell with an
+    adjustable accent, a zoom bar, and an About page.
+  * Session-critical processes and services are protected; ping and tracert
+    hold their terminal window open through a shipped helper, never a shell.
+  * "Software installers (.deb)" is a Default apps choice so App Center can
+    be picked once and a double-click installs from then on.
+  * Version 1.0.0 also gives the package a plain filename:
+    trier-bridge_1.0.0_all.deb.
+
+ -- Doug Trier <dougtrier69@gmail.com>  Mon, 21 Sep 2026 23:28:41 -0500
+
 trier-bridge (0.1.0~dev1) unstable; urgency=low
 
   * Foundations 02 to 07: discovery, everyday pages, read-only system tools,

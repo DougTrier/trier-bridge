@@ -37,7 +37,8 @@ from .. import APP_ID, __version__  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 
 _CAREER_START = date(1992, 9, 21)
-_GOAL = (
+# Shared with the top of Home (pages.py): the one paragraph that says what this is for.
+GOAL = (
     "Trier Bridge is for people who know Windows and now have Linux in front of them. Type "
     "what you would look for on Windows — Task Manager, Control Panel, Command Prompt "
     "— and it opens the real Linux place for it, and says plainly when there is no "
@@ -92,7 +93,7 @@ class AboutPage(Gtk.Box):  # type: ignore[misc]
 
         goal_group = Adw.PreferencesGroup(title="What it is for")
         goal_row = Adw.ActionRow(use_markup=False)
-        goal_row.set_subtitle(_GOAL)
+        goal_row.set_subtitle(GOAL)
         goal_row.set_subtitle_lines(6)
         goal_group.add(goal_row)
         page.add(goal_group)

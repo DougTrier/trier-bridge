@@ -61,6 +61,24 @@ KIND_LABEL = {
     ProcessKind.CRITICAL: "Critical",
     ProcessKind.SESSION_CRITICAL: "Critical (session)",
 }
+# Pill tint per kind (presentation only, TB-INV-253): the ones you may end read as yours,
+# the ones Linux protects read as such.
+KIND_PILL = {
+    ProcessKind.APP: "tb-pill-ok",
+    ProcessKind.USER: "tb-pill-ok",
+    ProcessKind.OTHER_USER: "tb-pill-neutral",
+    ProcessKind.SYSTEM: "tb-pill-off",
+    ProcessKind.KERNEL: "tb-pill-off",
+    ProcessKind.CRITICAL: "tb-pill-error",
+    ProcessKind.SESSION_CRITICAL: "tb-pill-error",
+}
+# One color per graphed resource, the same palette as the sidebar groups and icon suite.
+RESOURCE_RGB = {
+    "cpu": (0.12, 0.44, 0.40),
+    "mem": (0.32, 0.22, 0.66),
+    "disk": (0.64, 0.41, 0.12),
+    "net": (0.12, 0.31, 0.52),
+}
 
 
 def _fmt_bytes(n: int | None) -> str:
@@ -175,6 +193,10 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
     def _make_row(self, s: ProcessSample) -> Adw.ActionRow:
         row = Adw.ActionRow(use_markup=False)
         row.tb_pid = s.identity.pid
+        kind = Gtk.Label(label=KIND_LABEL[s.kind], valign=Gtk.Align.CENTER, width_chars=7)
+        kind.add_css_class("tb-pill")
+        kind.add_css_class(KIND_PILL[s.kind])
+        row.add_prefix(kind)
         if self._on_end is not None and s.kind.actionable_by_user:
             end = Gtk.Button(label="End task")
             end.set_valign(Gtk.Align.CENTER)
@@ -198,7 +220,7 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
     def _fill_row(self, row: Adw.ActionRow, s: ProcessSample) -> None:
         subtitle = (
             f"CPU {_fmt_pct(s.cpu_percent)} · Memory {_fmt_bytes(s.rss_bytes)} · "
-            f"PID {s.identity.pid} · {s.user} · {KIND_LABEL[s.kind]}"
+            f"PID {s.identity.pid} · {s.user}"
         )
         if row.get_title() != s.name:
             row.set_title(s.name)
@@ -267,8 +289,13 @@ class _Tile:
         self.subtitle = "Unknown"
         self.row = Adw.ActionRow(use_markup=False, title=title, subtitle="Unknown")
         self.row.tb_key = key
+        dot = Gtk.Box(valign=Gtk.Align.CENTER)
+        dot.add_css_class("tb-perf-dot")
+        dot.add_css_class(f"tb-perf-{kind}")
+        self.row.add_prefix(dot)
         self.mini = Chart(CHART_CAPACITY, fill=False)
-        self.mini.set_size_request(56, 28)
+        self.mini.set_color(*RESOURCE_RGB[kind])
+        self.mini.set_size_request(64, 30)
         self.mini.set_valign(Gtk.Align.CENTER)
         if kind in ("cpu", "mem"):
             self.mini.set_max_value(100.0)
@@ -306,22 +333,33 @@ class _PerformancePage(Gtk.Box):  # type: ignore[misc]
         sidebar_scroll.set_vexpand(True)
         self.append(sidebar_scroll)
 
-        detail = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        detail = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         detail.set_margin_top(12)
         detail.set_margin_start(12)
-        detail.set_margin_end(12)
+        detail.set_margin_end(16)
         detail.set_margin_bottom(12)
         detail.set_hexpand(True)
+        heading = Gtk.Box(spacing=12)
+        titles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, hexpand=True)
         self._detail_title = Gtk.Label(xalign=0.0)
         self._detail_title.add_css_class("title-2")
-        detail.append(self._detail_title)
+        titles.append(self._detail_title)
         self._detail_subtitle = Gtk.Label(xalign=0.0)
         self._detail_subtitle.add_css_class("dim-label")
-        detail.append(self._detail_subtitle)
+        titles.append(self._detail_subtitle)
+        heading.append(titles)
+        self._detail_value = Gtk.Label(xalign=1.0, valign=Gtk.Align.CENTER)
+        self._detail_value.add_css_class("tb-perf-value")
+        self._value_kind = ""
+        heading.append(self._detail_value)
+        detail.append(heading)
 
-        overlay = Gtk.Overlay()
+        card = Gtk.Box()
+        card.add_css_class("tb-card")
+        card.set_vexpand(True)
+        overlay = Gtk.Overlay(hexpand=True)
         self._detail_chart = Chart(CHART_CAPACITY, fill=True)
-        self._detail_chart.set_size_request(-1, 240)
+        self._detail_chart.set_size_request(-1, 220)
         self._detail_chart.set_vexpand(True)
         overlay.set_child(self._detail_chart)
         self._peak_label = _caption_label(Gtk.Align.END, Gtk.Align.START)
@@ -332,11 +370,20 @@ class _PerformancePage(Gtk.Box):  # type: ignore[misc]
         self._span_label = _caption_label(Gtk.Align.START, Gtk.Align.END)
         self._span_label.set_text("60 seconds")
         overlay.add_overlay(self._span_label)
-        detail.append(overlay)
+        card.append(overlay)
+        detail.append(card)
 
-        self._facts_group = Adw.PreferencesGroup()
-        self._fact_rows: dict[str, Adw.ActionRow] = {}
-        detail.append(self._facts_group)
+        self._facts_grid = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            homogeneous=True,
+            min_children_per_line=2,
+            max_children_per_line=4,
+            column_spacing=10,
+            row_spacing=10,
+        )
+        self._facts_grid.set_can_focus(False)
+        self._fact_cards: dict[str, tuple[Gtk.FlowBoxChild, Gtk.Label]] = {}
+        detail.append(self._facts_grid)
         self.append(detail)
 
         self._add_tile("cpu", "cpu", "", "CPU")
@@ -362,21 +409,47 @@ class _PerformancePage(Gtk.Box):  # type: ignore[misc]
         self._selected = key
         self._detail_title.set_text(tile.title)
         self._detail_subtitle.set_text(tile.device or tile.subtitle)
+        self._detail_chart.set_color(*RESOURCE_RGB[tile.kind])
         self._detail_chart.set_max_value(100.0 if tile.kind in ("cpu", "mem") else None)
         self._detail_chart.set_values(list(tile.history))
+        if self._value_kind:
+            self._detail_value.remove_css_class(f"tb-perf-{self._value_kind}")
+        self._value_kind = tile.kind
+        self._detail_value.add_css_class(f"tb-perf-{tile.kind}")
+        self._detail_value.set_text(tile.subtitle)
         self._update_facts(tile)
         self._peak_label.set_text(
             "100%" if tile.kind in ("cpu", "mem") else _fmt_bps(self._detail_chart.peak())
         )
 
     def _update_facts(self, tile: _Tile) -> None:
-        for w in list(self._fact_rows.values()):
-            self._facts_group.remove(w)
-        self._fact_rows = {}
+        """Stat cards, updated in place each tick; rebuilt only when the set of facts changes
+        (a different resource selected), so nothing flickers at the 2-second cadence."""
+        if list(self._fact_cards) != list(tile.facts):
+            for child, _ in self._fact_cards.values():
+                self._facts_grid.remove(child)
+            self._fact_cards = {}
+            for label in tile.facts:
+                card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+                card.add_css_class("tb-stat")
+                caption = Gtk.Label(label=label, xalign=0.0)
+                caption.add_css_class("tb-stat-label")
+                card.append(caption)
+                value_label = Gtk.Label(label="", xalign=0.0)
+                value_label.add_css_class("tb-stat-value")
+                card.append(value_label)
+                card.update_property([Gtk.AccessibleProperty.LABEL], [label])
+                child = Gtk.FlowBoxChild(child=card)
+                child.set_can_focus(False)
+                self._facts_grid.append(child)
+                self._fact_cards[label] = (child, value_label)
         for label, value in tile.facts.items():
-            row = Adw.ActionRow(use_markup=False, title=label, subtitle=value)
-            self._facts_group.add(row)
-            self._fact_rows[label] = row
+            value_label = self._fact_cards[label][1]
+            if value_label.get_text() != value:
+                value_label.set_text(value)
+                self._fact_cards[label][0].get_child().update_property(
+                    [Gtk.AccessibleProperty.DESCRIPTION], [value]
+                )
 
     # ---- sampling (values already collected off the main thread; TB-INV-246) ---------
     def update(
@@ -468,6 +541,7 @@ class _PerformancePage(Gtk.Box):  # type: ignore[misc]
         tile = self._tiles[self._selected]
         self._detail_chart.push(tile.history[-1] if tile.history else None)
         self._detail_subtitle.set_text(tile.device or tile.subtitle)
+        self._detail_value.set_text(tile.subtitle)
         self._update_facts(tile)
         self._peak_label.set_text(
             "100%" if tile.kind in ("cpu", "mem") else _fmt_bps(self._detail_chart.peak())
@@ -518,7 +592,7 @@ class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
         for child, name, title, icon in (
             (self._apps, "apps", "Apps and processes", "view-list-symbolic"),
             (self._background, "background", "Background", "system-run-symbolic"),
-            (self._perf, "performance", "Performance", "utilities-system-monitor-symbolic"),
+            (self._perf, "performance", "Performance", "speedometer-symbolic"),
         ):
             p = self._stack.add_titled(child, name, title)
             p.set_icon_name(icon)

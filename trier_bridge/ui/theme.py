@@ -133,6 +133,10 @@ def generate_css(hue: int, zoom_percent: int) -> str:
   background-color: {bottom};
   color: #cfdbea;
   border-top: none;
+  padding: 6px 16px;
+}}
+.tb-shell revealer.bottom-bar {{
+  background-color: {bottom};
 }}
 .tb-zoombar button {{
   color: #ffffff;
@@ -234,6 +238,40 @@ def generate_css(hue: int, zoom_percent: int) -> str:
 .tb-card-text {{
   color: alpha(@card_fg_color, 0.65);
   font-size: 0.92em;
+}}
+
+/* ---- Task Manager Performance: one color per resource, stat cards ---- */
+.tb-perf-dot {{
+  border-radius: 6px;
+  min-width: 10px;
+  min-height: 10px;
+}}
+.tb-perf-dot.tb-perf-cpu {{ background-color: #1f6f65; }}
+.tb-perf-dot.tb-perf-mem {{ background-color: #5138a8; }}
+.tb-perf-dot.tb-perf-disk {{ background-color: #a2681f; }}
+.tb-perf-dot.tb-perf-net {{ background-color: #1f4f85; }}
+.tb-perf-value {{
+  font-weight: 700;
+  font-size: 1.6em;
+}}
+.tb-perf-value.tb-perf-cpu {{ color: #1f6f65; }}
+.tb-perf-value.tb-perf-mem {{ color: #5138a8; }}
+.tb-perf-value.tb-perf-disk {{ color: #a2681f; }}
+.tb-perf-value.tb-perf-net {{ color: #1f4f85; }}
+.tb-stat {{
+  background-color: @card_bg_color;
+  color: @card_fg_color;
+  border: 1px solid alpha(@window_fg_color, 0.10);
+  border-radius: 12px;
+  padding: 12px 14px;
+}}
+.tb-stat-label {{
+  font-size: 0.85em;
+  color: alpha(@card_fg_color, 0.6);
+}}
+.tb-stat-value {{
+  font-weight: 700;
+  font-size: 1.15em;
 }}
 
 /* ---- rows: real application icons and support links ---- */

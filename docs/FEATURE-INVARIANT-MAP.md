@@ -1,6 +1,6 @@
 # Feature to Invariant Map
 
-**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 08:30 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
+**Generated from `VALIDATION.md` (the "Invariant impact" line of every evidence entry) by `tools/dev.py map`, 2026-09-21 11:11 PM CDT.** Regenerate whenever an entry is added; this file is derived, not edited by hand (ARC-13).
 
 | Evidence entry | Feature | Invariants and security rules cited |
 |---|---|---|
@@ -35,8 +35,11 @@
 | IMP-07.11 | findstr, find, where, set, path, tree, %VAR% expansion, exit | TB-INV-080, TB-INV-098, TB-INV-099, TB-INV-100, TB-INV-105 |
 | IMP-07.12 | shutdown timer and cancel, tool names open pages, findstr /R and /L; Event Viewer Boot view | TB-INV-045, TB-INV-068, TB-INV-094, TB-INV-099, TB-INV-100, TB-INV-104, TB-INV-146, TB-INV-147 |
 | IMP-07.13 | nslookup's resolver calls bounded by a wall-clock timeout (TB-INV-101) | TB-INV-041, TB-INV-101 |
+| IMP-07.14 | ping/tracert terminal window no longer closes itself before the reply is readable | TB-INV-004, TB-SEC-003 |
+| SCOPE-15 | Branded navy shell, adjustable accent color, zoom bar, sidebar About page (DEC-027) | TB-INV-252, TB-INV-253, TB-INV-254, TB-INV-255, TB-INV-256, TB-INV-257, TB-INV-258 |
+| SCOPE-16 | Final polish pass: content-area design, accent frame, `.deb` as a default-app choice, About facts only (DEC-028) | TB-INV-252, TB-INV-253, TB-INV-254, TB-INV-255, TB-INV-256, TB-INV-257 |
 | TOOL-06 | Stack-dependent engineering tools: normalized test results, quality evidence, derived docs | TB-INV-004, TB-INV-109, TB-INV-110 |
 | TOOL-05 | Read-only tools run unmodified on Linux | none cited |
 | DOC-02.01 | In-app file browser: browsing, mutations, root curation, keys, icons, properties | TB-INV-006, TB-INV-050, TB-INV-234, TB-INV-237, TB-INV-239, TB-INV-242, TB-INV-243, TB-INV-244 |
 
-107 distinct invariant and security IDs are cited by 34 entries.
+114 distinct invariant and security IDs are cited by 37 entries.

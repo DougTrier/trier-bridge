@@ -38,6 +38,7 @@ from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
 from ..system.driveletters import letters  # noqa: E402
 from . import theme  # noqa: E402
+from .about import GOAL  # noqa: E402
 from .filebrowser import FileBrowserPage  # noqa: E402
 from ..operations.defaults import (  # noqa: E402
     Candidate,
@@ -135,7 +136,7 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
             "taskmanager",
             "Task Manager",
             "What is running and how the system is doing",
-            "utilities-system-monitor-symbolic",
+            "speedometer-symbolic",
             "Troubleshooting",
         ),
         (
@@ -174,13 +175,9 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
         self._router = router
         self._notify = notify
         page = Adw.PreferencesPage()
-        intro = Adw.PreferencesGroup(
-            description=(
-                "Type what you would look for on Windows: Task Manager, Add or Remove Programs, "
-                "Downloads, Printers, Control Panel. Trier Bridge shows the Linux place for it "
-                "and tells you when it is not the same."
-            ),
-        )
+        # The first thing a new person reads is what this is for (the same paragraph About
+        # shows), then the search box that is the way to use it.
+        intro = Adw.PreferencesGroup(description=GOAL)
         self._entry = Gtk.SearchEntry(placeholder_text="Search Windows words…")
         self._entry.update_property(
             [Gtk.AccessibleProperty.LABEL], ["Search for anything you know from Windows"]
@@ -246,6 +243,9 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
 
     def _on_search(self, entry: Gtk.SearchEntry) -> None:
         query = entry.get_text().strip()
+        # The card grid steps aside while a search is active, so the results sit right
+        # under the search box instead of below the fold (owner-reported, SCOPE-16).
+        self._cards.set_visible(not query)
         if not query:
             self._show_groups()
             return

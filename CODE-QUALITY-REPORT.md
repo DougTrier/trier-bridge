@@ -1,9 +1,9 @@
 # CODE-QUALITY-REPORT.md
 # Trier Bridge Code Quality Report
 
-**Candidate:** commit `e6ad2f8` (adds IMP-07.13, `nslookup`'s resolver calls bounded by a wall-clock timeout; package 0.1.0~dev1)  
-**Timestamp:** 2026-09-21 03:10 PM CDT  
-**CQS:** **94 / 100** (all eight categories measured; unchanged from candidate `28f6988` — see the note at the end of this refresh)  
+**Candidate:** commit `208a257` (final polish pass, DEC-028: shared page hero, accent frame, Home cards, real app icons and pills, About facts only, `.deb` as a default-app choice; package 0.1.0~dev1). Covers everything since `e6ad2f8`: the file browser (DEC-025), session-critical protection, Performance graphs (DEC-026), the launcher icon suite, the ping/tracert terminal fixes, and the shell restyle (DEC-027).  
+**Timestamp:** 2026-09-21 11:04 PM CDT  
+**CQS:** **94 / 100** (all eight categories measured; unchanged from candidates `28f6988` and `e6ad2f8` — no criterion's 0/0.5/1 score moved; the six new complexity outliers are dispositioned below and stay within the 0.5 already recorded for those criteria)  
 **Assessed weight:** 100 / 100  
 **Observed:** 94 of 100  
 **Release quality:** NOT ASSESSED (no release candidate; release locked)
@@ -16,11 +16,11 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 
 | Item | Value |
 |---|---|
-| Source scope | `trier_bridge/` (14,299 lines, 68 files), `tests/` (3,788 lines, 45 files: unit, integration, the polkit test agent, AT-SPI journeys), `tools/dev.py`, `data/integrations/tb_nautilus.py` |
+| Source scope | `trier_bridge/` (16,734 lines, 75 files, per `dev.py evidence`), `tests/` (unit, integration, the polkit test agent, AT-SPI journeys; 194 unit cases in the VM), `tools/dev.py`, `data/integrations/tb_nautilus.py` |
 | Environment | `tb-ubuntu-desktop-2404` (Ubuntu 24.04.5, GNOME 46 Wayland, software rendering) and Windows host `.venv` with identical tool versions |
 | Tools | black 24.2.0, flake8 7.0.0 (pyflakes 3.2.0, pycodestyle 2.11.1, mccabe 0.7.0), flake8-cognitive-complexity 0.1.0, bandit 1.6.2, mypy 1.9.0 `--strict`, pytest 7.4.4, lintian 2.117.0 (all from the Ubuntu 24.04 archive, mirrored on the host) |
 | Commands | `python3 tools/dev.py all` (includes `security` and `complexity`); `dev.py results` and `dev.py evidence` write the normalized test outcome and the measured inputs of this report to `reports/local/` (entry TOOL-06); `dpkg-buildpackage -us -uc -b`; `lintian`; a read-only metrics script for the broad-catch inventory and longest functions |
-| Test results | host: 105 unit passed, 11 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 140 unit passed, 1 skipped (up from 139: the new `_bounded` timeout unit test); integration 46 passed, 8 skipped with the journeys excluded, this pass without the test-account password (a fuller pass earlier the same day, with it, read 51 passed/3 skipped — the 3 remaining need a console session unavailable over SSH); all normalized by `tools/dev.py results`; bandit: 0 findings (entry IMP-07.13) |
+| Test results | host: 138 unit passed, 17 skipped (need `gi`, CUPS, logind, or POSIX permission bits); VM: 194 unit passed, 1 skipped (up from 140 at `e6ad2f8`: real-fixture tests for the file listing, disk/network sampling and the chart, the shell theme, the section table, and the default-app type list); integration 46 passed, 8 skipped with the journeys excluded and without the test-account password in this SSH session (the same environment-limited shape as the `e6ad2f8` pass; the fuller 51 passed/3 skipped run with the password stands as the best evidence, entry IMP-07.12); all normalized by `tools/dev.py results`; bandit: 0 findings (entry SCOPE-16) |
 
 ---
 
@@ -30,10 +30,10 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 |---|---:|---|---:|---|
 | Architecture / boundaries | 20 | purposes and dependency direction documented in package docstrings and `docs/ENGINEERING.md` (1); acyclic: `core` imports only the standard library; `system`, `state`, `operations`, `bridge`, `integrations`, `apps`, `desktop` import `core`/`config`; `ui` imports all of them; nothing imports `ui` except `__main__` (1); single mutable-state authority per kind: `config.py` writes files, `state/journal.py` owns operation records, `state/preferences.py` owns preferences, `integrations/ledger.py` owns the integration record and re-reads before every change (1); explicit domain/interfaces/adapters: typed `Operation`/`OperationResult`, `StableIdentity` protocol with four implementations (process, unit, file, default-app), adapters `system/*` behind `Bus` (1); cohesive responsibilities, no generic managers (1) | 20 | MEASURED |
 | Readability / naming | 15 | Trier Bridge vocabulary throughout (Operation, CapabilityState, ProcessIdentity, UnitIdentity, FileIdentity, MimeIdentity, TerminatePlan, FilePlan, ServicePlan, DefaultAppPlan, Integration) (1); accurate names (1); understandable control flow: fifteen functions above cyclomatic 10 are dispositioned below; none is flagged for splitting (1); consistent state/result terms matching `docs/STATE-AND-PERSISTENCE.md` (1); coherent module scope (1) | 15 | MEASURED |
-| Complexity | 15 | cyclomatic: 15 functions above 10, maximum 18 (`_build_page`), unchanged from candidate `28f6988` (same 15 functions, same values; `netdiag.py`'s new `_bounded` helper and revised `lookup` stay under threshold); every outlier is dispositioned below (0.5); cognitive complexity: 31 functions above 15 (flake8-cognitive-complexity, threshold 15), unchanged from candidate `28f6988`, maximum 30, all dispositioned below (0.5); nesting review: deepest nesting three levels (0.5); function/module scope: longest function 92 lines (`Discovery.environment`), largest module `ui/window.py` 480 lines (0.5); duplicated decision review: one state machine, one identity comparison per kind, one redaction function, one atomic write, one ledger, one plan→confirm→execute shape reused by four operation kinds (1) | 9 | MEASURED |
+| Complexity | 15 | cyclomatic: 17 functions above 10, maximum 19 (`_build_page`, one more page since `e6ad2f8`); two new since `e6ad2f8` (`list_directory` 12, `run_in_terminal` 13), every outlier dispositioned below (0.5); cognitive complexity: 35 functions above 15 (flake8-cognitive-complexity, threshold 15), four new since `e6ad2f8`, maximum still 30, all dispositioned below (0.5); nesting review: deepest nesting three levels (0.5); function/module scope: longest logic function 92 lines (`Discovery.environment`; `theme.generate_css` is longer at 180 lines but is one CSS template string with no branches), largest module `bridge/commands.py` 1,549 lines (0.5); duplicated decision review: one state machine, one identity comparison per kind, one redaction function, one atomic write, one ledger, one plan→confirm→execute shape reused by four operation kinds, one CSS provider for the whole window (1) | 9 | MEASURED |
 | Documentation / rationale | 15 | API ownership/errors/side effects in module and class docstrings (1); privilege/security assumptions stated (`operations/*`, `integrations/*`, `bridge/*`, `docs/PRIVILEGE-MODEL.md` section 8) (1); persistence/recovery documented (`config.py`, `state/journal.py`, `integrations/ledger.py`) (1); concurrency/lifecycle: worker threads hand results to the main loop through `GLib.idle_add`; the polkit test agent documents its own thread and private connection; the contract is written in `docs/ENGINEERING.md` section 14.1 (1); compatibility decisions cite `TB-INV-###` and decision IDs (1) | 15 | MEASURED |
-| Testing / regression | 15 | tests map to invariants by `TB-T###` in docstrings (1); 140 unit tests on real files, real child processes, the real Trash, the real mimeapps.list, and now a real wall-clock timeout (`_bounded`, entry IMP-07.13); no mocks (1); integration/negative tests against live services: best evidence this same day is 51 passed with journeys excluded (systemd, polkit through a real agent, NetworkManager, udisks2, journald, sysfs, D-Bus activation, loopback ext4 faults, entry IMP-07.12); 3 skipped for lacking a console session over SSH, not a code gap; also confirmed live at this candidate: two-concurrent-instance coordination (TB-INV-063, entry IMP-05) and the PowerShell button, End task dialog, Disk Management/Network/Files pages, all driven or read back over AT-SPI (entries IMP-05, IMP-06.04, IMP-07.06/07, IMP-04.07, IMP-06.06) (1); failure/lifecycle/recovery cases: state-machine refusals, disk-full and kill-mid-write recovery, stale identity for four target kinds, PARTIAL restart, denied and dismissed authorization, read-only ledger (1); candidate-specific regression evidence: `docs/TEST-STRATEGY.md` section 7 maps SECURITY section 37 to tests with gaps named; same revision run on host and VM; installed `.deb` exercised through AT-SPI (1) | 15 | MEASURED |
-| Static-analysis health | 10 | build diagnostics: package builds with no warnings; lintian silent (1); lint and type analysis: flake8 and mypy strict clean (1); security/safety findings: bandit 1.6.2 over the product reports zero findings (four low-severity `assert` uses were replaced by explicit checks today); manual grep still shows zero subprocess/shell/os.system in the product (1); suppression inventory: 148, all of three documented kinds, listed below (1); resource/nullability/unsafe/boundary warnings: mypy strict with `warn_unreachable` clean (1) | 10 | MEASURED |
+| Testing / regression | 15 | tests map to invariants by `TB-T###` in docstrings (1); 194 unit tests on real files, real child processes, the real Trash, the real mimeapps.list, a real wall-clock timeout (`_bounded`, entry IMP-07.13), real FIFOs/sockets/symlinks for the file listing, real `/proc`-shaped samples for the graphs, and the real color math behind the shell theme; no mocks (1); integration/negative tests against live services: best evidence this same day is 51 passed with journeys excluded (systemd, polkit through a real agent, NetworkManager, udisks2, journald, sysfs, D-Bus activation, loopback ext4 faults, entry IMP-07.12); 3 skipped for lacking a console session over SSH, not a code gap; also confirmed live at this candidate: two-concurrent-instance coordination (TB-INV-063, entry IMP-05) and the PowerShell button, End task dialog, Disk Management/Network/Files pages, all driven or read back over AT-SPI (entries IMP-05, IMP-06.04, IMP-07.06/07, IMP-04.07, IMP-06.06) (1); failure/lifecycle/recovery cases: state-machine refusals, disk-full and kill-mid-write recovery, stale identity for four target kinds, PARTIAL restart, denied and dismissed authorization, read-only ledger (1); candidate-specific regression evidence: `docs/TEST-STRATEGY.md` section 7 maps SECURITY section 37 to tests with gaps named; same revision run on host and VM; installed `.deb` exercised through AT-SPI (1) | 15 | MEASURED |
+| Static-analysis health | 10 | build diagnostics: package builds with no warnings; lintian silent (1); lint and type analysis: flake8 and mypy strict clean (1); security/safety findings: bandit 1.6.2 over the product reports zero findings (four low-severity `assert` uses were replaced by explicit checks today); manual grep still shows zero subprocess/shell/os.system in the product (1); suppression inventory: 171, all of three documented kinds, listed below (1); resource/nullability/unsafe/boundary warnings: mypy strict with `warn_unreachable` clean (1) | 10 | MEASURED |
 | Dependency hygiene | 5 | necessity: no runtime dependency beyond Ubuntu Desktop defaults; `python3-nautilus` is a Recommends used only when the Files integration is on (1); pins: `docs/TOOLCHAIN.md` and `debian/control` version floors (1); license/provenance: all first-party Apache-2.0 plus Ubuntu packages (1); maintenance/security/platform: Ubuntu 24.04 LTS set (1); transitive/package cost: 99 KB `.deb`, zero new packages pulled; `python3-cups` is a Recommends that Ubuntu Desktop already ships (1) | 5 | MEASURED |
 | Dead code / duplication | 5 | unused paths: pyflakes clean (1); unreachable branches: mypy `warn_unreachable` clean (1); exact duplicates: none found by reading; the two directory classes are now `config.Paths` and `integrations.catalog.UserDirs` (1); semantic duplicates / state authority: one authority each (1); standalone foundations distinguished and labelled (1) | 5 | MEASURED |
 
@@ -45,7 +45,7 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 
 | Function | CC | Disposition |
 |---|---:|---|
-| `ui/window.py: _build_page` | 18 | Flat page dispatch; reads as a table. Kept. |
+| `ui/window.py: _build_page` | 19 | Flat page dispatch; reads as a table. Grew by one for the About page (DEC-027). Kept. |
 | `capability/discovery.py: environment` | 17 | A dozen independent facts, each guarded so one missing source never hides the others. Kept. |
 | `bridge/grammar.py: parse` | 14 | Grammar plus the cmdlet hook. Kept. |
 | `integrations/catalog.py: apply` | 14 | Dispatch by integration id plus rollback on any failure and on an unrecordable ledger. Kept. |
@@ -60,6 +60,8 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | `bridge/commands.py: cmd_tree` | 11 | Reviewed; kept. |
 | `catalog/model.py: load` | 11 | One branch per catalog schema rule. Kept. |
 | `integrations/tray.py: menu_call` | 11 | dbusmenu method dispatch. Kept. |
+| `system/netdiag.py: run_in_terminal` | 13 | New since `e6ad2f8` (entry IMP-07.14): the terminal launch grew three real branches — the stay-open wrapper, the marker-file read that finds the pty shell to replace on the next run, and the `Gio.AppInfo` fallback when no `x-terminal-emulator` is on `PATH`. Each branch was probed live on the VM before it shipped. Kept; a candidate for splitting the marker wait into a helper if it grows again. |
+| `system/filelisting.py: list_directory` | 12 | New since `e6ad2f8` (entry DOC-02.01): one branch per entry kind (dir, file, symlink-to-each, broken link, FIFO, socket, device) plus the hidden-file and root-curation filters, each with a real-fixture test. Kept. |
 
 ---
 
@@ -85,34 +87,38 @@ Rubric: `docs/CODE-QUALITY.md` section 1. Each criterion is 0, 0.5, or 1 with ev
 | `ui/disks.py: _show` | 20 | Row building per item with plain-language fallbacks (Printers, Disks, Network, Devices pages). Kept; presentation only. |
 | `bridge/commands.py: cmd_netstat` | 19 | /proc/net parsing for TCP/UDP tables. Kept. |
 | `operations/network.py: plan_network` | 19 | One refusal or preview per verb, reviewed as a whole so the wording stays consistent. Kept. |
-| `ui/window.py: _build_page` | 19 | Flat page dispatch; reads as a table. Kept. |
+| `ui/window.py: _build_page` | 20 | Flat page dispatch; reads as a table. Grew by one for the About page (DEC-027). Kept. |
+| `system/netdiag.py: run_in_terminal` | 20 | New since `e6ad2f8` (entry IMP-07.14); see the cyclomatic row above. Kept. |
+| `ui/filebrowser.py: _render` | 19 | New since `e6ad2f8` (entry DOC-02.01): one row shape per entry kind, with the per-kind icon, the root-curation hide, and the visible-row cap. Presentation only. Kept. |
 | `bridge/commands.py: _search` | 19 | Grew from 17: the `/R`/`/L` matcher dispatch added one branch (entry IMP-07.12). Kept. |
 | `bridge/commands.py: cmd_start` | 19 | Grew from 18: opening a `taskmgr`-family page by name added one branch (entry IMP-07.12). Kept. |
 | `catalog/model.py: load` | 18 | One branch per catalog schema rule. Kept. |
 | `ui/network.py: _show` | 18 | Row building per item with plain-language fallbacks (Printers, Disks, Network, Devices pages). Kept; presentation only. |
 | `system/devices.py: _load` | 17 | pci.ids/usb.ids parser. Kept. |
 | `system/startup.py: read_startup` | 17 | Autostart entry parsing with hidden/only-show-in rules. Kept. |
+| `ui/filebrowser.py: _on_key_pressed` | 17 | New since `e6ad2f8` (entry DOC-02.01): Explorer's own key bindings (Backspace, Alt+arrows, Delete, F2, Ctrl+C/X/V), one branch per key, each calling the identical action method the row menu calls. Kept. |
 | `bridge/commands.py: cmd_taskkill` | 16 | Reviewed; kept. |
 | `operations/network.py: _verify_link` | 16 | Polls the adapter for the expected link state with three outcomes. Kept. |
 | `operations/process.py: execute_terminate` | 16 | The TERM/KILL lifecycle. Kept. |
 | `system/driveletters.py: to_linux_path` | 16 | Drive-letter and Users alias resolution; each branch tested. Kept. |
 | `system/driveletters.py: to_windows_path` | 16 | Longest-mount match for the familiar spelling; tested. Kept. |
 | `ui/devices.py: _show` | 16 | Row building per item with plain-language fallbacks (Printers, Disks, Network, Devices pages). Kept; presentation only. |
+| `ui/chart.py: _draw` | 16 | New since `e6ad2f8` (entry IMP-04.01, DEC-026): one Cairo pass that draws the grid, the line, and a gap for every `None` sample (TB-INV-251) rather than interpolating. Presentation only. Kept. |
 
-**Resolved this candidate:** `system/journal.py: newest` (was 19) was split into `_scope`/`_read_entry` for the boot-scoped read; `bridge/commands.py: cmd_shutdown` (was 16) was split into `_shutdown_abort`/`_shutdown_form` for the timer/cancel logic. Both are now below the cognitive threshold and no longer dispositioned here (entry IMP-07.12).
+**New this candidate (since `e6ad2f8`):** two cyclomatic and four cognitive outliers, all from the evening's new surfaces (file browser, performance graphs, the terminal fixes), each dispositioned above; nothing previously listed left the lists. `ui/window.py: _build_page`/`_on_row_selected` did not grow with the shell restyle because the hero, color, and zoom logic live in their own methods and `ui/theme.py`.
 
-Both lists come from `python3 tools/dev.py complexity` in the VM (15 cyclomatic, 31 cognitive); the host mirror of the plugin reports a few fewer. Every function entering either list is dispositioned here before its ledger item closes.
+Both lists come from `python3 tools/dev.py evidence` in the VM (17 cyclomatic, 35 cognitive, written to `reports/local/quality-evidence.json`); the host mirror of the plugin reports a few fewer. Every function entering either list is dispositioned here before its ledger item closes.
 
 ---
 
-## Suppression inventory (148)
+## Suppression inventory (171)
 
-Counted by `tools/dev.py evidence` in the VM: 122 `# noqa` (all `E402`), 26 `type: ignore`, 0 `# nosec`. The earlier figure of 145 was a hand count that missed three `E402` markers added with the network layer.
+Counted by `tools/dev.py evidence` in the VM for candidate `208a257`: 142 `# noqa` (all `E402`), 29 `type: ignore`, 0 `# nosec` — up from 122/26/0 at `e6ad2f8`, all of the same three kinds: every new `E402` is a `gi.repository` import in a new module (`filelisting`, `filebrowser`, `diskio`, `netio`, `chart`, `theme`'s consumers, `about`) and every new `type: ignore[misc]` is a new `Gtk`/`Adw` subclass (`FileBrowserPage`, `Chart`, `AboutPage`).
 
 | Kind | Count | Where | Reason |
 |---|---:|---|---|
-| `# noqa: E402` | 122 | every module that imports `gi.repository` | PyGObject requires `gi.require_version()` before importing `gi.repository`; imports after it are the documented pattern |
-| `# type: ignore[misc]` | 21 | every `Gtk`/`Adw` subclass | mypy strict forbids subclassing an untyped base; `gi` has no complete stubs on the target |
+| `# noqa: E402` | 142 | every module that imports `gi.repository` | PyGObject requires `gi.require_version()` before importing `gi.repository`; imports after it are the documented pattern |
+| `# type: ignore[misc]` | 24 | every `Gtk`/`Adw` subclass | mypy strict forbids subclassing an untyped base; `gi` has no complete stubs on the target |
 | `# type: ignore[no-untyped-def]` | 5 | D-Bus method-call handlers in `integrations/search_provider.py` and `integrations/tray.py` | Gio hands the handler eight positional values whose types come from `gi`; annotating them as `Any` eight times would say the same thing with more noise |
 
 No baseline files, no disabled rules, no lowered thresholds. Broad `except Exception` catches: 18, all at a UI or process boundary where the failure is reported to the user or logged and the operation is marked failed (`bridge/commands.py`, `config.py` cleanup path, `integrations/catalog.py` rollback paths, `ui/*` page loaders, `ui/app.py` dev snapshot). None swallows silently.

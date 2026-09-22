@@ -20,6 +20,7 @@
   <developer id="org.triertech"><name>Doug Trier</name></developer>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.0.0" date="2026-09-21"><description><p>First release. In-app file browser with drive letters as labels, Task Manager with live performance graphs, branded launcher icons, a navy shell with an adjustable accent color and a zoom bar, an About page, protection for session-critical processes and services, and .deb installers as a default-app choice so a double-click installs through App Center.</p></description></release>
     <release version="0.1.0~dev1" date="2026-09-21"><description><p>Foundations 01 to 07 and the integrations: familiar tools, Bridge Terminal with PowerShell names, file operations, default apps, service control through polkit, setup screen, tray icon, search provider, Files menu.</p></description></release>
     <release version="0.1.0~dev0" date="2026-09-21"><description><p>Foundation 01 shell.</p></description></release>
   </releases>

@@ -38,3 +38,8 @@ def data_dir(environ: dict[str, str] | None = None) -> Path:
 
 def catalog_path(environ: dict[str, str] | None = None) -> Path:
     return data_dir(environ) / "catalog" / "concepts.json"
+
+
+def terminal_runner_path(environ: dict[str, str] | None = None) -> Path:
+    """The shipped helper that holds a terminal window open around one fixed program."""
+    return data_dir(environ) / "terminal" / "tb-hold-terminal.py"
