@@ -1,6 +1,6 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-22 12:19 AM CDT  
+**Last updated:** 2026-09-22 12:57 AM CDT  
 **Owner:** Doug Trier  
 **Project state:** VERSION 1.0.0 BUILT AND INSTALLED ON ENV-02 (candidate `5791bdc`); FOUNDATIONS 01–07 CLOSED; FOUNDATION 08 AUTOMATED PARTS DONE; FILE BROWSER, PERFORMANCE GRAPHS, SHELL RESTYLE, AND FINAL POLISH BUILT (DEC-025–028); OWNER ACCEPTANCE IS WHAT REMAINS  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
@@ -75,7 +75,7 @@ Administration and command translation are deeper layers.
 - IMP-08.03 a second environment (another machine, X11, an Ubuntu flavour); IMP-08.09 release CQS (release locked)
 - SCOPE-12 name and trademark check before any public step
 - quality remediation CQ-02..09 (`CODE-QUALITY-REPORT.md`)
-- release (publication still owner-gated; the repository itself is on GitHub, private, since 2026-09-22 — making it public, tagging, and attaching the package as a release asset are each a separate owner instruction)
+- release (tag `v1.0.0` and the GitHub release "Trier Bridge 1.0.0" with `trier-bridge_1.0.0_all.deb` + `SHA256SUMS` attached, published 2026-09-22 12:57 AM CDT by owner instruction; the repository is still private while the owner reviews it — making it public is his separate call)
 
 ---
 
@@ -103,7 +103,7 @@ No document existence implies runtime PASS.
 6. Do not weaken security to create familiarity.
 7. Design to prevent failure; when failure occurs, fail gracefully.
 8. Use America/Chicago / Central Time for project timestamps.
-9. The repository is `github.com/DougTrier/trier-bridge`, private, `origin/main` (owner instruction 2026-09-22, superseding the 2026-09-20 local-only direction). Gated local commits on `main` are pushed as the normal way to record work; making the repository public, tags, releases, package uploads, signing keys, force-pushes, and branch deletion each wait for an explicit owner instruction (`AGENTS.md` section 14).
+9. The repository is `github.com/DougTrier/trier-bridge`, private, `origin/main` (owner instruction 2026-09-22, superseding the 2026-09-20 local-only direction). Gated local commits on `main` are pushed as the normal way to record work. Tag `v1.0.0` and its release (package and checksum attached) were published 2026-09-22 12:57 AM CDT on the owner's instruction; making the repository public, further tags or releases, signing keys, force-pushes, and branch deletion each still wait for an explicit owner instruction (`AGENTS.md` section 14).
 10. Non-invasive: never invasive, never mistaken for a virus; the owner defines outcomes and delegates the engineering approach (2026-09-20, DEC-018).
 11. Ship every integration; user intent decides at first-run setup via grouped options; all reversible, changeable any time; otherwise out of sight behind a plain "T" tray icon (2026-09-20, DEC-019).
 

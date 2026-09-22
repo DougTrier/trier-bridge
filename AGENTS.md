@@ -1,7 +1,7 @@
 # AGENTS.md
 # Trier Bridge Agent / Contributor Operating Rules
 
-**Updated:** 2026-09-22 12:19 AM CDT
+**Updated:** 2026-09-22 12:57 AM CDT
 
 This file governs automated coding agents, AI assistants, scripted engineering workers, and similar contributors operating in the Trier Bridge repository.
 
@@ -268,7 +268,7 @@ with first-party header/format tooling unless explicitly designed for that forma
 
 GitHub creation, push, release, package upload, signing-key use, public distribution, and external publication remain owner-gated actions.
 
-**Owner direction 2026-09-22: the repository lives at `github.com/DougTrier/trier-bridge`, private, `origin/main`.** Doug created it by instruction on 2026-09-22 12:17 AM CDT and pushed the full history (`ca4849a` and earlier). Pushing `main` after a gated local commit is now the normal way to record work. Still owner-gated, each time, by explicit instruction: making the repository public, creating tags or releases, uploading a package as a release asset, any signing-key use, force-pushes, branch deletion, and anything else visible beyond the repository itself. The earlier direction (2026-09-20: local Git only, no remote) is superseded by this one.
+**Owner direction 2026-09-22: the repository lives at `github.com/DougTrier/trier-bridge`, private, `origin/main`.** Doug created it by instruction on 2026-09-22 12:17 AM CDT and pushed the full history (`ca4849a` and earlier). Pushing `main` after a gated local commit is now the normal way to record work. Tag `v1.0.0` and the GitHub release "Trier Bridge 1.0.0" (package and `SHA256SUMS` attached) were published on his instruction on 2026-09-22 12:57 AM CDT. Still owner-gated, each time, by explicit instruction: making the repository public, any further tag or release, uploading any further package, any signing-key use, force-pushes, branch deletion, and anything else visible beyond the repository itself. The earlier direction (2026-09-20: local Git only, no remote) is superseded by this one.
 
 Readiness is not authorization.
 
