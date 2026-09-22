@@ -672,6 +672,20 @@ Do not record planned behavior as observed evidence.
 - **Failures/limitations:** the timeout wraps the *wait*, not the call — a hung resolver leaves one daemon thread running in the background until the OS eventually gives up on its own; this is disclosed in the module docstring rather than hidden. This fix does not add a way to cancel an already-bounded, in-progress Bridge Terminal command from the UI (no Cancel button exists); that remains open as separate, larger scope, not something this entry claims to close.
 - **Evidence state:** UNIT_VERIFIED (host and VM) plus a live NXDOMAIN timing check; the actual unreachable-network hang path is verified generically via the helper's own test, not against a real black-holed network address
 
+### IMP-07.14 — ping/tracert terminal window no longer closes itself before the reply is readable
+
+- **Timestamp:** 2026-09-21 09:31 PM CDT
+- **Candidate revision:** a4f6e56
+- **Environment/profile:** tb-ubuntu-desktop-2404 (ENV-02); GNOME Terminal's default profile closes its window as soon as the launched command exits
+- **Files/modules:** `trier_bridge/system/netdiag.py` (`run_in_terminal`, new `_STAY_OPEN_TAIL`)
+- **Invariant impact:** TB-INV-004 (the window closing before the reply could be read looked like the feature silently failing, even though ping itself succeeded), TB-SEC-003 (unchanged: the appended tail is a fixed constant with no user-controlled content; the only dynamic parts remain the individually `GLib.shell_quote`-quoted argv tokens `diagnostic_tool()`/the host validator already produce)
+- **Expected result:** `ping 10.1.70.1` from Bridge Terminal opens a terminal window that stays open, showing all replies, until the user closes it or presses Enter.
+- **Observed result:** owner reported (screenshot) the terminal opening with `PING 10.1.70.1 ... 64 bytes from 10.1.70.1: icmp_seq=1 ttl=63 time=0.610 ms` and then the window disappearing before he could read further — a real, reproducible bug, not user error. Root cause confirmed by reading `run_in_terminal`: the terminal was handed the bare `ping -c 4 <host>` command line with nothing to keep it open after the child process exited. Fixed by appending a fixed pause tail. `tools/dev.py all` clean on host (black, flake8, mypy, bandit, pytest 127 passed/16 skipped, headers) after the fix.
+- **Tests/checks:** `tools/dev.py all` on host. `run_in_terminal` itself is not unit-tested (a real desktop terminal launch, same as before this fix — verified live on the VM, matching the rest of IMP-07.08's evidence).
+- **Artifacts/logs:** owner's screenshot showing the disappearing terminal; session transcript.
+- **Failures/limitations:** not yet re-driven live on the VM after the fix — the owner's screenshot is what surfaced the bug, not yet a confirmation of the fix. Needs the same rebuild+reinstall cycle and a fresh `ping` from Bridge Terminal to close this out as DESKTOP_VERIFIED.
+- **Evidence state:** TOOL_VERIFIED (host gate); DESKTOP_VERIFIED NOT_RUN (pending owner retest after reinstall)
+
 ### TOOL-06 — Stack-dependent engineering tools: normalized test results, quality evidence, derived docs
 
 - **Timestamp:** 2026-09-21 12:41 PM CDT
