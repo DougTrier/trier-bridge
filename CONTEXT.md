@@ -1,6 +1,6 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-21 11:40 PM CDT  
+**Last updated:** 2026-09-22 12:19 AM CDT  
 **Owner:** Doug Trier  
 **Project state:** VERSION 1.0.0 BUILT AND INSTALLED ON ENV-02 (candidate `5791bdc`); FOUNDATIONS 01–07 CLOSED; FOUNDATION 08 AUTOMATED PARTS DONE; FILE BROWSER, PERFORMANCE GRAPHS, SHELL RESTYLE, AND FINAL POLISH BUILT (DEC-025–028); OWNER ACCEPTANCE IS WHAT REMAINS  
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
@@ -53,7 +53,7 @@ Administration and command translation are deeper layers.
 - read-only engineering tools created under `tools/` and verified on Windows (`tb all` exit 0, 2026-09-20 09:55 PM CDT)
 - owner decisions 2026-09-20: DEC-016 accepted (Ubuntu 24.04 LTS first, derivatives next with their own evidence); DEC-017 rejected (no WSL; Hyper-V VM only); DEC-019 accepted (one integrated build, integrations are part of the product)
 - Hyper-V desktop VM scripts and autoinstall seed written under `tools/env/`; ISO download started (2026-09-20 10:25 PM CDT); VM creation is an owner-run elevated step
-- local Git repository initialized on `main` with no remote (2026-09-20)
+- local Git repository initialized on `main` with no remote (2026-09-20); pushed to `github.com/DougTrier/trier-bridge` (private) as `origin/main` by the owner's instruction (2026-09-22 12:17 AM CDT)
 - test VM `tb-ubuntu-desktop-2404` created by owner and profiled in-guest; tools verified on Linux (ENV-02, TOOL-05, 2026-09-20 11:10 PM CDT)
 - SCOPE-01..05 written from an in-guest research probe: delivery model, privilege model (no helper needed), packaging, research plan with findings, test strategy (2026-09-20 11:55 PM CDT)
 - live research R2/R17/R18 done in the VM session; stack proposal `docs/STACK-SELECTION.md` written as DEC-020 (proposed) (2026-09-21 12:05 AM CDT)
@@ -75,7 +75,7 @@ Administration and command translation are deeper layers.
 - IMP-08.03 a second environment (another machine, X11, an Ubuntu flavour); IMP-08.09 release CQS (release locked)
 - SCOPE-12 name and trademark check before any public step
 - quality remediation CQ-02..09 (`CODE-QUALITY-REPORT.md`)
-- release (locked; local Git only)
+- release (publication still owner-gated; the repository itself is on GitHub, private, since 2026-09-22 — making it public, tagging, and attaching the package as a release asset are each a separate owner instruction)
 
 ---
 
@@ -103,7 +103,7 @@ No document existence implies runtime PASS.
 6. Do not weaken security to create familiarity.
 7. Design to prevent failure; when failure occurs, fail gracefully.
 8. Use America/Chicago / Central Time for project timestamps.
-9. Local Git only: commit locally, no remotes, nothing touches GitHub until explicitly instructed (2026-09-20).
+9. The repository is `github.com/DougTrier/trier-bridge`, private, `origin/main` (owner instruction 2026-09-22, superseding the 2026-09-20 local-only direction). Gated local commits on `main` are pushed as the normal way to record work; making the repository public, tags, releases, package uploads, signing keys, force-pushes, and branch deletion each wait for an explicit owner instruction (`AGENTS.md` section 14).
 10. Non-invasive: never invasive, never mistaken for a virus; the owner defines outcomes and delegates the engineering approach (2026-09-20, DEC-018).
 11. Ship every integration; user intent decides at first-run setup via grouped options; all reversible, changeable any time; otherwise out of sight behind a plain "T" tray icon (2026-09-20, DEC-019).
 
