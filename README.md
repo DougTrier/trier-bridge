@@ -1,13 +1,13 @@
 # Trier Bridge
 ## Everything You Know. Linux Underneath.
 
-**Status:** Design / engineering foundation  
+**Version:** 1.0.0 — built, gated, and installed on the project's Ubuntu 24.04 test environment; the owner's acceptance pass and the first session with a real Windows user are what remain (see *Current project state* below)  
 **Owner:** Doug Trier  
 **License:** Apache License 2.0
 
 > **Trier Bridge is designed so a Windows user can move to Linux without feeling like they have to relearn how to use a computer.**
 
-Trier Bridge is a proposed installable **Windows-to-Linux experience compatibility layer**.
+Trier Bridge is an installable **Windows-to-Linux experience compatibility layer** for Ubuntu Desktop.
 
 It is not another Linux distribution and it is not a Windows emulator.
 
@@ -94,15 +94,15 @@ Advanced users can optionally see the native Linux details.
 
 ## Bridge Terminal
 
-A Windows user may eventually be able to enter familiar commands:
+A Windows user enters familiar commands:
 
 ```text
-C:\Users\Doug> ipconfig
+C:\Users\You> ipconfig
 ```
 
 Trier Bridge does **not** perform unsafe text substitution into Bash.
 
-The intended architecture is:
+The architecture is:
 
 ```text
 Windows-style input
@@ -126,7 +126,7 @@ If no safe or faithful equivalent exists, Trier Bridge says so and performs no h
 
 ## Engineering Philosophy
 
-Trier Bridge is being designed before implementation around several permanent principles:
+Trier Bridge was designed before it was built, around several permanent principles:
 
 - **local first**
 - **Linux remains authoritative**
@@ -146,26 +146,35 @@ If Trier Bridge cannot prove that it knows what it is about to do, to exactly wh
 
 ---
 
-## Current Project State
+## Install
 
-As of September 20, 2026:
+Trier Bridge ships as one Debian package for Ubuntu 24.04 Desktop: `trier-bridge_1.0.0_all.deb` (about 140 KB; it depends only on what Ubuntu Desktop already has: Python 3, GTK 4, libadwaita).
 
-- product concept defined
-- target user corrected to normal Windows users through advanced users
-- product North Star defined
-- security architecture drafted
-- **233 product/security/recovery/compatibility invariants** defined
-- Apache License 2.0 selected
-- contribution policy drafted
-- code-quality framework drafted
-- architecture/document foundation created
-- eight implementation foundation stages defined
-- implementation stack **not selected**
-- production code **not started**
-- CQS **94 / 100** (all eight categories measured; release still locked)
-- runtime qualification **NOT RUN**
+**Without a terminal.** Right-click the `.deb` in Files → *Open With* → **App Center**, tick *Always use for this file type*, then press Install. From then on a double-click installs. (On a stock Ubuntu 24.04 the archive viewer is the default for `.deb` files, so the first time needs that one choice; once Trier Bridge is installed, *Apps → Default apps → Software installers (.deb)* offers the same choice inside the app.)
 
-The project is intentionally separating design claims from implementation evidence.
+**With a terminal**, if you prefer:
+
+```bash
+sudo apt install ./trier-bridge_1.0.0_all.deb
+```
+
+Everything Trier Bridge writes lives in your home folder (`~/.config/trier-bridge`, `~/.local/state/trier-bridge`); removing the package leaves those, like a Windows uninstall leaves AppData. It never installs or removes other software, never runs as root, and asks Linux (polkit) for permission each time a change needs it.
+
+## Screenshot
+
+![Home: the accent-framed shell, the goal paragraph, the Windows-vocabulary search, and the Start-here cards](docs/screenshots/home.png)
+
+Rendered from the installed 1.0.0 package on the project's Ubuntu 24.04 test VM (960×640, the default window size).
+
+## Current project state
+
+As of September 21, 2026 (version 1.0.0, candidate `5791bdc`):
+
+- **Built:** Home search over the Windows vocabulary; Files with an in-app browser and drive letters as labels over real Linux paths; Apps with provenance and default-app choice; Settings routed to the desktop's own panels; Printers; Network as a translation layer over NetworkManager; Task Manager (End task, live Performance graphs); Event Viewer; Device Manager; Startup Apps; Disk Management; Services through polkit; Command Prompt and PowerShell names as typed operations; System Information; Integrations (tray icon, desktop search, launchers, Files menu, Ctrl+Shift+Esc — all chosen at setup, all reversible); About and Help.
+- **Verified:** every change gated on the Windows host and on the real Ubuntu VM (unit tests on real files, processes, and services — no mocks); the package is reproducible and lintian-clean; **258 invariants** with an evidence trail tied to commit hashes (`docs/VALIDATION.md`); CQS **94 / 100**, all eight categories measured.
+- **Not yet:** nobody the product is for has used it — the owner's own acceptance pass and the first ten minutes with a real Windows user are the next two steps, then a second desktop (Mint or Zorin). Publication to a package repository is a later, owner-gated step.
+
+The project separates design claims from implementation evidence on purpose; the ledger (`Engine Spec Tasklist 01.MD`) says what is proven and what is not.
 
 ---
 

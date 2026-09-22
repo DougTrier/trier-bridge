@@ -225,7 +225,9 @@ def main(argv=None) -> int:
     global STATE, NOTE, FILES
     ap = argparse.ArgumentParser(description="shared notepad + file drop for the test VM")
     ap.add_argument(
-        "--peer", default="172.20.252.59", help="VM address used to detect the switch-side host IP"
+        "--peer",
+        default=None,
+        help="VM address used to detect the switch-side host IP (required unless --bind is given)",
     )
     ap.add_argument(
         "--bind", default="auto", help="address to listen on (default: auto from --peer)"
@@ -248,6 +250,13 @@ def main(argv=None) -> int:
     NOTE = STATE / "note.txt"
     FILES = STATE / "files"
 
+    if args.bind == "auto" and not args.peer:
+        print(
+            "tb-pad: give --peer <VM address> (the switch-side host address is found from it) "
+            "or --bind <host address>.",
+            file=sys.stderr,
+        )
+        return 2
     bind = detect_bind(args.peer) if args.bind == "auto" else args.bind
     ip = ipaddress.ip_address(bind) if bind != "0.0.0.0" else None
     if not args.allow_any and (ip is None or not ip.is_private or ip.is_loopback):

@@ -30,7 +30,7 @@ Storage: `G:\tb-vms\iso\` holds the ISO and `SHA256SUMS`; `G:\tb-vms\<vm-name>\`
 Create and start:
 
 ```bash
-powershell -ExecutionPolicy Bypass -File "G:\0001 Trier Bridge\tools\env\New-TbDesktopVm.ps1" -Start
+powershell -ExecutionPolicy Bypass -File tools\env\New-TbDesktopVm.ps1 -Start
 ```
 
 Defaults: Generation 2, 4 vCPU, 8 GB dynamic memory (4 to 12), 64 GB dynamic disk, Default Switch, Secure Boot with the Microsoft UEFI Certificate Authority template, manual checkpoints allowed but automatic checkpoints off, no automatic start on host boot. All are parameters.
@@ -54,7 +54,7 @@ Guest account, test-only and documented on purpose: user `tb`, password `trierbr
 Remove:
 
 ```bash
-powershell -ExecutionPolicy Bypass -File "G:\0001 Trier Bridge\tools\env\Remove-TbDesktopVm.ps1"
+powershell -ExecutionPolicy Bypass -File tools\env\Remove-TbDesktopVm.ps1
 ```
 
 The ISO folder is kept for reuse; delete it by hand if no longer wanted.
@@ -66,22 +66,22 @@ Hyper-V has no clipboard for Linux guests, so `tb-pad.py` serves a small page re
 Start it on the host, which also opens the page (closing the console window or Ctrl+C stops it):
 
 ```bash
-tools\env\tb-pad --open
+tools\env\tb-pad --open --peer <vm-address>
 ```
 
-The Windows desktop folder `Trier Bridge` holds a shortcut that does exactly that, plus shortcuts for the VM console and the project. The Ubuntu desktop has a `tb-pad` launcher that opens the same page; it finds the host through the VM's default gateway, so it keeps working if the switch subnet changes after a host reboot.
+`--peer` is the VM's address (`ip addr` in the guest, or `Get-VMNetworkAdapter -VMName tb-ubuntu-desktop-2404` on the host); the host's switch-side address is found from it. The repository carries no address on purpose, so a desktop shortcut for this command must pass `--peer` itself. The Windows desktop folder `Trier Bridge` holds such a shortcut, plus shortcuts for the VM console and the project. The Ubuntu desktop has a `tb-pad` launcher that opens the same page; it finds the host through the VM's default gateway, so it keeps working if the switch subnet changes after a host reboot.
 
-The server binds only to the host's address on the Default Switch (read from `ipconfig`, normally `172.20.240.1`), so nothing off that switch can reach it, and it has no login by design. Page: textarea, Save, Ctrl+S, `raw`, `files`.
+The server binds only to the host's address on the Default Switch (read from `ipconfig`, normally `<host-address>`), so nothing off that switch can reach it, and it has no login by design. Page: textarea, Save, Ctrl+S, `raw`, `files`.
 
 From a shell (host has `curl`; Ubuntu Desktop ships `wget`, not `curl`):
 
 | Action | Host (curl) | VM (wget) |
 |---|---|---|
-| read the note | `curl -s http://172.20.240.1:8000/text` | `wget -qO- http://172.20.240.1:8000/text` |
-| run the note as a script | | `wget -qO- http://172.20.240.1:8000/text \| sh` |
-| replace the note from a file | `curl --data-binary @f http://172.20.240.1:8000/text` | `wget -qO- --post-file=f http://172.20.240.1:8000/text` |
-| upload a file | `curl -T f http://172.20.240.1:8000/files/f` | `wget -qO- --method=PUT --body-file=f http://172.20.240.1:8000/files/f` |
-| download a file | `curl -O http://172.20.240.1:8000/files/f` | `wget http://172.20.240.1:8000/files/f` |
+| read the note | `curl -s http://<host-address>:8000/text` | `wget -qO- http://<host-address>:8000/text` |
+| run the note as a script | | `wget -qO- http://<host-address>:8000/text \| sh` |
+| replace the note from a file | `curl --data-binary @f http://<host-address>:8000/text` | `wget -qO- --post-file=f http://<host-address>:8000/text` |
+| upload a file | `curl -T f http://<host-address>:8000/files/f` | `wget -qO- --method=PUT --body-file=f http://<host-address>:8000/files/f` |
+| download a file | `curl -O http://<host-address>:8000/files/f` | `wget http://<host-address>:8000/files/f` |
 | list files | open `/files/` | open `/files/` |
 
 State (the note and dropped files) lives under `reports/local/pad/`, which is gitignored so pasted commands and files never enter history; `--state DIR` keeps it elsewhere. Other options: `--port`, `--peer`, `--bind`, `--allow-any`. File names are restricted to a safe character set, path escapes are rejected, uploads are capped at 64 MB, and chunked uploads (piped `curl -T -`) are accepted.

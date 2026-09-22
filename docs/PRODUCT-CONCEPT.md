@@ -706,7 +706,7 @@ It is not the primary interface for ordinary users.
 A Windows user could enter:
 
 ```text
-C:\Users\Doug> ipconfig
+C:\Users\You> ipconfig
 ```
 
 and receive the appropriate Linux-backed result.

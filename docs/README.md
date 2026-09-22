@@ -27,9 +27,9 @@ Do not silently choose a weaker interpretation. If documents conflict, stop and 
 |---|---|
 | `PRODUCT-CONCEPT.md` | Full product concept: thesis, audience, every experience surface, MVP phases, success criteria. |
 | `PRODUCT-NORTH-STAR.md` | Governing product direction, UX priority order, decision test, owner product directive. |
-| `DECISIONS.md` | Accepted decisions DEC-001 to DEC-015 and the explicit list of open decisions. |
+| `DECISIONS.md` | Accepted decisions DEC-001 to DEC-028 and the explicit list of open decisions. |
 | `SECURITY.md` | Security architecture, trust boundaries, TB-SEC invariants, threat model, testing strategy, release gate. |
-| `INVARIANTS.md` | The 233 binding TB-INV invariants, fault-injection catalog, graceful-failure hierarchy, research baseline. |
+| `INVARIANTS.md` | The 258 binding TB-INV invariants, fault-injection catalog, graceful-failure hierarchy, research baseline. |
 | `ENGINEERING.md` | Architecture rules, layers, domain boundaries, build contract, automation, optimization, good first issues. |
 | `CODE-QUALITY.md` | CQS standard, hard gates, quality vocabulary, review questions. |
 | `LICENSING.md` | Apache-2.0 policy, headers, NOTICE, third-party and asset provenance. |
