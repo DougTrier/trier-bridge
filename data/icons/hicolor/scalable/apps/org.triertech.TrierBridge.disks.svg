@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Doug Trier. SPDX-License-Identifier: Apache-2.0. Trier Bridge launcher icon: Disk Management: a drive. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5c7a99"/>
+      <stop offset="1" stop-color="#34506b"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="none" stroke="#22374a" stroke-width="2"/>
+  <rect x="22" y="21" width="84" height="26" rx="13" fill="#f4f7fb"/>
+  <text x="64" y="39" text-anchor="middle" font-family="sans-serif" font-weight="700"
+        font-size="16" letter-spacing="0.3" fill="#22374a">T Bridge</text>
+  <rect x="28" y="58" width="72" height="48" rx="8" fill="none" stroke="#e9eef5" stroke-width="6"/>
+  <line x1="40" y1="76" x2="88" y2="76" stroke="#e9eef5" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="40" cy="94" r="5" fill="#e9eef5"/>
+</svg>

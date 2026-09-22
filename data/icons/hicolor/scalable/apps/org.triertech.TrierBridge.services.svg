@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Doug Trier. SPDX-License-Identifier: Apache-2.0. Trier Bridge launcher icon: Services: a gear. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#55b478"/>
+      <stop offset="1" stop-color="#2f8552"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="none" stroke="#1f5c38" stroke-width="2"/>
+  <rect x="22" y="21" width="84" height="26" rx="13" fill="#f4f7fb"/>
+  <text x="64" y="39" text-anchor="middle" font-family="sans-serif" font-weight="700"
+        font-size="16" letter-spacing="0.3" fill="#1f5c38">T Bridge</text>
+  <path d="M 64.0 57.0 L 70.5 66.3 L 81.7 64.3 L 79.7 75.5 L 89.0 82.0 L 79.7 88.5 L 81.7 99.7 L 70.5 97.7 L 64.0 107.0 L 57.5 97.7 L 46.3 99.7 L 48.3 88.5 L 39.0 82.0 L 48.3 75.5 L 46.3 64.3 L 57.5 66.3 Z" fill="#e9eef5"/>
+  <circle cx="64" cy="82" r="8" fill="#2f8552"/>
+</svg>

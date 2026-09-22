@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Doug Trier. SPDX-License-Identifier: Apache-2.0. Trier Bridge launcher icon: Command Prompt: a prompt. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4b5259"/>
+      <stop offset="1" stop-color="#282c30"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="none" stroke="#161819" stroke-width="2"/>
+  <rect x="22" y="21" width="84" height="26" rx="13" fill="#f4f7fb"/>
+  <text x="64" y="39" text-anchor="middle" font-family="sans-serif" font-weight="700"
+        font-size="16" letter-spacing="0.3" fill="#161819">T Bridge</text>
+  <path d="M36 64 L56 82 L36 100" fill="none" stroke="#e9eef5" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="66" y="94" width="28" height="8" rx="4" fill="#e9eef5"/>
+</svg>

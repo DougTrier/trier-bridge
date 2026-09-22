@@ -1,6 +1,14 @@
 data/org.triertech.TrierBridge.desktop usr/share/applications
 data/org.triertech.TrierBridge.metainfo.xml usr/share/metainfo
 data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.taskmanager.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.events.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.devices.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.disks.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.services.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.network.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.apps.svg usr/share/icons/hicolor/scalable/apps
+data/icons/hicolor/scalable/apps/org.triertech.TrierBridge.terminal.svg usr/share/icons/hicolor/scalable/apps
 data/icons/hicolor/symbolic/apps/org.triertech.TrierBridge-symbolic.svg usr/share/icons/hicolor/symbolic/apps
 NOTICE usr/share/doc/trier-bridge
 data/catalog/concepts.json usr/share/trier-bridge/catalog

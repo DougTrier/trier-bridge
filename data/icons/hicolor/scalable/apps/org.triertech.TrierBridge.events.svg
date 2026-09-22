@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Doug Trier. SPDX-License-Identifier: Apache-2.0. Trier Bridge launcher icon: Event Viewer: log lines. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d99a3b"/>
+      <stop offset="1" stop-color="#a2681f"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="none" stroke="#734813" stroke-width="2"/>
+  <rect x="22" y="21" width="84" height="26" rx="13" fill="#f4f7fb"/>
+  <text x="64" y="39" text-anchor="middle" font-family="sans-serif" font-weight="700"
+        font-size="16" letter-spacing="0.3" fill="#734813">T Bridge</text>
+  <rect x="24" y="56" width="70" height="7" rx="3.5" fill="#e9eef5"/>
+  <rect x="24" y="72" width="56" height="7" rx="3.5" fill="#e9eef5"/>
+  <rect x="24" y="88" width="64" height="7" rx="3.5" fill="#e9eef5"/>
+  <rect x="24" y="104" width="44" height="7" rx="3.5" fill="#e9eef5"/>
+</svg>
