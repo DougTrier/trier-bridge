@@ -11,7 +11,7 @@
   [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/desktop)
   [![GTK](https://img.shields.io/badge/GTK%204-libadwaita-4A86CF?style=for-the-badge&logo=gnome&logoColor=white)](https://gnome.pages.gitlab.gnome.org/libadwaita/)
   [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-  [![Tests](https://img.shields.io/badge/Tests-real%20VM%2C%20no%20mocks-45ba4b?style=for-the-badge)](./docs/VALIDATION.md)
+  [![Build, tests, and security](https://github.com/DougTrier/trier-bridge/actions/workflows/checks.yml/badge.svg)](https://github.com/DougTrier/trier-bridge/actions/workflows/checks.yml)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge)](./LICENSE)
 
   [Install](#-install) •
@@ -143,6 +143,8 @@ If no safe, faithful Linux equivalent exists, Trier Bridge says so and performs 
 - **Evidence from a real desktop.** Recorded checks include unit and integration tests on the project's Ubuntu 24.04 desktop VM, reproducible package builds, and lintian checks. The **258 invariants** in [`docs/INVARIANTS.md`](./docs/INVARIANTS.md) define the requirements. [`docs/VALIDATION.md`](./docs/VALIDATION.md) records the exact candidates and environments checked, including limitations and checks not run. The measured code-quality score is in [`CODE-QUALITY-REPORT.md`](./CODE-QUALITY-REPORT.md).
 
 Guiding order, always: **everyday continuity → familiar troubleshooting → advanced Windows continuity → optional Linux learning.** Learning Linux is optional. Productivity is not.
+
+GitHub checks code, a non-destructive unit subset, reproducible Debian builds, and commit history for secrets on every push to `main` and pull request targeting it. The badge above reports the actual workflow result. Desktop and system-change testing remain separate; see [`docs/CI.md`](./docs/CI.md) for coverage and limits.
 
 ---
 

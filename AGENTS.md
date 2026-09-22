@@ -81,7 +81,7 @@ Do not use UTC timestamps as the primary project chronology unless explicitly la
 
 Implementation was authorized by the owner on 2026-09-21 (DEC-023) with the stack frozen as DEC-020 (Python 3.12 + PyGObject, GTK 4 + libadwaita). Work proceeds foundation by foundation per the ledger; a foundation starts only when its prerequisites have evidence.
 
-The in-app file browser (`Engine Spec Tasklist 01.MD`, `DOC-02`) is authorized as of 2026-09-21 (DEC-025) as its own new foundation-sized scope, with safety invariants (`TB-INV-234`â€“`245`, `docs/INVARIANTS.md` section 3.14) written before any of its code, same as every other foundation. Task Manager's Performance-tab live graphs (per-disk and per-adapter throughput, matching Windows' own layout) are separately authorized as of 2026-09-21 (DEC-026), with safety invariants (`TB-INV-246`â€“`251`, `docs/INVARIANTS.md` section 3.15) written first. The window shell restyle (branded navy sidebar with an owner-adjustable accent color, a persistent zoom control, and a sidebar About page) is separately authorized as of 2026-09-21 (DEC-027), with safety invariants (`TB-INV-252`â€“`258`, `docs/INVARIANTS.md` section 3.16) written first; the final polish pass over the content area, and the `.deb` file type as a default-app choice, are recorded as DEC-028 under the same invariant family. Neither authorization opens the door to any other net-new subsystem â€” each is a named, specific scope grant.
+The in-app file browser (`Engine Spec Tasklist 01.MD`, `DOC-02`) is authorized as of 2026-09-21 (DEC-025) as its own new foundation-sized scope, with safety invariants (`TB-INV-234`–`245`, `docs/INVARIANTS.md` section 3.14) written before any of its code, same as every other foundation. Task Manager's Performance-tab live graphs (per-disk and per-adapter throughput, matching Windows' own layout) are separately authorized as of 2026-09-21 (DEC-026), with safety invariants (`TB-INV-246`–`251`, `docs/INVARIANTS.md` section 3.15) written first. The window shell restyle (branded navy sidebar with an owner-adjustable accent color, a persistent zoom control, and a sidebar About page) is separately authorized as of 2026-09-21 (DEC-027), with safety invariants (`TB-INV-252`–`258`, `docs/INVARIANTS.md` section 3.16) written first; the final polish pass over the content area, and the `.deb` file type as a default-app choice, are recorded as DEC-028 under the same invariant family. Neither authorization opens the door to any other net-new subsystem — each is a named, specific scope grant.
 
 Still binding regardless of authorization:
 
@@ -166,9 +166,9 @@ Never implement:
 
 ```text
 Windows command text
-â†’ string replacement
-â†’ shell command
-â†’ execute
+→ string replacement
+→ shell command
+→ execute
 ```
 
 Unknown syntax performs no operation.

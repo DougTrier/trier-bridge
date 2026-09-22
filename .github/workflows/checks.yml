@@ -76,9 +76,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
-            debhelper dh-python pybuild-plugin-pyproject python3-all \
+            build-essential debhelper dh-python pybuild-plugin-pyproject python3-all \
             python3-setuptools python3-build lintian
-          dpkg-query -W debhelper dh-python pybuild-plugin-pyproject \
+          dpkg-query -W build-essential debhelper dh-python pybuild-plugin-pyproject \
             python3-all python3-setuptools python3-build lintian
       - name: Build twice from clean copies of this commit
         run: |
