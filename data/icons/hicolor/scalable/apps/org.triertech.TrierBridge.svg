@@ -9,11 +9,14 @@
   </defs>
   <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
   <rect x="8" y="8" width="112" height="112" rx="24" fill="none" stroke="#163a63" stroke-width="2"/>
+  <!-- name banner -->
+  <rect x="22" y="21" width="84" height="26" rx="13" fill="#f4f7fb"/>
+  <text x="64" y="39" text-anchor="middle" font-family="sans-serif" font-weight="700"
+        font-size="16" letter-spacing="0.3" fill="#163a63">T Bridge</text>
   <!-- bridge deck -->
-  <rect x="24" y="80" width="80" height="8" rx="4" fill="#e9eef5"/>
+  <rect x="24" y="100" width="80" height="8" rx="4" fill="#e9eef5"/>
   <!-- bridge arch -->
-  <path d="M28 80 Q64 40 100 80" fill="none" stroke="#e9eef5" stroke-width="7" stroke-linecap="round"/>
-  <!-- the T -->
-  <rect x="40" y="30" width="48" height="12" rx="4" fill="#ffffff"/>
-  <rect x="58" y="30" width="12" height="52" rx="4" fill="#ffffff"/>
+  <path d="M28 100 Q64 60 100 100" fill="none" stroke="#e9eef5" stroke-width="6" stroke-linecap="round"/>
+  <!-- centre pylon -->
+  <rect x="61" y="66" width="6" height="34" rx="3" fill="#e9eef5"/>
 </svg>
