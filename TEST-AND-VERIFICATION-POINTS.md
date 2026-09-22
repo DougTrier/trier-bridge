@@ -103,12 +103,12 @@ If you want the full technical evidence behind any row — exact commands, exact
 | 5.4a | Type `cd tb-verify-scratch` and press Enter. (Not `C:\Users\tb\tb-verify-scratch` this time — Command Prompt starts in your home folder, so the short relative form works. Substitute your real account name only if `cd tb-verify-scratch` says the path isn't found.) | Lands in the scratch folder and shows the path both ways. | | This row was missing — that's the actual bug behind 5.4 below. Section 5 never tells you to `cd` into `tb-verify-scratch` on its own; row 5.4 wrongly assumed you were still there from 3.4/3.5, which doesn't hold if you did section 5 on its own or reopened the app since. |Pass
 | 5.4 | In the same `tb-verify-scratch` folder, type `findstr /I hello sample.txt`. | Lists two matching lines ("Hello there..." and "HELLO IN CAPS...") — case-insensitive, so both match. | | Uses the file the setup script created. Now that 5.4a exists, retry this one. | Need clarification otherwise failed.. was I suppose to do this from CMD — yes, from CMD; the missing step was 5.4a above, now added.
 | 5.5 | Type `findstr /R "\AH.llo" sample.txt` (a regular expression; note `\A`, not `^` — see the note). | Matches lines starting with "Hello" — case matters this time, so "HELLO IN CAPS" should *not* match. | | This row originally used `^H.llo`, the normal regex way to say "starts with." That's wrong for Bridge Terminal specifically: `^` (and `$`, `(`, `)`) are refused outright as shell-redirect/chaining characters before the command is even parsed, quotes or not — same family as the `<` refusal, but this one was baked into the example itself, not something you could avoid by typing differently. `\A` means the same thing ("start of the text") without using a refused character, and was verified against the real parser and the real sample.txt content directly, not guessed. Bottom line: `/R` regex patterns here can't use `^`, `$`, `(`, or `)` at all right now — a real, narrower-than-advertised limitation, not just this one example. |
-| 5.6 | Type `tree`. | Shows a folder tree, hidden folders excluded by default. | | |
-| 5.7 | Type `taskmgr`. | Switches the window to the Task Manager page. | | |
-| 5.8 | Type `sc query ssh` (or another known service). | Shows the service's real state. | | |
-| 5.9 | Type `shutdown /r /t 60`. **Read the confirmation dialog. Click Cancel.** | Dialog previews "Restart this computer after 60 seconds?" and warns about unsaved work. Cancel means nothing happens. | | ⚠ Do not confirm this unless you actually want the VM to restart. |
-| 5.10 | Type something nonsensical, like `frobnicate --wat`. | Refused plainly — never silently passed to a real shell. | | |
-| 5.11 | Type `net stop cups` (or another real service). | Same confirmation-dialog pattern as everything else — nothing happens until you confirm. | | |
+| 5.6 | Type `tree`. | Shows a folder tree, hidden folders excluded by default. | | |pass
+| 5.7 | Type `taskmgr`. | Switches the window to the Task Manager page. | | |pass
+| 5.8 | Type `sc query ssh` (or another known service). | Shows the service's real state. | | |pass
+| 5.9 | Type `shutdown /r /t 60`. **Read the confirmation dialog. Click Cancel.** | Dialog previews "Restart this computer after 60 seconds?" and warns about unsaved work. Cancel means nothing happens. | |pass ⚠ Do not confirm this unless you actually want the VM to restart. |
+| 5.10 | Type something nonsensical, like `frobnicate --wat`. | Refused plainly — never silently passed to a real shell. | | |pass
+| 5.11 | Type `net stop cups` (or another real service). | Same confirmation-dialog pattern as everything else — nothing happens until you confirm. | | |pass
 
 ---
 
@@ -118,10 +118,10 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 6.1 | In Command Prompt, click the **PowerShell** button (or type `powershell`). | A real PowerShell (`pwsh`) window opens in a separate terminal. | | |
-| 6.2 | In that pwsh window, run `Get-Process`. | Real process list (pwsh's own, not routed through Trier Bridge — this is genuine PowerShell). | | |
-| 6.3 | Back in Command Prompt, type `Get-Service ssh` (a cmdlet name, not `powershell`). | Answered directly by Trier Bridge with a "PowerShell X → Y" translation line, then the real result. | | |
-| 6.4 | Type `Get-EventLog System`. | Refused with an explanation pointing you to Event Viewer — not silently ignored. | | |
+| 6.1 | In Command Prompt, click the **PowerShell** button (or type `powershell`). | A real PowerShell (`pwsh`) window opens in a separate terminal. | | |pass
+| 6.2 | In that pwsh window, run `Get-Process`. | Real process list (pwsh's own, not routed through Trier Bridge — this is genuine PowerShell). | | |pass
+| 6.3 | Back in Command Prompt, type `Get-Service ssh` (a cmdlet name, not `powershell`). | Answered directly by Trier Bridge with a "PowerShell X → Y" translation line, then the real result. | | |pass
+| 6.4 | Type `Get-EventLog System`. | Refused with an explanation pointing you to Event Viewer — not silently ignored. | | |Pass
 
 ---
 
@@ -131,9 +131,9 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 7.1 | Open **Services**. | A real list of systemd services/units with their state. | | |
+| 7.1 | Open **Services**. | A real list of systemd services/units with their state. | | |pass
 | 7.2 | Pick a user-scope service you don't mind restarting. Restart it. | Confirmation dialog, then Linux asks for permission if needed, then a verified result. | | |
-| 7.3 | Try to change a system-scope service. | Either asks Linux for permission (a real polkit prompt) or is denied plainly — never silently succeeds without you noticing. | | |
+| 7.3 | Try to change a system-scope service. | Either asks Linux for permission (a real polkit prompt) or is denied plainly — never silently succeeds without you noticing. | | |pass
 
 ---
 
@@ -143,8 +143,8 @@ If you want the full technical evidence behind any row — exact commands, exact
 
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
-| 8.1 | Open **Printers**. | Shows the real print service state and any configured printers (likely "0 printers" in this VM — that's correct, not a bug). | | |
-| 8.2 | Click the Settings button on that page. | Opens the real GNOME printer settings panel. | | |
+| 8.1 | Open **Printers**. | Shows the real print service state and any configured printers (likely "0 printers" in this VM — that's correct, not a bug). | | |pass
+| 8.2 | Click the Settings button on that page. | Opens the real GNOME printer settings panel. | | |Pass
 
 ---
 
@@ -155,8 +155,8 @@ If you want the full technical evidence behind any row — exact commands, exact
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
 | 9.1 | Open **Apps**. Find a file type with more than one program available. | A drop-down shows the current default; a **Set** button next to it. | | |
-| 9.2 | Change the default to the other option, confirm. | The change is real — verify afterward in a terminal with `xdg-mime query default` followed by the actual MIME type you changed (for example `xdg-mime query default text/plain`), not the literal word "type". | | |
-| 9.3 | Change it back. | Reverts cleanly; no leftover state. | | |
+| 9.2 | Change the default to the other option, confirm. **Which row you're on decides the exact command** — `xdg-mime query default` needs exactly one argument in `major/minor` form; the label on the page ("Email links", "Folders", "Web links") is not that argument, it's the friendly name for it. Use: Web links → `xdg-mime query default x-scheme-handler/http`; Email links → `xdg-mime query default x-scheme-handler/mailto`; Folders → `xdg-mime query default inode/directory`. Whichever you changed, the output should now be the program you just set. | The change is real — the terminal command above confirms it, matching the program you set on the page. | | The old example (`xdg-mime query default text/plain`) didn't match any row actually on this page — fixed to name the three real ones. |
+| 9.3 | Change it back. Verify with the same `xdg-mime query default <that row's identifier>` command from 9.2 — it should now show the original program again. | Reverts cleanly; no leftover state. | | |
 
 ---
 
