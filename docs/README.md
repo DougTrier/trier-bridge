@@ -87,7 +87,7 @@ The original pack of 75 root files was condensed. Content was merged, not droppe
 | `FOUNDATION-SEQUENCING.md`, `IMPLEMENTATION-BASELINE-01.md` through `-08.md`, `TASKS.md` | `ROADMAP.md` |
 | `REFERENCE-POLICY.md` | `RESEARCH.md` |
 | `SECURITY-DESIGN.md`, `SECURITY-THREAT-REVIEW.md`, `SECURITY-VERIFICATION.md`, `RELEASE-SECURITY.md` | `SECURITY.md` (sections 5, 6.3, 37, 40 already covered them; the threat-review record fields were added as 6.3). |
-| `README-DOCS.md`, `DOCUMENT-MAP.md`, `DOCUMENT-ALIGNMENT.md` | This file. The Goldenage per-file mapping table was dropped as historical. |
+| `README-DOCS.md`, `DOCUMENT-MAP.md`, `DOCUMENT-ALIGNMENT.md` | This file. The earlier per-file mapping table was dropped as historical. |
 
 Authority-order drift between `AGENTS.md` and the former `DOCUMENT-ALIGNMENT.md` was resolved in favor of `AGENTS.md`. Phase numbering drift between the concept, roadmap, and foundation sequencing was reconciled in `ROADMAP.md`.
 

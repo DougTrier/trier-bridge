@@ -21,7 +21,7 @@ The repository root should contain:
 - `LICENSING.md` — this project-specific policy
 - applicable license/copyright headers in qualifying first-party source files
 
-This mirrors the licensing model selected for Goldenage Retro.
+Apache-2.0 was chosen for its patent grant, its explicit contribution terms, and its compatibility with the Ubuntu archive's licensing expectations.
 
 ---
 
