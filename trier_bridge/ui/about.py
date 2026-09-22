@@ -33,27 +33,44 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk  # noqa: E402
 
-from .. import APP_ID, APP_NAME, __version__  # noqa: E402
+from .. import APP_ID, __version__  # noqa: E402
 from ..desktop.launch import Launcher  # noqa: E402
 
 _CAREER_START = date(1992, 9, 21)
 _GOAL = (
-    "Trier Bridge doesn't ask you to relearn Linux from scratch. Type what you already know "
-    "how to look for — Task Manager, Control Panel, Command Prompt — and it shows you "
-    "the real Linux place for it, honestly, including the times it isn't the same. Every "
-    "action it takes is a typed, reviewable operation, never a hidden shell command, and it "
-    "never claims something works when it doesn't."
+    "Trier Bridge is for people who know Windows and now have Linux in front of them. Type "
+    "what you would look for on Windows — Task Manager, Control Panel, Command Prompt "
+    "— and it opens the real Linux place for it, and says plainly when there is no "
+    "equivalent. Every change it makes is a typed, reviewable operation, never a hidden shell "
+    "command, and Linux itself asks for permission each time."
 )
 _BIO = (
-    "{years} years bridging industrial operations and enterprise technology — from driving "
-    "routes and running the floor to architecting digital infrastructure. Trier Bridge is the "
-    "same idea applied here: hard-won operational knowledge, built into a tool."
+    "{years} years in industrial operations and enterprise IT, from delivery routes and "
+    "production equipment to server and mobile infrastructure."
 )
-_TITLES = ("Platform Architect", "Systems Administrator")
+_TITLES = ("Platform architect", "Systems administrator")
+# (label, address, icon, chip class). The icons are this package's own full-color
+# marks, shipped beside the launcher icons: a GitHub-style star, an Open
+# Collective-style ring, a coffee cup.
 _LINKS = (
-    ("Sponsor on GitHub", "https://github.com/sponsors/dougtrier", "tb-support-sponsors"),
-    ("Open Collective", "https://opencollective.com/trier-os", "tb-support-collective"),
-    ("Buy Me a Coffee", "https://www.buymeacoffee.com/dougtrier", "tb-support-coffee"),
+    (
+        "Sponsor on GitHub",
+        "https://github.com/sponsors/dougtrier",
+        f"{APP_ID}-star",
+        "tb-support-sponsors",
+    ),
+    (
+        "Open Collective",
+        "https://opencollective.com/trier-os",
+        f"{APP_ID}-collective",
+        "tb-support-collective",
+    ),
+    (
+        "Buy Me a Coffee",
+        "https://www.buymeacoffee.com/dougtrier",
+        f"{APP_ID}-coffee",
+        "tb-support-coffee",
+    ),
 )
 
 
@@ -72,11 +89,8 @@ class AboutPage(Gtk.Box):  # type: ignore[misc]
         self._notify = notify
         page = Adw.PreferencesPage()
         page.set_vexpand(True)
-        page.set_margin_top(4)
 
-        page.add(self._hero_group())
-
-        goal_group = Adw.PreferencesGroup(title="Our goal")
+        goal_group = Adw.PreferencesGroup(title="What it is for")
         goal_row = Adw.ActionRow(use_markup=False)
         goal_row.set_subtitle(_GOAL)
         goal_row.set_subtitle_lines(6)
@@ -108,9 +122,9 @@ class AboutPage(Gtk.Box):  # type: ignore[misc]
             description="Trier Bridge is independent work. If it's useful to you, these are the "
             "real ways to say so.",
         )
-        for title, url, accent_class in _LINKS:
+        for title, url, icon, accent_class in _LINKS:
             row = Adw.ActionRow(title=title, subtitle=url)
-            row.add_prefix(self._support_icon(accent_class))
+            row.add_prefix(self._support_icon(icon, accent_class))
             row.add_suffix(self._link_button(url))
             row.set_activatable(True)
             row.connect("activated", lambda *_r, u=url: self._open(u))
@@ -119,27 +133,8 @@ class AboutPage(Gtk.Box):  # type: ignore[misc]
 
         self.append(page)
 
-    def _hero_group(self) -> Adw.PreferencesGroup:
-        hero = Gtk.Box(spacing=16, valign=Gtk.Align.CENTER)
-        hero.add_css_class("tb-about-hero")
-        icon = Gtk.Image.new_from_icon_name(APP_ID)
-        icon.set_pixel_size(56)
-        hero.append(icon)
-        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER)
-        title = Gtk.Label(label=APP_NAME, xalign=0.0)
-        title.add_css_class("title-1")
-        title.add_css_class("tb-about-hero-title")
-        text.append(title)
-        subtitle = Gtk.Label(label="Everything you know. Linux underneath.", xalign=0.0)
-        subtitle.add_css_class("tb-about-hero-subtitle")
-        text.append(subtitle)
-        hero.append(text)
-        group = Adw.PreferencesGroup()
-        group.add(hero)
-        return group
-
-    def _support_icon(self, accent_class: str) -> Gtk.Image:
-        icon = Gtk.Image.new_from_icon_name("emblem-favorite-symbolic")
+    def _support_icon(self, icon_name: str, accent_class: str) -> Gtk.Image:
+        icon = Gtk.Image.new_from_icon_name(icon_name)
         icon.add_css_class("tb-support-icon")
         icon.add_css_class(accent_class)
         icon.set_valign(Gtk.Align.CENTER)

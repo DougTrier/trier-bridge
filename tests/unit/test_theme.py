@@ -65,3 +65,44 @@ def test_generate_css_zoom_percentage_is_clamped_and_embedded() -> None:
     css_high = theme.generate_css(theme.DEFAULT_HUE, 1000)
     assert f"font-size: {theme.MIN_ZOOM}%" in css_low
     assert f"font-size: {theme.MAX_ZOOM}%" in css_high
+
+
+def test_clamp_zoom_snaps_to_the_step() -> None:
+    assert theme.clamp_zoom(103) == 105
+    assert theme.clamp_zoom(97) == 95
+    assert theme.clamp_zoom(102) == 100
+    assert theme.clamp_zoom(100) == 100
+
+
+def test_group_css_class_is_one_token_per_sidebar_group() -> None:
+    assert theme.group_css_class("Everyday") == "tb-tint-everyday"
+    assert theme.group_css_class("Trier Bridge") == "tb-tint-trier-bridge"
+    assert " " not in theme.group_css_class("Trier Bridge")
+
+
+def test_generate_css_carries_the_whole_shell_vocabulary() -> None:
+    css = theme.generate_css(theme.DEFAULT_HUE, theme.DEFAULT_ZOOM)
+    for selector in (
+        ".tb-sidebar",
+        ".tb-topbar",
+        ".tb-zoombar",
+        ".tb-hero",
+        ".tb-hero-chip",
+        ".tb-pill",
+        ".tb-pill-ok",
+        ".tb-pill-error",
+        ".tb-card",
+        ".tb-app-icon",
+        ".tb-support-coffee",
+    ):
+        assert selector in css, selector
+    for group in theme.GROUP_ACCENTS:
+        assert f".{theme.group_css_class(group)}" in css
+    assert ".tb-tint-trier-bridge" in css
+
+
+def test_top_and_bottom_bars_use_the_sidebar_gradient_ends() -> None:
+    top, bottom = theme.sidebar_colors(90)
+    css = theme.generate_css(90, 100)
+    assert f".tb-topbar {{\n  background-color: {top};" in css
+    assert f".tb-zoombar {{\n  background-color: {bottom};" in css

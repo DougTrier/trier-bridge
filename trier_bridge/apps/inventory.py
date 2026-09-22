@@ -39,6 +39,12 @@ COMMON_TYPES: tuple[tuple[str, str], ...] = (
     ("x-scheme-handler/http", "Web links"),
     ("x-scheme-handler/mailto", "Email links"),
     ("inode/directory", "Folders"),
+    # A downloaded installer. On Ubuntu Desktop both App Center and the archive viewer
+    # register this type and the archive viewer wins the default, so a double-click opens
+    # the .deb as a zip file instead of installing it. Listing the type here lets the
+    # person pick App Center once, through the same per-user default-app change as every
+    # other row (DEC-028); Trier Bridge itself still never installs anything (DEC-024).
+    ("application/vnd.debian.binary-package", "Software installers (.deb)"),
 )
 
 

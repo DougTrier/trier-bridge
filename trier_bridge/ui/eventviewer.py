@@ -35,11 +35,11 @@ log = logging.getLogger("trier_bridge.ui.eventviewer")
 
 MAX_ROWS = 300
 LEVEL_CSS = {
-    Level.ERROR: "error",
-    Level.WARNING: "warning",
-    Level.INFORMATION: "dim-label",
-    Level.DEBUG: "dim-label",
-    Level.UNKNOWN: "dim-label",
+    Level.ERROR: "tb-pill-error",
+    Level.WARNING: "tb-pill-warn",
+    Level.INFORMATION: "tb-pill-neutral",
+    Level.DEBUG: "tb-pill-off",
+    Level.UNKNOWN: "tb-pill-off",
 }
 
 
@@ -153,8 +153,8 @@ class EventViewerPage(Gtk.Box):  # type: ignore[misc]
             row.set_title(e.message or "(no message)")
             row.set_title_lines(2)
             row.set_subtitle(f"{when} · {e.source}")
-            badge = Gtk.Label(label=e.level.value)
-            badge.add_css_class("caption")
+            badge = Gtk.Label(label=e.level.value, width_chars=11)
+            badge.add_css_class("tb-pill")
             badge.add_css_class(LEVEL_CSS[e.level])
             badge.set_valign(Gtk.Align.CENTER)
             row.add_prefix(badge)

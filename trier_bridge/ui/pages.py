@@ -30,13 +30,14 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gtk  # noqa: E402
+from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
 from ..apps.inventory import DefaultApp, InstalledApp, default_apps, installed_apps  # noqa: E402
 from ..catalog.model import Catalog, Concept, Equivalence, RouteKind  # noqa: E402
 from ..desktop.launch import LaunchResult, Launcher, folder_path  # noqa: E402
 from ..state.journal import OperationJournal  # noqa: E402
 from ..system.driveletters import letters  # noqa: E402
+from . import theme  # noqa: E402
 from .filebrowser import FileBrowserPage  # noqa: E402
 from ..operations.defaults import (  # noqa: E402
     Candidate,
@@ -62,6 +63,10 @@ class Router:
         self._select = select_section
         self._launcher = launcher
         self._actions = actions or {}
+
+    def show(self, section_key: str) -> None:
+        """Switch to a Trier Bridge section by key; nothing on the computer is touched."""
+        self._select(section_key)
 
     def open(self, concept: Concept) -> LaunchResult:
         if not concept.can_open:
@@ -99,6 +104,20 @@ def _open_button(label: str, description: str, on_click: Callable[[], None]) -> 
     return b
 
 
+def _app_icon(icon: str) -> Gtk.Image:
+    """The program's own icon, as the desktop file names it; a generic one if it has none."""
+    image = Gtk.Image.new_from_icon_name("application-x-executable-symbolic")
+    if icon:
+        try:
+            image = Gtk.Image.new_from_gicon(Gio.Icon.new_for_string(icon))
+        except GLib.Error:
+            pass
+    image.set_pixel_size(28)
+    image.set_valign(Gtk.Align.CENTER)
+    image.add_css_class("tb-app-icon")
+    return image
+
+
 def _report(notify: Callable[[str], None], action: Callable[[], LaunchResult]) -> None:
     """Run an open action and tell the user the plain result; a failure says nothing changed."""
     res = action()
@@ -106,7 +125,48 @@ def _report(notify: Callable[[str], None], action: Callable[[], LaunchResult]) -
 
 
 class HomePage(Gtk.Box):  # type: ignore[misc]
-    """Search for anything you know from Windows."""
+    """Search for anything you know from Windows, plus a card for each place people start."""
+
+    # (section key, title, one line, icon, sidebar group) -- every card is a section
+    # switch inside Trier Bridge; none of them reads or changes anything on its own.
+    CARDS = (
+        ("files", "Files", "Browse your folders and drives", "folder-symbolic", "Everyday"),
+        (
+            "taskmanager",
+            "Task Manager",
+            "What is running and how the system is doing",
+            "utilities-system-monitor-symbolic",
+            "Troubleshooting",
+        ),
+        (
+            "network",
+            "Network",
+            "Adapters, addresses, and connections",
+            "network-wired-symbolic",
+            "Everyday",
+        ),
+        (
+            "settings",
+            "Settings",
+            "The Linux equivalent of Control Panel",
+            "preferences-system-symbolic",
+            "Everyday",
+        ),
+        (
+            "printers",
+            "Printers",
+            "Printers and scanners on this computer",
+            "printer-symbolic",
+            "Everyday",
+        ),
+        (
+            "help",
+            "Help",
+            "Every translation this build knows",
+            "help-browser-symbolic",
+            "Trier Bridge",
+        ),
+    )
 
     def __init__(self, catalog: Catalog, router: Router, notify: Callable[[str], None]) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
@@ -115,7 +175,6 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
         self._notify = notify
         page = Adw.PreferencesPage()
         intro = Adw.PreferencesGroup(
-            title="Everything you know. Linux underneath.",
             description=(
                 "Type what you would look for on Windows: Task Manager, Add or Remove Programs, "
                 "Downloads, Printers, Control Panel. Trier Bridge shows the Linux place for it "
@@ -129,11 +188,49 @@ class HomePage(Gtk.Box):  # type: ignore[misc]
         self._entry.connect("search-changed", self._on_search)
         intro.add(self._entry)
         page.add(intro)
+        self._cards = Adw.PreferencesGroup(title="Start here")
+        self._cards.add(self._build_cards())
+        page.add(self._cards)
         self._results = Adw.PreferencesGroup(title="Results")
         self._rows: list[Gtk.Widget] = []
         page.add(self._results)
         self.append(_scrolled(page))
         self._show_groups()
+
+    def _build_cards(self) -> Gtk.FlowBox:
+        grid = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            homogeneous=True,
+            min_children_per_line=2,
+            max_children_per_line=3,
+            column_spacing=12,
+            row_spacing=12,
+        )
+        grid.set_can_focus(False)
+        for key, title, line, icon, group in self.CARDS:
+            card = Gtk.Button()
+            card.add_css_class("flat")
+            card.add_css_class("tb-card")
+            card.update_property([Gtk.AccessibleProperty.LABEL], [f"{title}. {line}"])
+            body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            chip = Gtk.Image.new_from_icon_name(icon)
+            chip.set_pixel_size(20)
+            chip.set_halign(Gtk.Align.START)
+            chip.add_css_class("tb-card-icon")
+            chip.add_css_class(theme.group_css_class(group))
+            body.append(chip)
+            name = Gtk.Label(label=title, xalign=0.0)
+            name.add_css_class("tb-card-title")
+            body.append(name)
+            text = Gtk.Label(label=line, xalign=0.0, wrap=True)
+            text.add_css_class("tb-card-text")
+            body.append(text)
+            card.set_child(body)
+            card.connect("clicked", lambda *_b, k=key: self._router.show(k))
+            child = Gtk.FlowBoxChild(child=card)
+            child.set_can_focus(False)
+            grid.append(child)
+        return grid
 
     def _clear(self) -> None:
         for w in self._rows:
@@ -467,9 +564,10 @@ class AppsPage(Gtk.Box):  # type: ignore[misc]
         self._list_group.set_title(f"{len(shown)} of {len(self._apps)} programs")
         for a in shown[:200]:
             row = _row(title=a.name, subtitle=a.comment or a.desktop_id)
+            row.add_prefix(_app_icon(a.icon))
             badge = Gtk.Label(label=a.provenance.label)
-            badge.add_css_class("caption")
-            badge.add_css_class("dim-label")
+            badge.add_css_class("tb-pill")
+            badge.add_css_class("tb-pill-neutral")
             badge.set_valign(Gtk.Align.CENTER)
             row.add_suffix(badge)
             row.set_tooltip_text(a.source_path)

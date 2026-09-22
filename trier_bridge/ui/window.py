@@ -65,11 +65,28 @@ class Section:
     familiar: str  # the Windows concept the user already knows
     group: str
     available: bool = False
+    blurb: str = ""  # one plain line under the page title: what this page does
 
 
 SECTIONS: tuple[Section, ...] = (
-    Section("home", "Home", "go-home-symbolic", "Start", "Everyday", available=True),
-    Section("files", "Files", "folder-symbolic", "File Explorer", "Everyday", available=True),
+    Section(
+        "home",
+        "Home",
+        "go-home-symbolic",
+        "Start",
+        "Everyday",
+        available=True,
+        blurb="Type what you would look for on Windows and go straight to the Linux place for it.",
+    ),
+    Section(
+        "files",
+        "Files",
+        "folder-symbolic",
+        "File Explorer",
+        "Everyday",
+        available=True,
+        blurb="Your folders and drives, with the letters you know beside the real Linux paths.",
+    ),
     Section(
         "apps",
         "Apps",
@@ -77,6 +94,7 @@ SECTIONS: tuple[Section, ...] = (
         "Start menu, Installed Apps",
         "Everyday",
         available=True,
+        blurb="Every installed program in one list, with where it came from, and default apps.",
     ),
     Section(
         "settings",
@@ -85,6 +103,7 @@ SECTIONS: tuple[Section, ...] = (
         "Settings, Control Panel",
         "Everyday",
         available=True,
+        blurb="Familiar settings names, routed to the matching panel in Linux Settings.",
     ),
     Section(
         "printers",
@@ -93,6 +112,7 @@ SECTIONS: tuple[Section, ...] = (
         "Printers & scanners",
         "Everyday",
         available=True,
+        blurb="Printers and scanners on this computer, through CUPS.",
     ),
     Section(
         "network",
@@ -101,6 +121,7 @@ SECTIONS: tuple[Section, ...] = (
         "Network Connections",
         "Everyday",
         available=True,
+        blurb="Adapters, addresses, and connection changes, translated to NetworkManager.",
     ),
     Section(
         "taskmanager",
@@ -109,6 +130,7 @@ SECTIONS: tuple[Section, ...] = (
         "Task Manager",
         "Troubleshooting",
         available=True,
+        blurb="Running processes and live performance, with system-critical ones marked.",
     ),
     Section(
         "events",
@@ -117,6 +139,7 @@ SECTIONS: tuple[Section, ...] = (
         "Event Viewer",
         "Troubleshooting",
         available=True,
+        blurb="The system journal in the views you know: Application, System, Security, Boot.",
     ),
     Section(
         "devices",
@@ -125,6 +148,7 @@ SECTIONS: tuple[Section, ...] = (
         "Device Manager",
         "Troubleshooting",
         available=True,
+        blurb="Hardware on this computer and which kernel driver runs it.",
     ),
     Section(
         "startup",
@@ -133,6 +157,7 @@ SECTIONS: tuple[Section, ...] = (
         "Startup Apps, msconfig",
         "Troubleshooting",
         available=True,
+        blurb="What starts when you sign in, from autostart entries and user services.",
     ),
     Section(
         "disks",
@@ -141,8 +166,20 @@ SECTIONS: tuple[Section, ...] = (
         "Disk Management",
         "Troubleshooting",
         available=True,
+        blurb="Disks, partitions, and where they are mounted, with drive letters as labels.",
     ),
-    Section("services", "Services", "system-run-symbolic", "Services", "Advanced", available=True),
+    Section(
+        "services",
+        "Services",
+        "system-run-symbolic",
+        "Services",
+        "Advanced",
+        available=True,
+        blurb=(
+            "System and user services: running state and start at boot, "
+            "changed only with permission."
+        ),
+    ),
     Section(
         "terminal",
         "Command Prompt",
@@ -150,6 +187,7 @@ SECTIONS: tuple[Section, ...] = (
         "Command Prompt",
         "Advanced",
         available=True,
+        blurb="Windows commands, turned into typed Linux operations. Nothing is passed to a shell.",
     ),
     Section(
         "sysinfo",
@@ -158,6 +196,9 @@ SECTIONS: tuple[Section, ...] = (
         "System Information (msinfo32)",
         "Advanced",
         available=True,
+        blurb=(
+            "This computer's hardware and software, and what Trier Bridge can and cannot do here."
+        ),
     ),
     Section(
         "integrations",
@@ -166,16 +207,29 @@ SECTIONS: tuple[Section, ...] = (
         "Setup choices",
         "Trier Bridge",
         available=True,
+        blurb="The optional desktop integrations you chose at setup; each can be turned off here.",
     ),
     Section(
         "about",
         "About Trier Bridge",
         "help-about-symbolic",
-        "About [Program]",
+        "Help → About",
         "Trier Bridge",
         available=True,
+        blurb=(
+            "Everything you know. Linux underneath. "
+            "Version, license, and how to support the project."
+        ),
     ),
-    Section("help", "Help", "help-browser-symbolic", "Help", "Trier Bridge", available=True),
+    Section(
+        "help",
+        "Help",
+        "help-browser-symbolic",
+        "Help",
+        "Trier Bridge",
+        available=True,
+        blurb="Every translation this build knows, searchable.",
+    ),
 )
 
 NOT_YET = (
@@ -229,6 +283,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._review_records: list[JournalRecord] = []
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         content_box.append(self._review_banner)
+        content_box.append(self._build_hero())
         content_box.append(self._content_stack)
         self._content_stack.set_vexpand(True)
         content_toolbar.set_content(content_box)
@@ -254,7 +309,10 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             prefs.set("sidebar_hue", self._hue)
 
     def _set_zoom(self, value: int) -> None:
-        self._zoom = theme.clamp_zoom(value)
+        snapped = theme.clamp_zoom(value)
+        if snapped == self._zoom and int(self._zoom_scale.get_value()) == snapped:
+            return
+        self._zoom = snapped
         self._apply_css()
         self._zoom_scale.set_value(self._zoom)
         self._zoom_label.set_label(f"{self._zoom}%")
@@ -271,11 +329,12 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         label = Gtk.Label(label=f"{APP_NAME} · {__version__}", xalign=0.0, hexpand=True)
         bar.append(label)
         out_button = Gtk.Button(icon_name="zoom-out-symbolic", valign=Gtk.Align.CENTER)
+        out_button.add_css_class("flat")
         out_button.update_property([Gtk.AccessibleProperty.LABEL], ["Zoom out"])
-        out_button.connect("clicked", lambda *_: self._set_zoom(self._zoom - 10))
+        out_button.connect("clicked", lambda *_: self._set_zoom(self._zoom - theme.ZOOM_STEP))
         bar.append(out_button)
         self._zoom_scale = Gtk.Scale.new_with_range(
-            Gtk.Orientation.HORIZONTAL, theme.MIN_ZOOM, theme.MAX_ZOOM, 10
+            Gtk.Orientation.HORIZONTAL, theme.MIN_ZOOM, theme.MAX_ZOOM, theme.ZOOM_STEP
         )
         self._zoom_scale.set_size_request(120, -1)
         self._zoom_scale.set_draw_value(False)
@@ -285,8 +344,9 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._zoom_scale.connect("value-changed", self._on_zoom_changed)
         bar.append(self._zoom_scale)
         in_button = Gtk.Button(icon_name="zoom-in-symbolic", valign=Gtk.Align.CENTER)
+        in_button.add_css_class("flat")
         in_button.update_property([Gtk.AccessibleProperty.LABEL], ["Zoom in"])
-        in_button.connect("clicked", lambda *_: self._set_zoom(self._zoom + 10))
+        in_button.connect("clicked", lambda *_: self._set_zoom(self._zoom + theme.ZOOM_STEP))
         bar.append(in_button)
         self._zoom_label = Gtk.Button(label=f"{self._zoom}%", valign=Gtk.Align.CENTER)
         self._zoom_label.add_css_class("flat")
@@ -294,6 +354,41 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         self._zoom_label.connect("clicked", lambda *_: self._set_zoom(theme.DEFAULT_ZOOM))
         bar.append(self._zoom_label)
         return bar
+
+    # ---- content hero (TB-INV-257: one per window, every page inherits it) ------
+    def _build_hero(self) -> Gtk.Box:
+        box = Gtk.Box(spacing=16)
+        box.add_css_class("tb-hero")
+        self._hero_icon = Gtk.Image(pixel_size=26, valign=Gtk.Align.START)
+        self._hero_icon.add_css_class("tb-hero-chip")
+        self._hero_tint = ""
+        box.append(self._hero_icon)
+        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, hexpand=True)
+        top = Gtk.Box(spacing=10)
+        self._hero_title = Gtk.Label(xalign=0.0)
+        self._hero_title.add_css_class("title-2")
+        self._hero_title.add_css_class("tb-hero-title")
+        top.append(self._hero_title)
+        self._hero_pill = Gtk.Label(valign=Gtk.Align.CENTER)
+        self._hero_pill.add_css_class("tb-pill")
+        self._hero_pill.add_css_class("tb-pill-windows")
+        top.append(self._hero_pill)
+        text.append(top)
+        self._hero_blurb = Gtk.Label(xalign=0.0, wrap=True)
+        self._hero_blurb.add_css_class("tb-hero-blurb")
+        text.append(self._hero_blurb)
+        box.append(text)
+        return box
+
+    def _update_hero(self, section: Section) -> None:
+        self._hero_icon.set_from_icon_name(section.icon)
+        if self._hero_tint:
+            self._hero_icon.remove_css_class(self._hero_tint)
+        self._hero_tint = theme.group_css_class(section.group)
+        self._hero_icon.add_css_class(self._hero_tint)
+        self._hero_title.set_label(section.title)
+        self._hero_pill.set_label(f"Windows: {section.familiar}")
+        self._hero_blurb.set_label(section.blurb)
 
     def show_unresolved(self, records: list[JournalRecord]) -> None:
         """Interrupted operations are surfaced, never silently repeated (TB-INV-060)."""
@@ -420,7 +515,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
             if section.key == "integrations":
                 self._integrations.refresh()
             self._title.set_title(section.title)
-            self._title.set_subtitle(f"Windows: {section.familiar}")
+            self._update_hero(section)
             prefs = getattr(self.get_application(), "preferences", None)
             if prefs is not None and prefs.get("last_section") != section.key:
                 prefs.set("last_section", section.key)  # durability reported by the result
@@ -494,6 +589,7 @@ class MainWindow(Adw.ApplicationWindow):  # type: ignore[misc]
         # No menu button (SCOPE-16): its only entries were About (moved to its own sidebar
         # page) and Quit, which already duplicates the window's own close control.
         header = Adw.HeaderBar()
+        header.add_css_class("tb-topbar")
         self._title = Adw.WindowTitle(title="Home", subtitle="")
         header.set_title_widget(self._title)
         return header

@@ -133,12 +133,22 @@ class ServicesPage(Gtk.Box):  # type: ignore[misc]
             critical = s.scope is Scope.USER and is_session_critical_user_unit(s.identity.name)
             row = Adw.ActionRow(use_markup=False)
             row.set_title(s.identity.name)
-            subtitle = (
-                f"{s.description} · Running: {s.plain_running} · Start at boot: {s.plain_startup}"
-            )
+            subtitle = f"{s.description} · Start at boot: {s.plain_startup}"
             if critical:
                 subtitle += " · Critical: runs your desktop session, stopping it signs you out"
             row.set_subtitle(subtitle)
+            state = Gtk.Label(label=s.plain_running, valign=Gtk.Align.CENTER, width_chars=8)
+            state.add_css_class("tb-pill")
+            state.add_css_class(
+                {
+                    "Running": "tb-pill-ok",
+                    "Active": "tb-pill-ok",
+                    "Failed": "tb-pill-error",
+                    "Starting": "tb-pill-warn",
+                    "Stopping": "tb-pill-warn",
+                }.get(s.plain_running, "tb-pill-off")
+            )
+            row.add_prefix(state)
             row.set_tooltip_text(s.identity.fragment_path or s.identity.object_path)
             row.update_property(
                 [Gtk.AccessibleProperty.LABEL],
