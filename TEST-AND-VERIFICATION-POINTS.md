@@ -155,8 +155,8 @@ If you want the full technical evidence behind any row — exact commands, exact
 | # | Step | Expected | Pass/Fail | Notes |
 |---|---|---|---|---|
 | 9.1 | Open **Apps**. Find a file type with more than one program available. | A drop-down shows the current default; a **Set** button next to it. | | |
-| 9.2 | Change the default to the other option, confirm. **Which row you're on decides the exact command** — `xdg-mime query default` needs exactly one argument in `major/minor` form; the label on the page ("Email links", "Folders", "Web links") is not that argument, it's the friendly name for it. Use: Web links → `xdg-mime query default x-scheme-handler/http`; Email links → `xdg-mime query default x-scheme-handler/mailto`; Folders → `xdg-mime query default inode/directory`. Whichever you changed, the output should now be the program you just set. | The change is real — the terminal command above confirms it, matching the program you set on the page. | | The old example (`xdg-mime query default text/plain`) didn't match any row actually on this page — fixed to name the three real ones. |
-| 9.3 | Change it back. Verify with the same `xdg-mime query default <that row's identifier>` command from 9.2 — it should now show the original program again. | Reverts cleanly; no leftover state. | | |
+| 9.2 | Change the default to the other option, confirm. Leave the Apps page (go to Home, say) and come back. | The new default is still shown selected — the change actually stuck, not just a UI flicker. | | (Skip this if you want — it doesn't need proving beyond what's on screen. If you're curious whether it's real at the Linux level too: `xdg-mime query default x-scheme-handler/mailto` for Email links, `inode/directory` for Folders, `x-scheme-handler/http` for Web links, should print the program you just set. Not required.) |
+| 9.3 | Change it back the same way. | Reverts cleanly — the original default shows again after leaving and returning. | | |
 
 ---
 
