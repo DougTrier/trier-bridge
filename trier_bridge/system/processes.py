@@ -20,6 +20,19 @@ TB-INV-132). Command lines are read but the UI decides how much to show
 IDENTITY: every row carries PID plus start time so a reused PID is a different
 target (TB-INV-050). Kernel threads and PID 1 are classified as system-critical
 (TB-INV-136).
+SESSION: the per-user desktop session depends on a small set of processes that
+are *not* PID 1 and run as the ordinary user, so the PID-1 check alone does not
+catch them — ending one force-logs-out the whole session, confirmed live on
+tb-ubuntu-desktop-2404 (real incident, 2026-09-21): the user's own
+`systemd --user` instance (comm "systemd", direct child of PID 1), the GNOME
+shell (`gnome-shell`), the session manager (`gnome-session-b`, /proc's 15-char
+truncation of gnome-session-binary), and the session message bus
+(`dbus-daemon`) are named explicitly and refused the same way PID 1 is
+(TB-INV-136). This is a curated, evidence-based list from the real process
+tree on the one qualified environment (ENV-02), not a general "everything
+systemd --user manages" rule — ordinary per-session helpers spawned the same
+way (for example gnome-shell's calendar-server helper) are deliberately left
+actionable, since ending those does not take the session down with them.
 RESOURCES: CPU percentages need two samples; the sampler keeps the previous
 tick table and computes deltas, so cost is one pass per refresh (TB-INV-199).
 """
@@ -43,6 +56,7 @@ class ProcessKind(Enum):
     SYSTEM = "system"  # root-owned service or daemon
     KERNEL = "kernel"  # kernel thread; never actionable
     CRITICAL = "critical"  # PID 1 and the init family; never actionable
+    SESSION_CRITICAL = "session-critical"  # runs your own desktop session; never actionable
 
     @property
     def actionable_by_user(self) -> bool:
@@ -137,10 +151,20 @@ def parse_cpu_total(stat_text: str) -> int | None:
     return None
 
 
+# Comm names (as truncated to 15 chars in /proc/PID/comm) confirmed, on the real process tree,
+# to be core desktop-session infrastructure rather than an ordinary user program -- ending one
+# takes the whole session with it. "systemd" is handled separately below since only the
+# per-user instance (a direct child of PID 1) counts, not every process that happens to share
+# the name with something else.
+_SESSION_CRITICAL_NAMES = frozenset({"gnome-shell", "gnome-session-b", "dbus-daemon"})
+
+
 def classify(pid: int, ppid: int, uid: int, my_uid: int, cmdline: str, comm: str) -> ProcessKind:
     if pid in (1, 2) or ppid == 2 or (cmdline == "" and uid == 0):
         return ProcessKind.CRITICAL if pid == 1 else ProcessKind.KERNEL
     if uid == my_uid:
+        if comm in _SESSION_CRITICAL_NAMES or (comm == "systemd" and ppid == 1):
+            return ProcessKind.SESSION_CRITICAL
         return ProcessKind.USER
     if uid == 0:
         return ProcessKind.SYSTEM

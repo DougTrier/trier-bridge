@@ -29,7 +29,12 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
-from ..operations.service import ServicePlan, execute_service, plan_service  # noqa: E402
+from ..operations.service import (  # noqa: E402
+    ServicePlan,
+    execute_service,
+    is_session_critical_user_unit,
+    plan_service,
+)
 from ..state.journal import OperationJournal  # noqa: E402
 from ..system.services import Scope, ServiceInfo, list_services  # noqa: E402
 
@@ -125,15 +130,22 @@ class ServicesPage(Gtk.Box):  # type: ignore[misc]
         if self._services:
             self._summary.set_text(f"{len(shown)} of {len(self._services)} services")
         for s in shown[:MAX_ROWS]:
+            critical = s.scope is Scope.USER and is_session_critical_user_unit(s.identity.name)
             row = Adw.ActionRow(use_markup=False)
             row.set_title(s.identity.name)
-            row.set_subtitle(
+            subtitle = (
                 f"{s.description} · Running: {s.plain_running} · Start at boot: {s.plain_startup}"
             )
+            if critical:
+                subtitle += " · Critical: runs your desktop session, stopping it signs you out"
+            row.set_subtitle(subtitle)
             row.set_tooltip_text(s.identity.fragment_path or s.identity.object_path)
             row.update_property(
                 [Gtk.AccessibleProperty.LABEL],
-                [f"{s.identity.name}, {s.plain_running}, start at boot {s.plain_startup}"],
+                [
+                    f"{s.identity.name}, {s.plain_running}, start at boot {s.plain_startup}"
+                    + (", critical: runs your desktop session" if critical else "")
+                ],
             )
             menu = Gtk.MenuButton(icon_name="view-more-symbolic")
             menu.set_valign(Gtk.Align.CENTER)

@@ -33,7 +33,12 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
-from ..operations.process import TerminatePlan, execute_terminate, plan_terminate  # noqa: E402
+from ..operations.process import (  # noqa: E402
+    WHY_NOT_ACTIONABLE,
+    TerminatePlan,
+    execute_terminate,
+    plan_terminate,
+)
 from ..state.journal import OperationJournal  # noqa: E402
 from ..system.processes import ProcessKind, ProcessSample  # noqa: E402
 from ..system.processes import ProcessSampler, SystemTotals  # noqa: E402
@@ -50,6 +55,7 @@ KIND_LABEL = {
     ProcessKind.SYSTEM: "System",
     ProcessKind.KERNEL: "Kernel",
     ProcessKind.CRITICAL: "Critical",
+    ProcessKind.SESSION_CRITICAL: "Critical (session)",
 }
 
 
@@ -201,13 +207,18 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
                     f"memory {_fmt_bytes(s.rss_bytes)}, {KIND_LABEL[s.kind]}"
                 ],
             )
+        why = WHY_NOT_ACTIONABLE.get(s.kind)
         tip = (
-            s.cmdline[:200]
-            if s.cmdline
+            f"Cannot be ended: {why}"
+            if why is not None
             else (
-                "Not readable for this account"
-                if not s.readable
-                else "No command line (kernel task)"
+                s.cmdline[:200]
+                if s.cmdline
+                else (
+                    "Not readable for this account"
+                    if not s.readable
+                    else "No command line (kernel task)"
+                )
             )
         )
         if row.get_tooltip_text() != tip:
@@ -295,7 +306,13 @@ class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
             {ProcessKind.APP, ProcessKind.USER}, "No processes of yours are running", self._ask_end
         )
         self._background = _ProcessList(
-            {ProcessKind.SYSTEM, ProcessKind.OTHER_USER, ProcessKind.KERNEL, ProcessKind.CRITICAL},
+            {
+                ProcessKind.SYSTEM,
+                ProcessKind.OTHER_USER,
+                ProcessKind.KERNEL,
+                ProcessKind.CRITICAL,
+                ProcessKind.SESSION_CRITICAL,
+            },
             "No background processes are visible to this account",
         )
         self._perf = _PerformancePage()

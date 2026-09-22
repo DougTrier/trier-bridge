@@ -37,6 +37,19 @@ from ..system.processes import ProcessKind, has_ended, is_still_same
 
 VERIFY_TIMEOUT_S = 3.0
 
+# Shared with the UI (row tooltips) so the reason shown before a click and the reason shown in
+# the refusal after one always say exactly the same thing.
+WHY_NOT_ACTIONABLE = {
+    ProcessKind.KERNEL: "It is part of the Linux kernel, not a program you started.",
+    ProcessKind.CRITICAL: "It is the core system process; ending it would stop the computer.",
+    ProcessKind.SESSION_CRITICAL: (
+        "It runs your desktop session; ending it would sign you out immediately "
+        "and you would need to log back in."
+    ),
+    ProcessKind.SYSTEM: "It belongs to the system, not to your account.",
+    ProcessKind.OTHER_USER: "It belongs to another user.",
+}
+
 
 @dataclass(frozen=True)
 class TerminatePlan:
@@ -67,14 +80,7 @@ def plan_terminate(
             safest_next_step="Use Quit from the menu.",
         )
     if not kind.actionable_by_user:
-        why = {
-            ProcessKind.KERNEL: "It is part of the Linux kernel, not a program you started.",
-            ProcessKind.CRITICAL: (
-                "It is the core system process; ending it would stop the computer."
-            ),
-            ProcessKind.SYSTEM: "It belongs to the system, not to your account.",
-            ProcessKind.OTHER_USER: "It belongs to another user.",
-        }.get(kind, "It is not a process of yours.")
+        why = WHY_NOT_ACTIONABLE.get(kind, "It is not a process of yours.")
         return OperationResult(
             op.operation_id,
             OperationState.UNSUPPORTED,

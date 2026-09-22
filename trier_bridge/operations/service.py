@@ -62,6 +62,19 @@ VERB_TEXT = {
     "disable": ("Stop starting at boot", "does not stop it now"),
 }
 
+# User-scope units confirmed, on the real service list, to be desktop-session infrastructure
+# (systemctl --user list-units, tb-ubuntu-desktop-2404): unlike system-scope changes, a user-scope
+# stop/restart needs no polkit prompt at all, so nothing else stands between a click and a forced
+# logout -- the same shape of gap found and fixed for Task Manager's process list (TB-INV-136).
+# A one-word or one-line match on the unit name, not a broader "everything systemd --user starts"
+# rule: most of what systemctl --user lists (GNOME Settings Daemon helpers, gvfs, IBus, evolution)
+# is an ordinary background service safe to restart, and is left fully actionable.
+_SESSION_CRITICAL_USER_UNITS = frozenset({"dbus.service", "gnome-session-monitor.service"})
+
+
+def is_session_critical_user_unit(name: str) -> bool:
+    return name in _SESSION_CRITICAL_USER_UNITS or name.startswith("gnome-session-manager@")
+
 
 def plan_service(service: ServiceInfo, verb: str) -> ServicePlan | OperationResult:
     if verb not in VERB_TEXT:
@@ -76,6 +89,17 @@ def plan_service(service: ServiceInfo, verb: str) -> ServicePlan | OperationResu
         parameters={"unit": service.identity.name, "scope": service.scope.value},
     )
     name = service.identity.name
+    if (
+        service.scope is Scope.USER
+        and verb in ("stop", "restart", "disable")
+        and is_session_critical_user_unit(name)
+    ):
+        return OperationResult(
+            op.operation_id,
+            OperationState.UNSUPPORTED,
+            f"{name} cannot be {verb}ed from here. It runs your desktop session; doing that "
+            "would sign you out immediately. Nothing was changed.",
+        )
     if verb == "start" and not service.can_start:
         return OperationResult(
             op.operation_id,

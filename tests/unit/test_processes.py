@@ -4,6 +4,8 @@
 from pathlib import Path
 
 from trier_bridge.core.identity import ProcessIdentity
+from trier_bridge.core.operations import OperationResult
+from trier_bridge.operations.process import plan_terminate
 from trier_bridge.system.processes import (
     ProcessKind,
     ProcessSampler,
@@ -52,6 +54,47 @@ def test_classification_protects_system_processes() -> None:
     assert ProcessKind.USER.actionable_by_user
 
 
+def test_classification_protects_session_critical_processes() -> None:
+    """TB-T136: a real incident (2026-09-21) -- ending the user's own systemd --user, dbus-daemon,
+    or gnome-session-binary from Task Manager force-logged the owner out of the desktop session.
+    None of these are PID 1, so the existing PID-1-only check missed them entirely; exact
+    pid/ppid/comm values below are copied from the real process tree that produced the incident."""
+    my_uid = 1000
+    assert classify(18598, 1, my_uid, my_uid, "/lib/systemd/systemd --user", "systemd") is (
+        ProcessKind.SESSION_CRITICAL
+    )
+    assert classify(18628, 18598, my_uid, my_uid, "/usr/bin/dbus-daemon", "dbus-daemon") is (
+        ProcessKind.SESSION_CRITICAL
+    )
+    assert classify(
+        18799, 18598, my_uid, my_uid, "/usr/libexec/gnome-session-binary", "gnome-session-b"
+    ) is (ProcessKind.SESSION_CRITICAL)
+    assert classify(18845, 18598, my_uid, my_uid, "/usr/bin/gnome-shell", "gnome-shell") is (
+        ProcessKind.SESSION_CRITICAL
+    )
+    assert not ProcessKind.SESSION_CRITICAL.actionable_by_user
+    # a session helper spawned the same way is deliberately still actionable -- not everything
+    # under the user's systemd instance is session-fatal to end
+    assert (
+        classify(
+            18897,
+            18598,
+            my_uid,
+            my_uid,
+            "/usr/libexec/gnome-shell-calendar-server",
+            "gnome-shell-cal",
+        )
+        is ProcessKind.USER
+    )
+    # a *different* dbus-daemon, e.g. a private/per-app bus, is still protected by name alone --
+    # distinguishing "the session bus" from any other dbus-daemon isn't reliable, so both are kept
+    assert classify(18844, 18833, my_uid, my_uid, "/usr/bin/dbus-daemon", "dbus-daemon") is (
+        ProcessKind.SESSION_CRITICAL
+    )
+    # "systemd" only means the per-user manager when it's a direct child of real PID 1
+    assert classify(9999, 4271, my_uid, my_uid, "systemd-mock", "systemd") is ProcessKind.USER
+
+
 def test_sampler_on_a_synthetic_proc_tree_built_from_real_files(tmp_path: Path) -> None:
     # A real directory tree shaped like procfs; every file is a real file the sampler reads.
     proc = tmp_path / "proc"
@@ -96,3 +139,16 @@ def test_unreadable_process_reports_unknown_not_zero(tmp_path: Path) -> None:
     rows, _ = ProcessSampler(proc).sample()
     assert len(rows) == 1
     assert rows[0].readable is False and rows[0].rss_bytes is None and rows[0].threads is None
+
+
+def test_plan_terminate_refuses_session_critical_with_an_accurate_reason() -> None:
+    """The refusal must say what actually happens (signed out), not reuse CRITICAL's
+    "would stop the computer" wording, which is true for PID 1 but false here."""
+    identity = ProcessIdentity(
+        pid=18845, start_ticks=1000, uid=1000, exe="gnome-shell", comm="gnome-shell"
+    )
+    res = plan_terminate(identity, ProcessKind.SESSION_CRITICAL)
+    assert isinstance(res, OperationResult)
+    assert "cannot be ended" in res.plain
+    assert "sign" in res.plain.lower() and "log back in" in res.plain.lower()
+    assert "stop the computer" not in res.plain
