@@ -1,6 +1,6 @@
 # Trier Bridge Context
 
-**Last updated:** 2026-09-22 02:02 AM CDT
+**Last updated:** 2026-09-22 02:09 AM CDT
 **Owner:** Doug Trier  
 **Project state:** VERSION 1.0.0 AND DOCUMENTATION CLEANUP COMPLETE PER DOUG'S DIRECTION, 2026-09-22. The repository remains private for final review; recorded qualification gaps remain explicit.
 **Implementation:** AUTHORIZED 2026-09-21 (DEC-023)  
@@ -10,7 +10,7 @@
 
 ## Current objective
 
-CI-01 is active by Doug's 2026-09-22 instruction: configure and run GitHub build, unit, and security checks before public availability. He explicitly approved disposable GitHub Ubuntu runners for package builds, static checks, and non-destructive unit tests; desktop, privileged, and fault-injection tests remain VM-only. See `docs/CI.md`. The repository stays private.
+CI-01 is configured and verified: [GitHub run](https://github.com/DougTrier/trier-bridge/actions/runs/35697910187), candidate `07e4125`, passed all three jobs (129 selected unit tests, static/security checks, and reproducible Debian builds). Dependabot alerts are enabled; the README badge shows live results. Doug explicitly approved disposable GitHub Ubuntu runners for this bounded scope on 2026-09-22; desktop, privileged, and fault-injection tests remain VM-only. See `docs/CI.md` and `docs/VALIDATION.md` CI-01. The repository stays private.
 
 The documentation cleanup for version 1.0.0 is complete. Product and security descriptions stand on their own terms, commit messages use Doug's first-person voice, and dependency/license attribution and the exact evidence record are preserved. The repository remains private for final review.
 
@@ -32,7 +32,7 @@ Administration and command translation are deeper layers.
 
 ### Implementation and design history
 
-The entries below preserve earlier checkpoints and their evidence limits. Their pending-work notes describe those checkpoints; the current documentation-only direction above governs this session.
+The entries below preserve earlier checkpoints and their evidence limits. Their pending-work notes describe those checkpoints; the current authorized scope above governs this session.
 
 - **1.0.0, 2026-09-21 11:40 PM CDT (candidate `f4042b5`, `docs/VALIDATION.md` SCOPE-16 round two):** built, gated on both platforms (host 143/17, VM 199/1), and installed on ENV-02 as `trier-bridge_1.0.0_all.deb`. The round was driven by the owner's screenshot and by the project's own gate: `tb terms` caught the `sh -c` wrapper in the ping/tracert fix (TB-TERM-007) and it was replaced by a shipped helper run as an argument list, verified live with no shell in the process line; the two "color did not apply" spots were diagnosed from a real render of the installed window and fixed at the container level; the same render exposed that Task Manager's icon had been GTK's missing-image placeholder since Foundation 01 (the session theme is Adwaita, which lacks the name); Home search results no longer hide below the card grid; the Task Manager Performance tab got one color per resource, gradient charts, and stat cards; Home opens on the "what it is for" paragraph. Renders of Home, Apps, and Performance were taken from the installed build and inspected. The owner's own look at 1.0.0 and the `.deb` double-click path are what remain.
 - Evening of 2026-09-21, at the owner's direction and mostly owner-confirmed live as it went: the in-app file browser (DEC-025, `DOC-02.01`; a real `Adw.ActionRow` activation bug found on first click and fixed); session-critical processes and services protected after the owner was force-logged-out twice (IMP-06.04/06.05); a deployment gap closed — the installed package had not been rebuilt since 7:30 AM, so nothing tested that day had been what was written — with rebuild+reinstall+relaunch now part of every cycle; Task Manager's Performance tab with live per-disk/per-adapter graphs (DEC-026, IMP-04.01); a branded launcher icon suite (SCOPE-14); ping/tracert's terminal kept open and then reused across runs, each fix probed on the VM after a confident-but-wrong first attempt (IMP-07.14); the navy shell with a hue slider, zoom bar, and sidebar About page (DEC-027, SCOPE-15); Services' first-load lag fixed at its cause (eager per-row popovers). Then the final audit and polish pass on Fable 5.1 (DEC-028, SCOPE-16, candidate `e08d255`, 11:04 PM CDT): one shared page hero for every section, the accent framing the content on three sides, Home's card grid, real app icons and status pills, zoom in 5% steps, About cut to facts with full-color support marks, and "Software installers (.deb)" as a Default apps row so App Center can be chosen once and a double-click installs — the File-Roller-wins-by-default cause verified on ENV-02 with the session's own data dirs, recorded in `docs/PACKAGING.md`. `HANDOFF.md` folded into the ledger and removed. Built, gated on both platforms, the real window constructed and exercised on the real stack, deployed; the owner's look is what remains. Invariants 258.
@@ -119,7 +119,7 @@ No document existence implies runtime PASS.
 
 ## Next bounded work
 
-Run and verify the initial CI-01 GitHub workflow, address failures within its authorized build/test setup scope, and record exact run evidence. Keep the repository private. Making it public or extending product behavior requires new direction.
+CI-01 is in place and the initial build/test/security run is verified. Keep the repository private for final review. Subsequent changes run the same checks automatically; making the repository public or extending product behavior requires new direction.
 
 Recorded test results, qualification gaps, and package artifacts retain their existing scope. No missing test was marked complete by this cleanup.
 

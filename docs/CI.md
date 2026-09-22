@@ -51,4 +51,4 @@ Gitleaks comes from [its official release](https://github.com/gitleaks/gitleaks/
 
 ## Evidence
 
-Workflow presence is not a passing run. Record the observed run URL, checked commit, environment, test counts/skips, package comparison, and scanner results in `VALIDATION.md` after the initial run. Any failed or unrun job remains explicit.
+Initial verified run: [GitHub Actions](https://github.com/DougTrier/trier-bridge/actions/runs/35697910187), candidate `07e4125`. All three jobs succeeded: 129 selected tests passed (one deliberate deselection), the two Debian packages matched, lintian passed its error/warning gate, and Gitleaks found no secrets in 215 reachable commits. `VALIDATION.md` CI-01 records the environment, package hash, initial setup failure, correction, and limits. Later commits must earn their own check results; this result is tied to the cited revision.
