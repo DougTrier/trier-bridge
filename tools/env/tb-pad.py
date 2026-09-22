@@ -68,12 +68,52 @@ ul{{margin:.3rem 0}}</style></head><body>
 </body></html>"""
 
 
-def detect_bind(peer: str) -> str:
+DEFAULT_VM_NAME = "tb-ubuntu-desktop-2404"
+_VM_NAME_OK = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def vm_address(vm_name: str) -> str | None:
+    """The VM's IPv4 address as Hyper-V reports it (read-only cmdlet, fixed argv, no shell).
+
+    Used only when the Default Switch adapter cannot be read from ipconfig. The VM
+    name is restricted to plain characters before it is placed in the cmdlet text.
+    """
+    if sys.platform != "win32" or not _VM_NAME_OK.match(vm_name):
+        return None
+    try:
+        out = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                f"(Get-VMNetworkAdapter -VMName '{vm_name}').IPAddresses",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    for token in out.split():
+        try:
+            candidate = ipaddress.ip_address(token)
+        except ValueError:
+            continue
+        if candidate.version == 4:
+            return str(candidate)
+    return None
+
+
+def detect_bind(peer: str | None, vm_name: str) -> str:
     """Host address on the Hyper-V Default Switch.
 
     Preferred: read the 'vEthernet (Default Switch)' adapter from ipconfig
     (fixed argv, no shell), because the switch subnet can change after a host
-    reboot. Fallback: the local address used to route to the VM (--peer).
+    reboot. Fallback: the local address used to route to the VM, whose address
+    is --peer if given, else what Hyper-V reports for --vm-name. The repository
+    carries no address of its own.
     """
     if sys.platform == "win32":
         try:
@@ -88,6 +128,15 @@ def detect_bind(peer: str) -> str:
                     return line.rsplit(":", 1)[1].strip()
         except (OSError, subprocess.SubprocessError):
             pass
+    if peer is None:
+        peer = vm_address(vm_name)
+    if peer is None:
+        raise RuntimeError(
+            "could not find the Hyper-V switch address: no 'Default Switch' adapter in ipconfig "
+            f"and Hyper-V reports no address for VM '{vm_name}' (that query answers only from "
+            "an elevated PowerShell or a Hyper-V Administrators account). "
+            "Give --peer <VM address> or --bind <host address>."
+        )
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect((peer, 9))
@@ -227,10 +276,18 @@ def main(argv=None) -> int:
     ap.add_argument(
         "--peer",
         default=None,
-        help="VM address used to detect the switch-side host IP (required unless --bind is given)",
+        help="VM address, only needed when the Default Switch adapter cannot be read from "
+        "ipconfig (default: ask Hyper-V for --vm-name's address)",
     )
     ap.add_argument(
-        "--bind", default="auto", help="address to listen on (default: auto from --peer)"
+        "--vm-name",
+        default=DEFAULT_VM_NAME,
+        help=f"Hyper-V VM whose address to look up when needed (default: {DEFAULT_VM_NAME})",
+    )
+    ap.add_argument(
+        "--bind",
+        default="auto",
+        help="address to listen on (default: the host's Default Switch address, found automatically)",
     )
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument(
@@ -250,14 +307,14 @@ def main(argv=None) -> int:
     NOTE = STATE / "note.txt"
     FILES = STATE / "files"
 
-    if args.bind == "auto" and not args.peer:
-        print(
-            "tb-pad: give --peer <VM address> (the switch-side host address is found from it) "
-            "or --bind <host address>.",
-            file=sys.stderr,
-        )
-        return 2
-    bind = detect_bind(args.peer) if args.bind == "auto" else args.bind
+    if args.bind == "auto":
+        try:
+            bind = detect_bind(args.peer, args.vm_name)
+        except (RuntimeError, OSError) as exc:
+            print(f"tb-pad: {exc}", file=sys.stderr)
+            return 2
+    else:
+        bind = args.bind
     ip = ipaddress.ip_address(bind) if bind != "0.0.0.0" else None
     if not args.allow_any and (ip is None or not ip.is_private or ip.is_loopback):
         print(

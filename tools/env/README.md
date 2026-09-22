@@ -66,10 +66,10 @@ Hyper-V has no clipboard for Linux guests, so `tb-pad.py` serves a small page re
 Start it on the host, which also opens the page (closing the console window or Ctrl+C stops it):
 
 ```bash
-tools\env\tb-pad --open --peer <vm-address>
+tools\env\tb-pad --open
 ```
 
-`--peer` is the VM's address (`ip addr` in the guest, or `Get-VMNetworkAdapter -VMName tb-ubuntu-desktop-2404` on the host); the host's switch-side address is found from it. The repository carries no address on purpose, so a desktop shortcut for this command must pass `--peer` itself. The Windows desktop folder `Trier Bridge` holds such a shortcut, plus shortcuts for the VM console and the project. The Ubuntu desktop has a `tb-pad` launcher that opens the same page; it finds the host through the VM's default gateway, so it keeps working if the switch subnet changes after a host reboot.
+No address to type: the tool reads the host's `vEthernet (Default Switch)` address from `ipconfig` (this is the path that works from a normal window). If that adapter cannot be read, it asks Hyper-V for the VM's address by name (`--vm-name`, default `tb-ubuntu-desktop-2404`, a read-only cmdlet) and derives the host address from that — Hyper-V answers that query only from an elevated PowerShell or an account in the Hyper-V Administrators group; from a normal window it returns nothing and the tool says so. `--peer <VM address>` and `--bind <host address>` override both. The repository carries no address of its own. The Windows desktop folder `Trier Bridge` holds a shortcut that runs exactly this command, plus shortcuts for the VM console and the project. The Ubuntu desktop has a `tb-pad` launcher that opens the same page; it finds the host through the VM's default gateway, so it keeps working if the switch subnet changes after a host reboot.
 
 The server binds only to the host's address on the Default Switch (read from `ipconfig`, normally `<host-address>`), so nothing off that switch can reach it, and it has no login by design. Page: textarea, Save, Ctrl+S, `raw`, `files`.
 
@@ -84,7 +84,7 @@ From a shell (host has `curl`; Ubuntu Desktop ships `wget`, not `curl`):
 | download a file | `curl -O http://<host-address>:8000/files/f` | `wget http://<host-address>:8000/files/f` |
 | list files | open `/files/` | open `/files/` |
 
-State (the note and dropped files) lives under `reports/local/pad/`, which is gitignored so pasted commands and files never enter history; `--state DIR` keeps it elsewhere. Other options: `--port`, `--peer`, `--bind`, `--allow-any`. File names are restricted to a safe character set, path escapes are rejected, uploads are capped at 64 MB, and chunked uploads (piped `curl -T -`) are accepted.
+State (the note and dropped files) lives under `reports/local/pad/`, which is gitignored so pasted commands and files never enter history; `--state DIR` keeps it elsewhere. Other options: `--port`, `--vm-name`, `--peer`, `--bind`, `--allow-any`. File names are restricted to a safe character set, path escapes are rejected, uploads are capped at 64 MB, and chunked uploads (piped `curl -T -`) are accepted.
 
 ## Guest state beyond the clean-install checkpoint (2026-09-21)
 
