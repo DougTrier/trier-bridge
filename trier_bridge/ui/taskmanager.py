@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections import deque
 from typing import Callable
 
 import gi
@@ -40,8 +41,11 @@ from ..operations.process import (  # noqa: E402
     plan_terminate,
 )
 from ..state.journal import OperationJournal  # noqa: E402
+from ..system.diskio import DiskIoSampler, DiskRate, disk_drive_letters  # noqa: E402
+from ..system.netio import NetIoSampler, NetRate  # noqa: E402
 from ..system.processes import ProcessKind, ProcessSample  # noqa: E402
 from ..system.processes import ProcessSampler, SystemTotals  # noqa: E402
+from .chart import Chart  # noqa: E402
 
 log = logging.getLogger("trier_bridge.ui.taskmanager")
 
@@ -225,58 +229,249 @@ class _ProcessList(Gtk.Box):  # type: ignore[misc]
             row.set_tooltip_text(tip)
 
 
+CHART_CAPACITY = 30  # 30 samples * 2 s tick = 60 seconds, matching Windows' own "60 seconds" span
+
+
+def _fmt_bps(n: float | None) -> str:
+    """Bytes/sec, not bits -- consistent with _fmt_bytes elsewhere, unlike real Windows'
+    network-in-bits convention, which would be its own small honesty problem to replicate."""
+    if n is None:
+        return "Unknown"
+    if n < 1024:
+        return f"{n:.0f} B/s"
+    if n < 1024 * 1024:
+        return f"{n / 1024:.1f} KB/s"
+    return f"{n / (1024 * 1024):.1f} MB/s"
+
+
+def _caption_label(halign: Gtk.Align, valign: Gtk.Align) -> Gtk.Label:
+    label = Gtk.Label(margin_top=4, margin_bottom=4, margin_start=4, margin_end=4)
+    label.add_css_class("caption")
+    label.set_halign(halign)
+    label.set_valign(valign)
+    return label
+
+
+class _Tile:
+    """One graphed resource: a sidebar row with a mini chart, and enough state to rebuild
+    the big detail chart when this tile is selected (TB-INV-248: both share one bounded
+    rolling window, neither grows without limit)."""
+
+    def __init__(self, key: str, kind: str, device: str, title: str) -> None:
+        self.key = key
+        self.kind = kind  # "cpu", "mem", "disk", "net"
+        self.device = device  # real name behind the label: "", "sda", "eth0", ... (TB-INV-249)
+        self.title = title
+        self.history: deque[float | None] = deque(maxlen=CHART_CAPACITY)
+        self.facts: dict[str, str] = {}
+        self.subtitle = "Unknown"
+        self.row = Adw.ActionRow(use_markup=False, title=title, subtitle="Unknown")
+        self.row.tb_key = key
+        self.mini = Chart(CHART_CAPACITY, fill=False)
+        self.mini.set_size_request(56, 28)
+        self.mini.set_valign(Gtk.Align.CENTER)
+        if kind in ("cpu", "mem"):
+            self.mini.set_max_value(100.0)
+        self.row.add_suffix(self.mini)
+
+    def push(self, value: float | None, subtitle: str, facts: dict[str, str]) -> None:
+        self.history.append(value)
+        self.subtitle = subtitle
+        self.facts = facts
+        self.mini.push(value)
+        self.row.set_subtitle(subtitle)
+
+
 class _PerformancePage(Gtk.Box):  # type: ignore[misc]
+    """Windows-style Performance tab (DEC-026): a sidebar of live resource tiles, a big
+    chart for whichever one is selected. GPU is deliberately not included -- there is no
+    portable, generic way to read GPU utilization on Linux without vendor-specific tooling
+    (nvidia-smi, vendor sysfs counters), the same "needs real hardware" boundary IMP-03.08
+    and CQ-09 already carry."""
+
     def __init__(self) -> None:
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
-        page = Adw.PreferencesPage()
-        self._group = Adw.PreferencesGroup(
-            title="Performance",
-            description="Read from the kernel every two seconds while this page is visible.",
-        )
-        self._rows: dict[str, Adw.ActionRow] = {}
-        for key, title in (
-            ("cpu", "CPU usage"),
-            ("cores", "Processors"),
-            ("mem", "Memory in use"),
-            ("memtotal", "Memory total"),
-            ("load", "Load (1 minute)"),
-            ("uptime", "Up time"),
-            ("procs", "Processes"),
-        ):
-            row = Adw.ActionRow(use_markup=False)
-            row.set_title(title)
-            row.set_subtitle("Unknown")
-            self._group.add(row)
-            self._rows[key] = row
-        page.add(self._group)
-        self.append(page)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self._prev_total: int | None = None
         self._prev_busy: int | None = None
+        self._tiles: dict[str, _Tile] = {}
+        self._selected: str | None = None
 
-    def update(self, totals: SystemTotals, nprocs: int, samples: list[ProcessSample]) -> None:
-        cpu_text = "Unknown"
+        self._sidebar = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE)
+        self._sidebar.add_css_class("navigation-sidebar")
+        self._sidebar.connect("row-selected", self._on_row_selected)
+        sidebar_scroll = Gtk.ScrolledWindow(
+            child=self._sidebar, hscrollbar_policy=Gtk.PolicyType.NEVER
+        )
+        sidebar_scroll.set_size_request(280, -1)
+        sidebar_scroll.set_vexpand(True)
+        self.append(sidebar_scroll)
+
+        detail = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        detail.set_margin_top(12)
+        detail.set_margin_start(12)
+        detail.set_margin_end(12)
+        detail.set_margin_bottom(12)
+        detail.set_hexpand(True)
+        self._detail_title = Gtk.Label(xalign=0.0)
+        self._detail_title.add_css_class("title-2")
+        detail.append(self._detail_title)
+        self._detail_subtitle = Gtk.Label(xalign=0.0)
+        self._detail_subtitle.add_css_class("dim-label")
+        detail.append(self._detail_subtitle)
+
+        overlay = Gtk.Overlay()
+        self._detail_chart = Chart(CHART_CAPACITY, fill=True)
+        self._detail_chart.set_size_request(-1, 240)
+        self._detail_chart.set_vexpand(True)
+        overlay.set_child(self._detail_chart)
+        self._peak_label = _caption_label(Gtk.Align.END, Gtk.Align.START)
+        overlay.add_overlay(self._peak_label)
+        self._floor_label = _caption_label(Gtk.Align.END, Gtk.Align.END)
+        self._floor_label.set_text("0")
+        overlay.add_overlay(self._floor_label)
+        self._span_label = _caption_label(Gtk.Align.START, Gtk.Align.END)
+        self._span_label.set_text("60 seconds")
+        overlay.add_overlay(self._span_label)
+        detail.append(overlay)
+
+        self._facts_group = Adw.PreferencesGroup()
+        self._fact_rows: dict[str, Adw.ActionRow] = {}
+        detail.append(self._facts_group)
+        self.append(detail)
+
+        self._add_tile("cpu", "cpu", "", "CPU")
+        self._add_tile("mem", "mem", "", "Memory")
+        self._select_key("cpu")
+
+    # ---- tiles -----------------------------------------------------------
+    def _add_tile(self, key: str, kind: str, device: str, title: str) -> _Tile:
+        tile = _Tile(key, kind, device, title)
+        self._tiles[key] = tile
+        self._sidebar.append(tile.row)
+        return tile
+
+    def _on_row_selected(self, _box: Gtk.ListBox, row: Gtk.ListBoxRow | None) -> None:
+        key = getattr(row, "tb_key", None) if row is not None else None
+        if key is not None:
+            self._select_key(key)
+
+    def _select_key(self, key: str) -> None:
+        tile = self._tiles.get(key)
+        if tile is None:
+            return
+        self._selected = key
+        self._detail_title.set_text(tile.title)
+        self._detail_subtitle.set_text(tile.device or tile.subtitle)
+        self._detail_chart.set_max_value(100.0 if tile.kind in ("cpu", "mem") else None)
+        self._detail_chart.set_values(list(tile.history))
+        self._update_facts(tile)
+        self._peak_label.set_text(
+            "100%" if tile.kind in ("cpu", "mem") else _fmt_bps(self._detail_chart.peak())
+        )
+
+    def _update_facts(self, tile: _Tile) -> None:
+        for w in list(self._fact_rows.values()):
+            self._facts_group.remove(w)
+        self._fact_rows = {}
+        for label, value in tile.facts.items():
+            row = Adw.ActionRow(use_markup=False, title=label, subtitle=value)
+            self._facts_group.add(row)
+            self._fact_rows[label] = row
+
+    # ---- sampling (values already collected off the main thread; TB-INV-246) ---------
+    def update(
+        self,
+        totals: SystemTotals,
+        nprocs: int,
+        samples: list[ProcessSample],
+        disk_rates: list[DiskRate],
+        net_rates: list[NetRate],
+        disk_letters: dict[str, list[str]],
+    ) -> None:
+        self._update_cpu(totals, nprocs, samples)
+        self._update_mem(totals)
+        self._update_disks(disk_rates, disk_letters)
+        self._update_nets(net_rates)
+        if self._selected is not None and self._selected in self._tiles:
+            self._refresh_selected()
+
+    def _update_cpu(self, totals: SystemTotals, nprocs: int, samples: list[ProcessSample]) -> None:
+        cpu_pct: float | None = None
         if totals.cpu_ticks_total is not None:
             busy = sum(s.cpu_ticks for s in samples)
             if self._prev_total is not None and self._prev_busy is not None:
                 dt = totals.cpu_ticks_total - self._prev_total
                 if dt > 0:
-                    cpu_text = f"{min(100.0, 100.0 * (busy - self._prev_busy) / dt):.1f}%"
+                    cpu_pct = min(100.0, 100.0 * (busy - self._prev_busy) / dt)
             self._prev_total, self._prev_busy = totals.cpu_ticks_total, busy
-        self._rows["cpu"].set_subtitle(cpu_text)
-        self._rows["cores"].set_subtitle(str(totals.cpu_count))
+        facts = {
+            "Processors": str(totals.cpu_count),
+            "Processes": str(nprocs),
+            "Load (1 minute)": "Unknown" if totals.load1 is None else f"{totals.load1:.2f}",
+            "Up time": _fmt_uptime(totals.uptime_seconds),
+        }
+        self._tiles["cpu"].push(cpu_pct, _fmt_pct(cpu_pct), facts)
+
+    def _update_mem(self, totals: SystemTotals) -> None:
+        mem_pct: float | None = None
+        subtitle = "Unknown"
+        facts = {"Memory total": _fmt_bytes(totals.mem_total_bytes)}
         if totals.mem_total_bytes is not None and totals.mem_available_bytes is not None:
             used = totals.mem_total_bytes - totals.mem_available_bytes
-            self._rows["mem"].set_subtitle(
-                f"{_fmt_bytes(used)} ({100.0 * used / totals.mem_total_bytes:.0f}%)"
-            )
-        else:
-            self._rows["mem"].set_subtitle("Unknown")
-        self._rows["memtotal"].set_subtitle(_fmt_bytes(totals.mem_total_bytes))
-        self._rows["load"].set_subtitle(
-            "Unknown" if totals.load1 is None else f"{totals.load1:.2f}"
+            mem_pct = 100.0 * used / totals.mem_total_bytes
+            subtitle = f"{_fmt_pct(mem_pct)} ({_fmt_bytes(used)} used)"
+            facts["Memory in use"] = _fmt_bytes(used)
+        self._tiles["mem"].push(mem_pct, subtitle, facts)
+
+    def _update_disks(self, rates: list[DiskRate], letters: dict[str, list[str]]) -> None:
+        seen = set()
+        for r in rates:
+            seen.add(r.name)
+            key = f"disk:{r.name}"
+            if key not in self._tiles:
+                letter_bits = letters.get(r.name)
+                title = f"{r.name} ({', '.join(letter_bits)})" if letter_bits else r.name
+                self._add_tile(key, "disk", r.name, title)
+            combined = None
+            if r.read_bytes_per_sec is not None and r.write_bytes_per_sec is not None:
+                combined = r.read_bytes_per_sec + r.write_bytes_per_sec
+            facts = {
+                "Read speed": _fmt_bps(r.read_bytes_per_sec),
+                "Write speed": _fmt_bps(r.write_bytes_per_sec),
+            }
+            self._tiles[key].push(combined, _fmt_bps(combined), facts)
+        # a disk that vanished between ticks (unplugged) keeps its tile and goes Unknown,
+        # rather than being removed mid-session and losing the owner's place if selected
+        for key, tile in self._tiles.items():
+            if tile.kind == "disk" and tile.device not in seen:
+                tile.push(None, "Unknown", tile.facts)
+
+    def _update_nets(self, rates: list[NetRate]) -> None:
+        seen = set()
+        for r in rates:
+            seen.add(r.name)
+            key = f"net:{r.name}"
+            if key not in self._tiles:
+                self._add_tile(key, "net", r.name, r.name.capitalize())
+            combined = None
+            if r.rx_bytes_per_sec is not None and r.tx_bytes_per_sec is not None:
+                combined = r.rx_bytes_per_sec + r.tx_bytes_per_sec
+            facts = {"Send": _fmt_bps(r.tx_bytes_per_sec), "Receive": _fmt_bps(r.rx_bytes_per_sec)}
+            self._tiles[key].push(combined, _fmt_bps(combined), facts)
+        for key, tile in self._tiles.items():
+            if tile.kind == "net" and tile.device not in seen:
+                tile.push(None, "Unknown", tile.facts)
+
+    def _refresh_selected(self) -> None:
+        if self._selected is None:
+            return
+        tile = self._tiles[self._selected]
+        self._detail_chart.push(tile.history[-1] if tile.history else None)
+        self._detail_subtitle.set_text(tile.device or tile.subtitle)
+        self._update_facts(tile)
+        self._peak_label.set_text(
+            "100%" if tile.kind in ("cpu", "mem") else _fmt_bps(self._detail_chart.peak())
         )
-        self._rows["uptime"].set_subtitle(_fmt_uptime(totals.uptime_seconds))
-        self._rows["procs"].set_subtitle(str(nprocs))
 
 
 class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
@@ -290,6 +485,10 @@ class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
         self._journal = journal
         self._notify = notify or (lambda text: None)
         self._sampler = sampler_factory()
+        self._disk_sampler = DiskIoSampler()
+        self._net_sampler = NetIoSampler()
+        self._disk_letters: dict[str, list[str]] = {}
+        self._disk_letters_loaded = False
         self._visible = False
         self._timer: int | None = None
         self._busy = False
@@ -357,11 +556,18 @@ class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
     def _worker(self) -> None:
         try:
             samples, totals = self._sampler.sample()
+            disk_rates = self._disk_sampler.sample()
+            net_rates = self._net_sampler.sample()
+            if not self._disk_letters_loaded:
+                # a D-Bus inventory call (disks.py's own pattern): once here, off the main
+                # thread, not on every 2-second tick (TB-INV-246) -- drive letters rarely change
+                self._disk_letters = disk_drive_letters()
+                self._disk_letters_loaded = True
         except Exception as exc:  # report, never hide (TB-INV-004)
             log.exception("process sampling failed")
             GLib.idle_add(self._fail, str(exc))
             return
-        GLib.idle_add(self._apply, samples, totals)
+        GLib.idle_add(self._apply, samples, totals, disk_rates, net_rates)
 
     def _fail(self, text: str) -> bool:
         self._status.set_text(f"Could not read processes: {text}")
@@ -405,10 +611,16 @@ class TaskManagerPage(Gtk.Box):  # type: ignore[misc]
         GLib.idle_add(self._notify, text)
         GLib.idle_add(self._tick)
 
-    def _apply(self, samples: list[ProcessSample], totals: SystemTotals) -> bool:
+    def _apply(
+        self,
+        samples: list[ProcessSample],
+        totals: SystemTotals,
+        disk_rates: list[DiskRate],
+        net_rates: list[NetRate],
+    ) -> bool:
         self._apps.update(samples)
         self._background.update(samples)
-        self._perf.update(totals, len(samples), samples)
+        self._perf.update(totals, len(samples), samples, disk_rates, net_rates, self._disk_letters)
         unreadable = sum(1 for s in samples if not s.readable)
         note = f"; {unreadable} not fully readable for this account" if unreadable else ""
         self._status.set_text(f"{len(samples)} processes, sampled every 2 s while visible{note}")

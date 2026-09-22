@@ -397,6 +397,21 @@ Scoped 2026-09-21 for the proposed in-app file browser (`DOC-02`, not yet author
 
 ---
 
+### 3.15 Live performance graphs (per-disk, per-adapter, CPU, memory)
+
+Scoped 2026-09-21 for a Windows-Task-Manager-style Performance tab (owner request, explicit go-ahead for the full scope) adding real per-disk and per-network-adapter throughput graphs alongside the existing CPU/memory numbers. Grounded in what the sampling actually reads (`/proc/diskstats`, `/proc/net/dev`, both documented kernel interfaces, sampled the same delta-over-interval way `ProcessSampler` already computes CPU%) and in this codebase's existing precedents: `storage.py` already excludes snap-loop pseudo-devices from disk inventory (TB-INV-157's family), and `driveletters.py` already treats a letter as a label over a real mount, never the truth itself (TB-INV-031/073). This family extends those precedents to throughput graphing rather than inventing new ones.
+
+| ID | Must remain true | Graceful failure requirement |
+|---|---|---|
+| **TB-INV-246** | Disk and network throughput sampling follows the same bounded, visibility-gated cadence as process sampling (TB-INV-199/200) — one shared 2-second tick while the Performance tab is visible, not an independent always-on timer per graph. | Adding graphs must not multiply background sampling cost; hiding the tab stops all of it, not just the process list. |
+| **TB-INV-247** | A disk or adapter whose rate cannot be computed (no previous sample yet, device disappeared, read failed) shows Unknown, never 0 B/s. | Extends TB-INV-131: a real zero (idle disk) and an unreadable one must never look the same. |
+| **TB-INV-248** | Each chart keeps a fixed-size rolling window of samples (matching the 60-second span shown), never an unbounded history. | Long-running visibility does not grow memory; the oldest sample is dropped as the newest is added. |
+| **TB-INV-249** | A disk graph may label itself with a familiar drive letter alias ("Disk 0 (C:)"), but the real block device (`/dev/sda`) stays visible in the detail view, never only the letter. | Extends TB-INV-070/073: the alias is presentation, the device path is the truth underneath it. |
+| **TB-INV-250** | Loopback network (`lo`) and snap/loop pseudo-block-devices are excluded from the graphed resource list, consistent with how `storage.py` and `network.py` already treat them elsewhere in this codebase. | A pseudo-device never appears dressed up as a real, graphable disk or adapter. |
+| **TB-INV-251** | A sample the worker thread fails to collect for one tick is shown as a real gap in that chart, never interpolated or repeated from the last good value. | Graceful failure here means an honest missing point, not fabricated continuity that hides a real read failure. |
+
+---
+
 ## 4. Invariant family index
 
 | Family | IDs |
@@ -415,8 +430,9 @@ Scoped 2026-09-21 for the proposed in-app file browser (`DOC-02`, not yet author
 | Accessibility, localization, privacy, and multi-user behavior | TB-INV-207–TB-INV-218 |
 | Updates, supply chain, extensions, testing, and release | TB-INV-219–TB-INV-233 |
 | In-app file browsing and navigation | TB-INV-234–TB-INV-245 |
+| Live performance graphs | TB-INV-246–TB-INV-251 |
 
-**Total baseline invariants: 245.**
+**Total baseline invariants: 251.**
 
 ---
 
